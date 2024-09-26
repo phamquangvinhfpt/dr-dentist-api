@@ -1,0 +1,60 @@
+stages:
+  - build
+  - ssh
+  - docker
+  - docker-prod
+  - deploy-test
+  - deploy-prod
+
+build_job:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:7.0
+  script:
+    - dotnet restore
+    - dotnet build --no-restore
+    - dotnet test --no-build --verbosity normal
+
+.ssh-setup: &ssh_setup
+  image: ubuntu:latest
+  stage: ssh
+  before_script:
+    - apt-get -yq update
+    - apt-get -yqq install ssh
+    - install -m 600 -D /dev/null ~/.ssh/id_rsa
+    - echo "$SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+    - ssh-keyscan -H $SSH_HOST > ~/.ssh/known_hosts
+
+docker_job:
+  <<: *ssh_setup
+  stage: docker
+  script:
+    - ssh $SSH_USER@$SSH_HOST "/root/deploy-drdentist-api-to-hub.sh"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_COMMIT_TAG
+
+docker-prod_job:
+  <<: *ssh_setup
+  stage: docker-prod
+  script:
+    - ssh $SSH_USER@$SSH_HOST "/root/deploy-drdentist-api-to-hub-prod.sh"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+deploy-test_job:
+  <<: *ssh_setup
+  stage: deploy-test
+  script:
+    - ssh $SSH_USER@$SSH_HOST "/root/deploy-drdentist-api-to-test.sh"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+deploy-prod_job:
+  <<: *ssh_setup
+  stage: deploy-prod
+  script:
+    - ssh $SSH_USER@$SSH_HOST "/root/deploy-drdentist-api-to-prod.sh"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG

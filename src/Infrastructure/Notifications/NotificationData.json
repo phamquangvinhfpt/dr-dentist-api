@@ -1,0 +1,99 @@
+[
+  {
+    "Title": "Wellcome to GEO",
+    "Label": "Information",
+    "Message": "This is the first page of the GEO application. You can navigate through the application using the menu on the left. Enjoy your experience!"
+  },
+  {
+    "Title": "Success notification",
+    "Label": "Success",
+    "Message": "This is message to test success notification."
+  },
+  {
+    "Title": "Error notification",
+    "Label": "Error",
+    "Message": "This is message to test error notification."
+  },
+  {
+    "Title": "Warning notification",
+    "Label": "Warning",
+    "Message": "This is message to test warning notification."
+  },
+  {
+    "Title": "Reminder notification",
+    "Label": "Reminder",
+    "Message": "This is message to test reminder notification.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Assignment assigned",
+    "Label": "Information",
+    "Message": "You have been assigned to a new assignment. Please check the assignment page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Exam Finished",
+    "Label": "Success",
+    "Message": "You have successfully finished the exam. Please check the exam page for the results.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Exam Failed",
+    "Label": "Error",
+    "Message": "You have failed the exam. Please check the exam page for the results.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Exam Reminder",
+    "Label": "Reminder",
+    "Message": "You have an exam in 2 days. Please check the exam page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Assignment Reminder",
+    "Label": "Reminder",
+    "Message": "You have an assignment due in 2 days. Please check the assignment page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Assignment Submitted",
+    "Label": "Success",
+    "Message": "You have successfully submitted the assignment. Please check the assignment page for the results.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Class Assigned",
+    "Label": "Information",
+    "Message": "You have been assigned to a new class. Please check the class page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Class Reminder",
+    "Label": "Reminder",
+    "Message": "You have a class in 2 days. Please check the class page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Course Assigned",
+    "Label": "Information",
+    "Message": "You have been assigned to a new course. Please check the course page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Course Reminder",
+    "Label": "Reminder",
+    "Message": "You have a course in 2 days. Please check the course page for more details.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Course Finished",
+    "Label": "Success",
+    "Message": "You have successfully finished the course. Please check the course page for the results.",
+    "Url": "http://www.google.com"
+  },
+  {
+    "Title": "Course Failed",
+    "Label": "Error",
+    "Message": "You have failed the course. Please check the course page for more details"
+  }
+]

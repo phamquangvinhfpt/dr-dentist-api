@@ -1,0 +1,6 @@
+{
+  "CorsSettings": {
+    "Vue": "http://localhost:5173;https://test.drdentist.me;https://drdentist.me",
+    "Blazor": "https://localhost;http://localhost;capacitor://localhost;ionic://localhost;http://localhost:8100;http://localhost:8080"
+  }
+}

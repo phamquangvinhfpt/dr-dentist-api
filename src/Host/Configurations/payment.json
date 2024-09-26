@@ -1,0 +1,8 @@
+{
+  "PaymentSettings": {
+    "TransactionsURL": "https://my-json-server.typicode.com/kine1234/gfake/trans",
+    "SyncJobURL": "https://test-api.guardianexam.com",
+    "CheckTransCron": "* * * * *",
+    "DisableSubCron": "0 0 * * *"
+  }
+}

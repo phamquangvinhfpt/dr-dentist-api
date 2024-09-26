@@ -1,0 +1,33 @@
+version: '3.8'
+name: drdentist-net
+services:
+  dotnet-webapi:
+    image: phamquangvinh/drdentist-net-api:latest
+    container_name: dotnet-webapi
+    networks:
+      - drdentist-net
+    env_file:
+      - .env
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    ports:
+      - 5100:5100
+      - 5010:5010
+    restart: on-failure
+  # elk:
+  #     container_name:  elasticsearch-kibana
+  #     image: sebp/elk:oss-8.5.3
+  #     environment:
+  #       - LOGSTASH_START=0
+  #     volumes:
+  #       - sebp-elk-data:/usr/share/elk/data
+  #     ports:
+  #       - 5601:5601
+  #       - 9200:9200
+  #     networks:
+  #       - drdentist-net
+# volumes:
+  # sebp-elk-data:
+networks:
+  drdentist-net:
+    name:  drdentist-net

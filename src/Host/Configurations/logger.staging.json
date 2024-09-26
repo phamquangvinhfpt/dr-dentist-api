@@ -1,0 +1,7 @@
+{
+  "LoggerSettings": {
+    "AppName": "DentalClinicManagementSystem",
+    "WriteToFile": false,
+    "StructuredConsoleLogging": true
+  }
+}

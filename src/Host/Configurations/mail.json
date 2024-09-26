@@ -1,0 +1,10 @@
+{
+  "MailSettings": {
+    "DisplayName": "DCMS",
+    "From": "9277.dev@gmail.com",
+    "Host": "smtp.gmail.com",
+    "Password": "bfub qrtw zsqf ggia",
+    "Port": 587,
+    "UserName": "9277.dev@gmail.com"
+  }
+}

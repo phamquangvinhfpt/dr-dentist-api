@@ -1,0 +1,75 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <RootNamespace>FSH.WebApi.Host</RootNamespace>
+        <AssemblyName>FSH.WebApi.Host</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup>
+        <ContainerImageName>drdentist-net-api</ContainerImageName>
+        <ContainerImageTags>1.0.0;latest</ContainerImageTags>
+        <PublishProfile>DefaultContainer</PublishProfile>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="DocX" Version="3.0.0" />
+        <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+        <PackageReference Include="Hangfire.Console.Extensions.Serilog" Version="1.0.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="7.0.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Core\Application\Application.csproj" />
+        <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+        <ProjectReference Include="..\Migrators\Migrators.PostgreSQL\Migrators.PostgreSQL.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Update="Configurations\*.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <None Update="Files\full-stack-hero-logo.png">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Files\QuestionImportTemplate.docx">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="Files\QuestionTemplate.txt">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Update="libwkhtmltox.dll">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+        <None Include="Email Templates\*.html">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Remove="Logs\*" />
+        <None Include="Logs\*" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Include="Email Templates\*.cshtml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+      <Content Remove="Email Templates\join-my-team.cshtml" />
+      <Content Remove="Email Templates\reset-password.cshtml" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Databases\Host\" />
+    </ItemGroup>
+    <ItemGroup>
+      <Content Update="PaperTemplates\paper.cshtml">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Update="Roslynator.Analyzers" Version="4.2.0">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+</Project>
