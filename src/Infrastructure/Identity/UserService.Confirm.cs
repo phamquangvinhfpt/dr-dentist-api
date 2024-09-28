@@ -32,9 +32,8 @@ internal partial class UserService
 
         var user = await _userManager.Users
             .Where(u => u.Id == userId && !u.EmailConfirmed)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken) ?? throw new InternalServerException(_t["An error occurred while confirming E-Mail."]);
 
-        _ = user ?? throw new InternalServerException(_t["An error occurred while confirming E-Mail."]);
 
         code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
         var result = await _userManager.ConfirmEmailAsync(user, code);

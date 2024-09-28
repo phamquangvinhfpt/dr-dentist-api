@@ -17,6 +17,9 @@ public class ApplicationUserConfig : IEntityTypeConfiguration<ApplicationUser>
         builder
             .Property(u => u.ObjectId)
                 .HasMaxLength(256);
+
+        builder.Property(u => u.Address)
+            .HasMaxLength(256);
     }
 }
 

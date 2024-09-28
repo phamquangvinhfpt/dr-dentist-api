@@ -1122,6 +1122,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date");
 
@@ -1147,6 +1151,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Job")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastName")
                         .HasColumnType("text");

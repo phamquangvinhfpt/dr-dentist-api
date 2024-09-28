@@ -134,18 +134,16 @@ internal partial class UserService : IUserService
         var user = await _userManager.Users
             .AsNoTracking()
             .Where(u => u.Id == userId)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
 
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
 
         return user.Adapt<UserDetailsDto>();
     }
 
     public async Task ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.Users.Where(u => u.Id == request.UserId).FirstOrDefaultAsync(cancellationToken);
+        var user = await _userManager.Users.Where(u => u.Id == request.UserId).FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
 
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
 
         bool isAdmin = await _userManager.IsInRoleAsync(user, FSHRoles.Admin);
         if (isAdmin)
@@ -155,7 +153,7 @@ internal partial class UserService : IUserService
 
         user.IsActive = request.ActivateUser;
 
-        _ = await _userManager.UpdateAsync(user);
+        await _userManager.UpdateAsync(user);
 
         await _events.PublishAsync(new ApplicationUserUpdatedEvent(user.Id));
     }

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240926022542_Init")]
-    partial class Init
+    [Migration("20240928040242_ChangeDataBase")]
+    partial class ChangeDataBase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1125,6 +1125,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date");
 
@@ -1150,6 +1154,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Job")
+                        .HasColumnType("text");
 
                     b.Property<string>("LastName")
                         .HasColumnType("text");

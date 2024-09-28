@@ -104,6 +104,7 @@ internal partial class UserService
 
     public async Task<string> CreateAsync(CreateUserRequest request, string origin)
     {
+        var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
         var user = new ApplicationUser
         {
             Email = request.Email,
@@ -115,22 +116,15 @@ internal partial class UserService
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
+
         if (!result.Succeeded)
         {
             throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
         }
 
-        await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
-        //var studentList = await _studentRepo.ListAsync(new StudentByEmailSpec(user.Email));
+        await _userManager.AddToRoleAsync(user, role.Name);
 
-        //if (studentList.Any())
-        //{
-        //    foreach (var student in studentList)
-        //    {
-        //        student.StId = Guid.Parse(user.Id);
-        //        await _studentRepo.UpdateAsync(student);
-        //    }
-        //}
+        var existingUser = _userManager.FindByEmailAsync(request.Email).Result ?? throw new InternalServerException(_t[$"User {user.Email} is existed."]);
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
 

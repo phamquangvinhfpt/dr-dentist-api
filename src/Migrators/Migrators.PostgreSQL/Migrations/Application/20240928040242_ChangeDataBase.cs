@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class ChangeDataBase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -202,6 +202,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     RefreshToken = table.Column<string>(type: "text", nullable: true),
                     RefreshTokenExpiryTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Job = table.Column<string>(type: "text", nullable: true),
+                    Address = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     ObjectId = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),

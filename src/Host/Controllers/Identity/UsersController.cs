@@ -1,3 +1,4 @@
+using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
@@ -46,12 +47,19 @@ public class UsersController : VersionNeutralApiController
 
     [HttpPost]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
-    [OpenApiOperation("Creates a new user.", "")]
+    [OpenApiOperation("Creates a new Staff/Doctor.", "")]
     public Task<string> CreateAsync(CreateUserRequest request)
     {
         // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
         // and return UnAuthorized when it isn't
         // Also: add other protection to prevent automatic posting (captcha?)
+        var validation = new CreateUserRequestValidator(_userService).ValidateAsync(request);
+        if (!validation.IsCompleted)
+        {
+            var t = validation.Result;
+            if (!t.IsValid)
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
+        }
         return _userService.CreateAsync(request, GetOriginFromRequest());
     }
 
@@ -65,6 +73,12 @@ public class UsersController : VersionNeutralApiController
         // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
         // and return UnAuthorized when it isn't
         // Also: add other protection to prevent automatic posting (captcha?)
+        var validation = new CreateUserRequestValidator(_userService).ValidateAsync(request);
+        if (!validation.IsCompleted) {
+            var t = validation.Result;
+            if(!t.IsValid)
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
+        }
         return _userService.CreateAsync(request, GetOriginFromRequest());
     }
 
@@ -72,13 +86,8 @@ public class UsersController : VersionNeutralApiController
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     [OpenApiOperation("Toggle a user's active status.", "")]
-    public async Task<ActionResult> ToggleStatusAsync(string id, ToggleUserStatusRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult> ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken)
     {
-        if (id != request.UserId)
-        {
-            return BadRequest();
-        }
-
         await _userService.ToggleStatusAsync(request, cancellationToken);
         return Ok();
     }
