@@ -32,19 +32,20 @@ public class RolesController : VersionNeutralApiController
         return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
     }
 
-    [HttpPut("{id}/permissions")]
+    [HttpPut("update/permissions")]
     [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]
     [OpenApiOperation("Update a role's permissions.", "")]
-    public async Task<ActionResult<string>> UpdatePermissionsAsync(string id, UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<string>> UpdatePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
     {
-        if (id != request.RoleId)
-        {
-            return BadRequest();
-        }
-
-        return Ok(await _roleService.UpdatePermissionsAsync(request, cancellationToken));
+        return Ok(await _roleService.AssignPermissionsAsync(request, cancellationToken));
     }
-
+    [HttpPut("delete/permissions")]
+    [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]
+    [OpenApiOperation("Delete a role's permissions.", "")]
+    public async Task<ActionResult<string>> DeletePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    {
+        return Ok(await _roleService.DeletePermissionsAsync(request, cancellationToken));
+    }
     [HttpPost]
     [MustHavePermission(FSHAction.Create, FSHResource.Roles)]
     [OpenApiOperation("Create or update a role.", "")]

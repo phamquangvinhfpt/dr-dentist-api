@@ -136,7 +136,6 @@ internal partial class UserService : IUserService
             .Where(u => u.Id == userId)
             .FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
 
-
         return user.Adapt<UserDetailsDto>();
     }
 

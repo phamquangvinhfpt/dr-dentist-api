@@ -23,5 +23,7 @@ public class UserDetailsDto
     public string? PhoneNumber { get; set; }
 
     public bool? PhoneNumberConfirmed { get; set; }
+    public string? Job { get; set; }
+    public string? Address { get; set; }
     public string? ImageUrl { get; set; }
 }

@@ -1,5 +1,6 @@
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using MediatR.Pipeline;
 using System.Security.Claims;
 
 namespace FSH.WebApi.Application.Identity.Users;

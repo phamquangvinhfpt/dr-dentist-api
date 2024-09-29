@@ -34,7 +34,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 name: "Identity");
 
             migrationBuilder.CreateTable(
-                name: "Appoinment",
+                name: "Appointment",
                 schema: "Treatment",
                 columns: table => new
                 {
@@ -56,7 +56,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Appoinment", x => x.Id);
+                    table.PrimaryKey("PK_Appointment", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -348,10 +348,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_GeneralExamination", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GeneralExamination_Appoinment_AppointmentId",
+                        name: "FK_GeneralExamination_Appointment_AppointmentId",
                         column: x => x.AppointmentId,
                         principalSchema: "Treatment",
-                        principalTable: "Appoinment",
+                        principalTable: "Appointment",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -431,17 +431,17 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_Payment", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Payment_Appoinment_AppointmentId",
+                        name: "FK_Payment_Appointment_AppointmentId",
                         column: x => x.AppointmentId,
                         principalSchema: "Treatment",
-                        principalTable: "Appoinment",
+                        principalTable: "Appointment",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Payment_Appoinment_AppointmentId1",
+                        name: "FK_Payment_Appointment_AppointmentId1",
                         column: x => x.AppointmentId1,
                         principalSchema: "Treatment",
-                        principalTable: "Appoinment",
+                        principalTable: "Appointment",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Payment_Users_PatientId",
@@ -475,17 +475,17 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_Prescription", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Prescription_Appoinment_AppointmentId",
+                        name: "FK_Prescription_Appointment_AppointmentId",
                         column: x => x.AppointmentId,
                         principalSchema: "Treatment",
-                        principalTable: "Appoinment",
+                        principalTable: "Appointment",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Prescription_Appoinment_AppointmentId1",
+                        name: "FK_Prescription_Appointment_AppointmentId1",
                         column: x => x.AppointmentId1,
                         principalSchema: "Treatment",
-                        principalTable: "Appoinment",
+                        principalTable: "Appointment",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Prescription_Users_DentistId",
@@ -1241,7 +1241,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "Appoinment",
+                name: "Appointment",
                 schema: "Treatment");
 
             migrationBuilder.DropTable(

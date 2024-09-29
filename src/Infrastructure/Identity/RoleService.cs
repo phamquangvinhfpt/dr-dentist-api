@@ -116,10 +116,10 @@ internal class RoleService : IRoleService
         }
     }
 
-    public async Task<string> UpdatePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    public async Task<string> AssignPermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
     {
-        var role = await _roleManager.FindByIdAsync(request.RoleId);
-        _ = role ?? throw new NotFoundException(_t["Role Not Found"]);
+        var role = await _roleManager.FindByIdAsync(request.RoleId) ?? throw new NotFoundException(_t["Role Not Found"]);
+
         if (role.Name == FSHRoles.Admin)
         {
             throw new ConflictException(_t["Not allowed to modify Permissions for this Role."]);
@@ -128,40 +128,30 @@ internal class RoleService : IRoleService
         if (_currentTenant.Id != MultitenancyConstants.Root.Id)
         {
             // Remove Root Permissions if the Role is not created for Root Tenant.
-            request.Permissions.RemoveAll(u => u.StartsWith("Permissions.Root."));
+            throw new BadRequestException("The Role is not created for Root Tenant.");
         }
 
         var currentClaims = await _roleManager.GetClaimsAsync(role);
 
-        // Remove permissions that were previously selected
-        foreach (var claim in currentClaims.Where(c => !request.Permissions.Any(p => p == c.Value)))
-        {
-            var removeResult = await _roleManager.RemoveClaimAsync(role, claim);
-            if (!removeResult.Succeeded)
-            {
-                throw new InternalServerException(_t["Update permissions failed."], removeResult.GetErrors(_t));
-            }
-        }
-
         // Add all permissions that were not previously selected
-        foreach (string permission in request.Permissions.Where(c => !currentClaims.Any(p => p.Value == c)))
+        if(!string.IsNullOrEmpty(request.Permissions)) 
         {
-            if (!string.IsNullOrEmpty(permission))
+            if (!currentClaims.Any(p => p.Value == request.Permissions))
             {
                 _db.RoleClaims.Add(new ApplicationRoleClaim
                 {
                     RoleId = role.Id,
                     ClaimType = FSHClaims.Permission,
-                    ClaimValue = permission,
+                    ClaimValue = request.Permissions,
                     CreatedBy = _currentUser.GetUserId().ToString()
                 });
                 await _db.SaveChangesAsync(cancellationToken);
+                await _events.PublishAsync(new ApplicationRoleUpdatedEvent(role.Id, role.Name!, true));
+
+                return _t["Permissions Updated."];
             }
         }
-
-        await _events.PublishAsync(new ApplicationRoleUpdatedEvent(role.Id, role.Name!, true));
-
-        return _t["Permissions Updated."];
+        throw new BadRequestException("The Role had this permission");
     }
 
     public async Task<string> DeleteAsync(string id)
@@ -185,5 +175,41 @@ internal class RoleService : IRoleService
         await _events.PublishAsync(new ApplicationRoleDeletedEvent(role.Id, role.Name!));
 
         return string.Format(_t["Role {0} Deleted."], role.Name);
+    }
+
+    public async Task<string> DeletePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    {
+        var role = await _roleManager.FindByIdAsync(request.RoleId) ?? throw new NotFoundException(_t["Role Not Found"]);
+
+        if (role.Name == FSHRoles.Admin)
+        {
+            throw new ConflictException(_t["Not allowed to modify Permissions for this Role."]);
+        }
+
+        if (_currentTenant.Id != MultitenancyConstants.Root.Id)
+        {
+            // Remove Root Permissions if the Role is not created for Root Tenant.
+            throw new BadRequestException("The Role is not remove for Root Tenant.");
+        }
+
+        var currentClaims = await _roleManager.GetClaimsAsync(role);
+
+        // Add all permissions that were not previously selected
+        if (!string.IsNullOrEmpty(request.Permissions))
+        {
+            foreach (var claim in currentClaims.Where(c => request.Permissions == c.Value))
+            {
+                var removeResult = await _roleManager.RemoveClaimAsync(role, claim);
+                if (!removeResult.Succeeded)
+                {
+                    throw new InternalServerException(_t["Update permissions failed."], removeResult.GetErrors(_t));
+                }
+            }
+        }
+        else
+        {
+            throw new BadRequestException("Permission is empty.");
+        }
+        return _t["Remove Permission Successfully"];
     }
 }

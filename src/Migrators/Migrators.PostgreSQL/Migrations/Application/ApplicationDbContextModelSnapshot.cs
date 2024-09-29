@@ -76,7 +76,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.ToTable("Appoinment", "Treatment");
+                    b.ToTable("Appointment", "Treatment");
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });

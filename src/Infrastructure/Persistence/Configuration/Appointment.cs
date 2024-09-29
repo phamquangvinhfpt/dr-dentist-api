@@ -9,7 +9,7 @@ public class AppointmentConfig : IEntityTypeConfiguration<Appointment>
     public void Configure(EntityTypeBuilder<Appointment> builder)
     {
         builder
-              .ToTable("Appoinment", SchemaNames.Treatment)
+              .ToTable("Appointment", SchemaNames.Treatment)
               .IsMultiTenant();
 
         builder
