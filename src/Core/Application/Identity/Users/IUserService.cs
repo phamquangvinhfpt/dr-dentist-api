@@ -31,6 +31,7 @@ public interface IUserService : ITransientService
 
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
     Task<string> CreateAsync(CreateUserRequest request, string origin);
+    Task<string> RegisterNewPatientAsync(SeftRegistNewPatient request, string origin);
     Task UpdateAsync(UpdateUserRequest request);
     Task<string> UpdateEmailAsync(UpdateEmailRequest request);
     Task UpdatePhoneNumberAsync(UpdatePhoneNumberRequest request);

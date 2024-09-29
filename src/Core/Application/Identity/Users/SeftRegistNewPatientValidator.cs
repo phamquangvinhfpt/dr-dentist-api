@@ -1,9 +1,13 @@
-namespace FSH.WebApi.Application.Identity.Users;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
+namespace FSH.WebApi.Application.Identity.Users;
+public class SeftRegistNewPatientValidator : CustomValidator<SeftRegistNewPatient>
 {
-    public CreateUserRequestValidator(IUserService userService)
-    {
+    public SeftRegistNewPatientValidator(IUserService userService) {
         RuleFor(u => u.Email).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .EmailAddress()
@@ -14,7 +18,7 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
             .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Birth day is required.")
             .Must(p => p.HasValue).WithMessage("Birth day must be a valid date in the format dd-MM-yyyy.")
-            .Must(p => p.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-25)).WithMessage("Birth day must be valid");
+            .Must(p => p.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-18)).WithMessage("Birth day must be valid");
         RuleFor(u => u.UserName).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MinimumLength(6);
@@ -28,6 +32,12 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
             .NotEmpty();
 
         RuleFor(p => p.LastName).Cascade(CascadeMode.Stop)
+            .NotEmpty();
+
+        RuleFor(p => p.Job).Cascade(CascadeMode.Stop)
+            .NotEmpty();
+
+        RuleFor(p => p.Address).Cascade(CascadeMode.Stop)
             .NotEmpty();
 
         RuleFor(p => p.Password).Cascade(CascadeMode.Stop)

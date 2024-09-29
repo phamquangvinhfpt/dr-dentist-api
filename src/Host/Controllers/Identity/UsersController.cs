@@ -66,20 +66,20 @@ public class UsersController : VersionNeutralApiController
     [HttpPost("self-register")]
     [TenantIdHeader]
     [AllowAnonymous]
-    [OpenApiOperation("Anonymous user creates a user.", "")]
+    [OpenApiOperation("Regist new patient.", "")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
-    public Task<string> SelfRegisterAsync(CreateUserRequest request)
+    public Task<string> SelfRegisterAsync(SeftRegistNewPatient request)
     {
         // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
         // and return UnAuthorized when it isn't
         // Also: add other protection to prevent automatic posting (captcha?)
-        var validation = new CreateUserRequestValidator(_userService).ValidateAsync(request);
+        var validation = new SeftRegistNewPatientValidator(_userService).ValidateAsync(request);
         if (!validation.IsCompleted) {
             var t = validation.Result;
             if(!t.IsValid)
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
         }
-        return _userService.CreateAsync(request, GetOriginFromRequest());
+        return _userService.RegisterNewPatientAsync(request, GetOriginFromRequest());
     }
 
     [HttpPost("{id}/toggle-status")]
