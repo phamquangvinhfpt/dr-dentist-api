@@ -8,7 +8,8 @@ namespace FSH.WebApi.Application.Identity.Users;
 public interface IUserService : ITransientService
 {
     Task<PaginationResponse<UserDetailsDto>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken);
-
+    Task<bool> ExistsWithUserIDAsync(string userID);
+    Task<bool> CheckConfirmEmail(string userID);
     Task<bool> ExistsWithNameAsync(string name);
     Task<bool> ExistsWithEmailAsync(string email, string? exceptId = null);
     Task<bool> ExistsWithPhoneNumberAsync(string phoneNumber, string? exceptId = null);
@@ -46,4 +47,5 @@ public interface IUserService : ITransientService
     Task<UserDetailsDto> GetUserDetailByEmailAsync(string email, CancellationToken cancellationToken);
     Task<UserDetailsDto> GetUserDetailByPhoneAsync(string phoneNumber, CancellationToken cancellationToken);
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
+    Task<string> UpdatePatientRecordAsync(CreatePatientRecord request);
 }

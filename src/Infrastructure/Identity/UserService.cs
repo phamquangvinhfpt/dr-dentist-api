@@ -1,5 +1,6 @@
 using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Events;
@@ -22,6 +23,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using System.Runtime.CompilerServices;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -94,10 +96,28 @@ internal partial class UserService : IUserService
         return new PaginationResponse<UserDetailsDto>(users, count, filter.PageNumber, filter.PageSize);
     }
 
+    public async Task<bool> ExistsWithUserIDAsync(string userID)
+    {
+        EnsureValidTenant();
+        var user = await _userManager.FindByIdAsync(userID);
+        return user is not null;
+    }
+
     public async Task<bool> ExistsWithNameAsync(string name)
     {
         EnsureValidTenant();
         return await _userManager.FindByNameAsync(name) is not null;
+    }
+
+    public async Task<bool> CheckConfirmEmail(string userID)
+    {
+        EnsureValidTenant();
+        var user = await _userManager.FindByIdAsync(userID);
+        if (user == null)
+        {
+            return false;
+        }
+        return await _userManager.IsEmailConfirmedAsync(user);
     }
 
     public async Task<bool> ExistsWithEmailAsync(string email, string? exceptId = null)

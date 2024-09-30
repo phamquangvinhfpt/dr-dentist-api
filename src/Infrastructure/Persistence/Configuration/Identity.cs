@@ -1,4 +1,5 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,44 @@ public class ApplicationUserConfig : IEntityTypeConfiguration<ApplicationUser>
 
         builder.Property(u => u.Address)
             .HasMaxLength(256);
+    }
+}
+
+public class MedicalHistoryConfig : IEntityTypeConfiguration<MedicalHistory>
+{
+    public void Configure(EntityTypeBuilder<MedicalHistory> builder)
+    {
+        builder
+            .ToTable("MedicalHistory", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<MedicalHistory>("PatientId");
+
+        builder
+            .Property(b => b.Note)
+            .HasMaxLength(256);
+    }
+}
+
+public class PatientFamilyConfig : IEntityTypeConfiguration<PatientFamily>
+{
+    public void Configure(EntityTypeBuilder<PatientFamily> builder)
+    {
+        builder
+            .ToTable("PatientFamily", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<PatientFamily>("PatientId");
+
+        builder
+            .Property(b => b.Email)
+            .HasMaxLength(100);
     }
 }
 

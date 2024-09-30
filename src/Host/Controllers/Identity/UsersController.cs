@@ -34,7 +34,7 @@ public class UsersController : VersionNeutralApiController
     public Task<List<UserRoleDto>> GetRolesAsync(string id, CancellationToken cancellationToken)
     {
         return _userService.GetRolesAsync(id, cancellationToken);
-    }   
+    }
 
     [HttpPost("{id}/roles")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
@@ -61,6 +61,24 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
         }
         return _userService.CreateAsync(request, GetOriginFromRequest());
+    }
+
+    [HttpPost("update-patient-record")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    [OpenApiOperation("Update Patient Record.", "")]
+    public Task<string> UpdatePatientRecord(CreatePatientRecord request)
+    {
+        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
+        // and return UnAuthorized when it isn't
+        // Also: add other protection to prevent automatic posting (captcha?)
+        var validation = new CreatePatientRecordValidator(_userService).ValidateAsync(request);
+        if (!validation.IsCompleted)
+        {
+            var t = validation.Result;
+            if (!t.IsValid)
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
+        }
+        return _userService.UpdatePatientRecordAsync(request);
     }
 
     [HttpPost("self-register")]

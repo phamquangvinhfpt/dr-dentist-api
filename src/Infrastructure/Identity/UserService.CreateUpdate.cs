@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.Common.Exceptions;
+﻿using DocumentFormat.OpenXml.Presentation;
+using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.SpeedSMS;
 using FSH.WebApi.Application.Identity.Users;
@@ -104,7 +105,6 @@ internal partial class UserService
 
     public async Task<string> CreateAsync(CreateUserRequest request, string origin)
     {
-        _ = _userManager.FindByEmailAsync(request.Email).Result ?? throw new InternalServerException(_t[$"User {request.Email} is existed."]);
         var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
         var user = new ApplicationUser
         {
@@ -153,18 +153,10 @@ internal partial class UserService
     }
     public async Task<string> RegisterNewPatientAsync(SeftRegistNewPatient request, string origin)
     {
-        _ = _userManager.FindByEmailAsync(request.Email).Result ?? throw new InternalServerException(_t[$"User {request.Email} is existed."]);
         var user = new ApplicationUser
         {
             Email = request.Email,
-            Gender = request.IsMale,
-            BirthDate = request.BirthDay,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
             UserName = request.UserName,
-            PhoneNumber = request.PhoneNumber,
-            Job = request.Job,
-            Address = request.Address,
             IsActive = true
         };
 
@@ -202,6 +194,32 @@ internal partial class UserService
 
         return string.Join(Environment.NewLine, messages);
     }
+
+    public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)
+    {
+        var user = _userManager.FindByIdAsync(request.PatientId).Result;
+
+        user.PhoneNumber = request.PhoneNumber;
+        user.LastName = request.LastName;
+        user.FirstName = request.FirstName;
+        user.Address = request.Address;
+        user.BirthDate = request.BirthDay;
+        user.Gender = request.IsMale;
+        user.Job = request.Job;
+
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
+        }
+
+
+        await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
+
+        return _t["Update Record Successfully"];
+    }
+
     public async Task UpdateAsync(UpdateUserRequest request)
     {
         var user = await _userManager.FindByIdAsync(request.UserId!);

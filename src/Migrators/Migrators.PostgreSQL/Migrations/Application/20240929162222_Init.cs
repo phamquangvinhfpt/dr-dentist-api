@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class ChangeDataBase : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,6 +22,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 name: "CustomerService");
 
             migrationBuilder.EnsureSchema(
+                name: "Identity");
+
+            migrationBuilder.EnsureSchema(
                 name: "Notification");
 
             migrationBuilder.EnsureSchema(
@@ -29,9 +32,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             migrationBuilder.EnsureSchema(
                 name: "Service");
-
-            migrationBuilder.EnsureSchema(
-                name: "Identity");
 
             migrationBuilder.CreateTable(
                 name: "Appointment",
@@ -368,6 +368,64 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MedicalHistory",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PatientId = table.Column<string>(type: "text", nullable: true),
+                    MedicalName = table.Column<string[]>(type: "text[]", nullable: false),
+                    Note = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MedicalHistory", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MedicalHistory_Users_PatientId",
+                        column: x => x.PatientId,
+                        principalSchema: "Identity",
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PatientFamily",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PatientId = table.Column<string>(type: "text", nullable: true),
+                    Name = table.Column<string>(type: "text", nullable: true),
+                    Phone = table.Column<string>(type: "text", nullable: true),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Relationship = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PatientFamily", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PatientFamily_Users_PatientId",
+                        column: x => x.PatientId,
+                        principalSchema: "Identity",
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -953,6 +1011,20 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "PatientId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MedicalHistory_PatientId",
+                schema: "Identity",
+                table: "MedicalHistory",
+                column: "PatientId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PatientFamily_PatientId",
+                schema: "Identity",
+                table: "PatientFamily",
+                column: "PatientId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PatientImage_IndicationId",
                 schema: "Treatment",
                 table: "PatientImage",
@@ -1161,8 +1233,16 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "CustomerService");
 
             migrationBuilder.DropTable(
+                name: "MedicalHistory",
+                schema: "Identity");
+
+            migrationBuilder.DropTable(
                 name: "Notification",
                 schema: "Notification");
+
+            migrationBuilder.DropTable(
+                name: "PatientFamily",
+                schema: "Identity");
 
             migrationBuilder.DropTable(
                 name: "PatientImage",
