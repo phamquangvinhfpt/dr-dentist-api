@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -140,11 +141,26 @@ internal partial class UserService : IUserService
         }
     }
 
-    public async Task<List<UserDetailsDto>> GetListAsync(CancellationToken cancellationToken) =>
-        (await _userManager.Users
-                .AsNoTracking()
-                .ToListAsync(cancellationToken))
-            .Adapt<List<UserDetailsDto>>();
+    public async Task<List<ListUserDTO>> GetListAsync(CancellationToken cancellationToken)
+    {
+        var list_user = new List<ListUserDTO>();
+        var list = await _userManager.Users.AsNoTracking().ToListAsync(cancellationToken);
+        foreach(var user in list)
+        {
+            list_user.Add(new ListUserDTO
+            {
+                UserName = user.UserName,
+                Address = user.Address,
+                Email = user.Email,
+                Gender = user.Gender,
+                ImageUrl = user.ImageUrl,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                Role = await GetRolesAsync(user.Id, cancellationToken),
+            });
+        }
+        return list_user;
+    }
 
     public Task<int> GetCountAsync(CancellationToken cancellationToken) =>
         _userManager.Users.AsNoTracking().CountAsync(cancellationToken);

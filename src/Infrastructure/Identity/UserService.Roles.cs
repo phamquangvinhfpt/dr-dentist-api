@@ -10,21 +10,23 @@ namespace FSH.WebApi.Infrastructure.Identity;
 
 internal partial class UserService
 {
-    public async Task<List<UserRoleDto>> GetRolesAsync(string userId, CancellationToken cancellationToken)
+    public async Task<UserRoleDto> GetRolesAsync(string userId, CancellationToken cancellationToken)
     {
-        var userRoles = new List<UserRoleDto>();
+        var userRoles = new UserRoleDto();
 
         var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException("User Not Found.");
         var roles = await _roleManager.Roles.AsNoTracking().ToListAsync(cancellationToken) ?? throw new NotFoundException("Roles Not Found.");
         foreach (var role in roles)
         {
-            userRoles.Add(new UserRoleDto
+            if(await _userManager.IsInRoleAsync(user, role.Name!))
             {
-                RoleId = role.Id,
-                RoleName = role.Name,
-                Description = role.Description,
-                Enabled = await _userManager.IsInRoleAsync(user, role.Name!)
-            });
+
+                userRoles.RoleId = role.Id;
+                userRoles.RoleName = role.Name;
+                userRoles.Description = role.Description;
+                userRoles.Enabled = true;
+                break;
+            }
         }
 
         return userRoles;

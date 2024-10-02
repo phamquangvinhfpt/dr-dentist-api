@@ -15,7 +15,7 @@ public class UsersController : VersionNeutralApiController
     [HttpGet]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get list of all users.", "")]
-    public Task<List<UserDetailsDto>> GetListAsync(CancellationToken cancellationToken)
+    public Task<List<ListUserDTO>> GetListAsync(CancellationToken cancellationToken)
     {
         return _userService.GetListAsync(cancellationToken);
     }
@@ -31,7 +31,7 @@ public class UsersController : VersionNeutralApiController
     [HttpGet("{id}/roles")]
     [MustHavePermission(FSHAction.View, FSHResource.UserRoles)]
     [OpenApiOperation("Get a user's roles.", "")]
-    public Task<List<UserRoleDto>> GetRolesAsync(string id, CancellationToken cancellationToken)
+    public Task<UserRoleDto> GetRolesAsync(string id, CancellationToken cancellationToken)
     {
         return _userService.GetRolesAsync(id, cancellationToken);
     }
@@ -50,9 +50,6 @@ public class UsersController : VersionNeutralApiController
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
     public Task<string> CreateAsync(CreateUserRequest request)
     {
-        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-        // and return UnAuthorized when it isn't
-        // Also: add other protection to prevent automatic posting (captcha?)
         var validation = new CreateUserRequestValidator(_userService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {

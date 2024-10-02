@@ -15,13 +15,13 @@ public interface IUserService : ITransientService
     Task<bool> ExistsWithPhoneNumberAsync(string phoneNumber, string? exceptId = null);
     Task<bool> VerifyCurrentPassword(string userId, string password);
     Task<string> GetFullName(Guid userId);
-    Task<List<UserDetailsDto>> GetListAsync(CancellationToken cancellationToken);
+    Task<List<ListUserDTO>> GetListAsync(CancellationToken cancellationToken);
 
     Task<int> GetCountAsync(CancellationToken cancellationToken);
 
     Task<UserDetailsDto> GetAsync(string userId, CancellationToken cancellationToken);
 
-    Task<List<UserRoleDto>> GetRolesAsync(string userId, CancellationToken cancellationToken);
+    Task<UserRoleDto> GetRolesAsync(string userId, CancellationToken cancellationToken);
     Task<string> AssignRolesAsync(string userId, UserRolesRequest request, CancellationToken cancellationToken);
 
     Task<List<string>> GetPermissionsAsync(string userId, CancellationToken cancellationToken);

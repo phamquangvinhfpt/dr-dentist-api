@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240929162222_Init")]
-    partial class Init
+    [Migration("20241002024635_MigrationDC")]
+    partial class MigrationDC
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -174,6 +174,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -184,6 +187,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasIndex("DoctorId");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("ServiceId");
 
                     b.ToTable("Feedback", "CustomerService");
 
@@ -1457,6 +1462,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .WithMany()
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("FSH.WebApi.Domain.Service.Service", null)
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.PatientMessages", b =>

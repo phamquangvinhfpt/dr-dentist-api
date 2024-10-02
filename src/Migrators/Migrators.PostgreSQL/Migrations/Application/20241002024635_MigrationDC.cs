@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class MigrationDC : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -296,6 +296,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<string>(type: "text", nullable: true),
                     DoctorId = table.Column<string>(type: "text", nullable: true),
+                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
                     Message = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
@@ -309,6 +310,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Feedback", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Feedback_Service_ServiceId",
+                        column: x => x.ServiceId,
+                        principalSchema: "Service",
+                        principalTable: "Service",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Feedback_Users_DoctorId",
                         column: x => x.DoctorId,
@@ -966,6 +974,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "CustomerService",
                 table: "Feedback",
                 column: "PatientId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Feedback_ServiceId",
+                schema: "CustomerService",
+                table: "Feedback",
+                column: "ServiceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GeneralExamination_AppointmentId",

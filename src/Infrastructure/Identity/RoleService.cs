@@ -134,7 +134,7 @@ internal class RoleService : IRoleService
         var currentClaims = await _roleManager.GetClaimsAsync(role);
 
         // Add all permissions that were not previously selected
-        if(!string.IsNullOrEmpty(request.Permissions)) 
+        if(!string.IsNullOrEmpty(request.Permissions))
         {
             if (!currentClaims.Any(p => p.Value == request.Permissions))
             {

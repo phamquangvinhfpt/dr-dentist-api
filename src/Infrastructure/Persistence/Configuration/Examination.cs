@@ -371,6 +371,12 @@ public class FeedbackConfig : IEntityTypeConfiguration<Feedback>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
+            .HasOne<Service>()
+            .WithMany()
+            .HasForeignKey(b => b.ServiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
             .Property(b => b.Message)
                 .HasMaxLength(256);
     }

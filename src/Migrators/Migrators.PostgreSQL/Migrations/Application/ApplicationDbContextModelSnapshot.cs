@@ -171,6 +171,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -181,6 +184,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasIndex("DoctorId");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("ServiceId");
 
                     b.ToTable("Feedback", "CustomerService");
 
@@ -1454,6 +1459,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .WithMany()
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("FSH.WebApi.Domain.Service.Service", null)
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.PatientMessages", b =>
