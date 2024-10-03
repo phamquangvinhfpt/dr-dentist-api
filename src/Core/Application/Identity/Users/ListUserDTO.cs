@@ -8,6 +8,7 @@ namespace FSH.WebApi.Application.Identity.Users
 {
     public class ListUserDTO
     {
+        public string Id { get; set; }
         public string? ImageUrl { get; set; }
         public string? UserName { get; set; }
         public bool? Gender { get; set; }

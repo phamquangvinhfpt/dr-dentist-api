@@ -110,3 +110,22 @@ public class IdentityUserTokenConfig : IEntityTypeConfiguration<IdentityUserToke
             .ToTable("UserTokens", SchemaNames.Identity)
             .IsMultiTenant();
 }
+
+public class DoctorProfileConfig : IEntityTypeConfiguration<DoctorProfile>
+{
+    public void Configure(EntityTypeBuilder<DoctorProfile> builder)
+    {
+        builder
+            .ToTable("DoctorProfile", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<DoctorProfile>("DoctorId");
+
+        builder
+            .Property(b => b.SeftDescription)
+            .HasColumnType("text");
+    }
+}

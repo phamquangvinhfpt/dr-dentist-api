@@ -1,5 +1,6 @@
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Shared.Authorization;
 using MediatR.Pipeline;
 using System.Security.Claims;
 
@@ -7,7 +8,7 @@ namespace FSH.WebApi.Application.Identity.Users;
 
 public interface IUserService : ITransientService
 {
-    Task<PaginationResponse<UserDetailsDto>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken);
+    Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken);
     Task<bool> ExistsWithUserIDAsync(string userID);
     Task<bool> CheckConfirmEmail(string userID);
     Task<bool> ExistsWithNameAsync(string name);
@@ -32,7 +33,6 @@ public interface IUserService : ITransientService
 
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
     Task<string> CreateAsync(CreateUserRequest request, string origin);
-    Task<string> RegisterNewPatientAsync(SeftRegistNewPatient request, string origin);
     Task UpdateAsync(UpdateUserRequest request);
     Task<string> UpdateEmailAsync(UpdateEmailRequest request);
     Task UpdatePhoneNumberAsync(UpdatePhoneNumberRequest request);
@@ -47,5 +47,7 @@ public interface IUserService : ITransientService
     Task<UserDetailsDto> GetUserDetailByEmailAsync(string email, CancellationToken cancellationToken);
     Task<UserDetailsDto> GetUserDetailByPhoneAsync(string phoneNumber, CancellationToken cancellationToken);
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
-    Task<string> UpdatePatientRecordAsync(CreatePatientRecord request);
+
+    Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
+    Task<string> UpdateDoctorProfile(CreateDoctorProfile request, string doctorID);
 }

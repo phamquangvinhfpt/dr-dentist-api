@@ -46,6 +46,7 @@ internal partial class UserService : IUserService
     private readonly ITenantInfo _currentTenant;
     private readonly IReCAPTCHAv3Service _reCAPTCHAv3Service;
     private readonly ISpeedSMSService _speedSMSService;
+    private readonly ICurrentUser _currentUserService;
 
     public UserService(
         SignInManager<ApplicationUser> signInManager,
@@ -63,7 +64,8 @@ internal partial class UserService : IUserService
         ITenantInfo currentTenant,
         IReCAPTCHAv3Service reCAPTCHAv3Service,
         IOptions<SecuritySettings> securitySettings,
-        ISpeedSMSService speedSMSService)
+        ISpeedSMSService speedSMSService,
+        ICurrentUser currentUser)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -81,20 +83,36 @@ internal partial class UserService : IUserService
         _reCAPTCHAv3Service = reCAPTCHAv3Service;
         _securitySettings = securitySettings.Value;
         _speedSMSService = speedSMSService;
+        _currentUserService = currentUser;
     }
 
-    public async Task<PaginationResponse<UserDetailsDto>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)
     {
+        var list_user = new List<ListUserDTO>();
         var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(filter);
 
-        var users = await _userManager.Users
-            .WithSpecification(spec)
-            .ProjectToType<UserDetailsDto>()
+        var users = await _userManager.Users.AsNoTracking()
+            .WithSpecification(spec).ProjectToType<UserDetailsDto>()
             .ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            list_user.Add(new ListUserDTO
+            {
+                Id = user.Id.ToString(),
+                UserName = user.UserName,
+                Address = user.Address,
+                Email = user.Email,
+                Gender = user.Gender,
+                ImageUrl = user.ImageUrl,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                Role = await GetRolesAsync(user.Id.ToString(), cancellationToken),
+            });
+        }
         int count = await _userManager.Users
             .CountAsync(cancellationToken);
 
-        return new PaginationResponse<UserDetailsDto>(users, count, filter.PageNumber, filter.PageSize);
+        return new PaginationResponse<ListUserDTO>(list_user, count, filter.PageNumber, filter.PageSize);
     }
 
     public async Task<bool> ExistsWithUserIDAsync(string userID)
@@ -149,6 +167,7 @@ internal partial class UserService : IUserService
         {
             list_user.Add(new ListUserDTO
             {
+                Id = user.Id,
                 UserName = user.UserName,
                 Address = user.Address,
                 Email = user.Email,
@@ -211,6 +230,19 @@ internal partial class UserService : IUserService
         return user is null ? new UserDetailsDto() : user.Adapt<UserDetailsDto>();
     }
 
+    public async Task<bool> CheckBirthDayValid(DateOnly? date, string? role)
+    {
+        bool birthDayValid = false;
+
+        if (role.Equals(FSHRoles.Patient) || role.Equals(FSHRoles.Staff))
+        {
+            birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-18);
+        }else if (role.Equals(FSHRoles.Dentist))
+        {
+            birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-25);
+        }
+        return birthDayValid;
+    }
     public async Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = _userManager.Users
@@ -230,5 +262,38 @@ internal partial class UserService : IUserService
     public Task GetUserByIdAsync(DefaultIdType? userId, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
+    }
+    public async Task<string> UpdateDoctorProfile(CreateDoctorProfile request, string doctorID)
+    {
+        var user = _userManager.FindByIdAsync(doctorID);
+        if (user == null)
+        {
+            throw new BadRequestException("Can not find doctor");
+        }
+        var profile = _db.DoctorProfiles.Where(p => p.DoctorId == doctorID).FirstOrDefault();
+        if (profile != null)
+        {
+            profile.LastModifiedBy = _currentUserService.GetUserId();
+            profile.Certification = request.Certification;
+            profile.College = request.College;
+            profile.Education = request.Education;
+            profile.SeftDescription = request.SeftDescription;
+            profile.YearOfExp = request.YearOfExp;
+            _db.SaveChanges();
+        }
+        else
+        {
+            _db.Add(new DoctorProfile
+            {
+                CreatedBy = _currentUserService.GetUserId(),
+                Certification = request.Certification,
+                College = request.College,
+                Education = request.Education,
+                SeftDescription = request.SeftDescription,
+                YearOfExp = request.YearOfExp,
+            });
+            _db.SaveChanges();
+        }
+        return _t["Update Doctor Profile Success"];
     }
 }

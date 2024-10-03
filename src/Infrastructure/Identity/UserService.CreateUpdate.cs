@@ -117,6 +117,11 @@ internal partial class UserService
             PhoneNumber = request.PhoneNumber,
             IsActive = true
         };
+        if (request.Role.Equals(FSHRoles.Patient))
+        {
+            user.Job = request.Job;
+            user.Address = request.Address;
+        }
 
         var result = await _userManager.CreateAsync(user, request.Password);
 
@@ -127,48 +132,10 @@ internal partial class UserService
 
         await _userManager.AddToRoleAsync(user, role.Name);
 
-        var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
-
-        if (_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.Email))
+        if (request.Role.Equals(FSHRoles.Dentist))
         {
-            // send verification email
-            string emailVerificationUri = await GetEmailVerificationUriAsync(user, origin);
-            RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
-            {
-                Email = user.Email,
-                UserName = user.UserName,
-                Url = emailVerificationUri
-            };
-            var mailRequest = new MailRequest(
-                new List<string> { user.Email },
-                _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation", eMailModel));
-            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
-            messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
+            await UpdateDoctorProfile(request.DoctorProfile, user.Id);
         }
-
-        await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
-
-        return string.Join(Environment.NewLine, messages);
-    }
-    public async Task<string> RegisterNewPatientAsync(SeftRegistNewPatient request, string origin)
-    {
-        var user = new ApplicationUser
-        {
-            Email = request.Email,
-            UserName = request.UserName,
-            IsActive = true
-        };
-
-        var result = await _userManager.CreateAsync(user, request.Password);
-
-        if (!result.Succeeded)
-        {
-            throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
-        }
-
-        await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
-
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
 
@@ -195,30 +162,31 @@ internal partial class UserService
         return string.Join(Environment.NewLine, messages);
     }
 
-    public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)
-    {
-        var user = _userManager.FindByIdAsync(request.PatientId).Result;
 
-        user.PhoneNumber = request.PhoneNumber;
-        user.LastName = request.LastName;
-        user.FirstName = request.FirstName;
-        user.Address = request.Address;
-        user.BirthDate = request.BirthDay;
-        user.Gender = request.IsMale;
-        user.Job = request.Job;
+    //public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)
+    //{
+    //    var user = _userManager.FindByIdAsync(request.PatientId).Result;
 
-        var result = await _userManager.UpdateAsync(user);
+    //    user.PhoneNumber = request.PhoneNumber;
+    //    user.LastName = request.LastName;
+    //    user.FirstName = request.FirstName;
+    //    user.Address = request.Address;
+    //    user.BirthDate = request.BirthDay;
+    //    user.Gender = request.IsMale;
+    //    user.Job = request.Job;
 
-        if (!result.Succeeded)
-        {
-            throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
-        }
+    //    var result = await _userManager.UpdateAsync(user);
+
+    //    if (!result.Succeeded)
+    //    {
+    //        throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
+    //    }
 
 
-        await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
+    //    await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
 
-        return _t["Update Record Successfully"];
-    }
+    //    return _t["Update Record Successfully"];
+    //}
 
     public async Task UpdateAsync(UpdateUserRequest request)
     {

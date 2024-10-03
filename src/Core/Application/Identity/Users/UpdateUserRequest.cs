@@ -47,4 +47,4 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
         await _userService.UpdateAsync(request);
         return _t["Profile updated successfully."];
     }
-}   
+}

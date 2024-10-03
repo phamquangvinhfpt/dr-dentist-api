@@ -13,5 +13,8 @@ public class CreateUserRequest
     public string Password { get; set; } = default!;
     public string ConfirmPassword { get; set; } = default!;
     public string? PhoneNumber { get; set; }
-    public string? Role { get; set; }
+    public string? Job { get; set; }
+    public string? Address { get; set; }
+    public CreateDoctorProfile? DoctorProfile { get; set; }
+    public string? Role { get; set; } = FSHRoles.Patient;
 }

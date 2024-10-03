@@ -1,4 +1,5 @@
 using FSH.WebApi.Application.Common.Exceptions;
+using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
@@ -9,15 +10,19 @@ namespace FSH.WebApi.Host.Controllers.Identity;
 public class UsersController : VersionNeutralApiController
 {
     private readonly IUserService _userService;
+    private readonly ICurrentUser _currentUserService;
 
-    public UsersController(IUserService userService) => _userService = userService;
-
-    [HttpGet]
-    [MustHavePermission(FSHAction.View, FSHResource.Users)]
-    [OpenApiOperation("Get list of all users.", "")]
-    public Task<List<ListUserDTO>> GetListAsync(CancellationToken cancellationToken)
+    public UsersController(IUserService userService, ICurrentUser currentUserService)
     {
-        return _userService.GetListAsync(cancellationToken);
+        _userService = userService;
+        _currentUserService = currentUserService;
+    }
+    [HttpPost("get-users")]
+    [AllowAnonymous]
+    [OpenApiOperation("Get list of all users.", "")]
+    public Task<PaginationResponse<ListUserDTO>> GetListAsync(UserListFilter request, CancellationToken cancellationToken)
+    {
+        return _userService.SearchAsync(request, cancellationToken);
     }
 
     [HttpGet("{id}")]
@@ -45,56 +50,72 @@ public class UsersController : VersionNeutralApiController
         return _userService.AssignRolesAsync(id, request, cancellationToken);
     }
 
-    [HttpPost]
+    [HttpPost("create-user")]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
     public Task<string> CreateAsync(CreateUserRequest request)
     {
-        var validation = new CreateUserRequestValidator(_userService).ValidateAsync(request);
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {
             var t = validation.Result;
             if (!t.IsValid)
-                throw new BadRequestException(t.Errors[0].ErrorMessage);
+            {
+                var message = "";
+                foreach(var i in t.Errors)
+                {
+                    message += i;
+                    message += " / ";
+                }
+                throw new BadRequestException(message);
+            }
         }
         return _userService.CreateAsync(request, GetOriginFromRequest());
     }
 
-    [HttpPost("update-patient-record")]
-    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
-    [OpenApiOperation("Update Patient Record.", "")]
-    public Task<string> UpdatePatientRecord(CreatePatientRecord request)
-    {
-        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-        // and return UnAuthorized when it isn't
-        // Also: add other protection to prevent automatic posting (captcha?)
-        var validation = new CreatePatientRecordValidator(_userService).ValidateAsync(request);
-        if (!validation.IsCompleted)
-        {
-            var t = validation.Result;
-            if (!t.IsValid)
-                throw new BadRequestException(t.Errors[0].ErrorMessage);
-        }
-        return _userService.UpdatePatientRecordAsync(request);
-    }
+    //[HttpPost("update-patient-record")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    //[OpenApiOperation("Update Patient Record.", "")]
+    //public Task<string> UpdatePatientRecord(CreatePatientRecord request)
+    //{
+    //    // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
+    //    // and return UnAuthorized when it isn't
+    //    // Also: add other protection to prevent automatic posting (captcha?)
+    //    var validation = new CreatePatientRecordValidator(_userService).ValidateAsync(request);
+    //    if (!validation.IsCompleted)
+    //    {
+    //        var t = validation.Result;
+    //        if (!t.IsValid)
+    //            throw new BadRequestException(t.Errors[0].ErrorMessage);
+    //    }
+    //    return _userService.UpdatePatientRecordAsync(request);
+    //}
 
     [HttpPost("self-register")]
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Regist new patient.", "")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
-    public Task<string> SelfRegisterAsync(SeftRegistNewPatient request)
+    public Task<string> SelfRegisterAsync(CreateUserRequest request)
     {
         // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
         // and return UnAuthorized when it isn't
         // Also: add other protection to prevent automatic posting (captcha?)
-        var validation = new SeftRegistNewPatientValidator(_userService).ValidateAsync(request);
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted) {
             var t = validation.Result;
-            if(!t.IsValid)
-                throw new BadRequestException(t.Errors[0].ErrorMessage);
+            if (!t.IsValid)
+            {
+                var message = "";
+                foreach (var i in t.Errors)
+                {
+                    message += i;
+                    message += " / ";
+                }
+                throw new BadRequestException(message);
+            }
         }
-        return _userService.RegisterNewPatientAsync(request, GetOriginFromRequest());
+        return _userService.CreateAsync(request, GetOriginFromRequest());
     }
 
     [HttpPost("{id}/toggle-status")]

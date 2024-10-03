@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class MigrationDC : Migration
+    public partial class Migrations : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -286,6 +286,37 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalTable: "Service",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DoctorProfile",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DoctorId = table.Column<string>(type: "text", nullable: true),
+                    Education = table.Column<string>(type: "text", nullable: true),
+                    College = table.Column<string>(type: "text", nullable: true),
+                    Certification = table.Column<string>(type: "text", nullable: true),
+                    YearOfExp = table.Column<string>(type: "text", nullable: true),
+                    SeftDescription = table.Column<string>(type: "text", nullable: true),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DoctorProfile", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DoctorProfile_Users_DoctorId",
+                        column: x => x.DoctorId,
+                        principalSchema: "Identity",
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -964,6 +995,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "PatientId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DoctorProfile_DoctorId",
+                schema: "Identity",
+                table: "DoctorProfile",
+                column: "DoctorId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Feedback_DoctorId",
                 schema: "CustomerService",
                 table: "Feedback",
@@ -1241,6 +1279,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
             migrationBuilder.DropTable(
                 name: "ContactInfor",
                 schema: "CustomerService");
+
+            migrationBuilder.DropTable(
+                name: "DoctorProfile",
+                schema: "Identity");
 
             migrationBuilder.DropTable(
                 name: "Feedback",
