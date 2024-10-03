@@ -1,3 +1,4 @@
+using FSH.WebApi.Infrastructure.Chat;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -8,7 +9,7 @@ namespace FSH.WebApi.Infrastructure.Notifications;
 
 internal static class Startup
 {
-    internal static IServiceCollection AddNotifications(this IServiceCollection services, IConfiguration config)
+    internal static IServiceCollection AddNotificationsAndChat(this IServiceCollection services, IConfiguration config)
     {
         ILogger logger = Log.ForContext(typeof(Startup));
 
@@ -42,9 +43,14 @@ internal static class Startup
         return services;
     }
 
-    internal static IEndpointRouteBuilder MapNotifications(this IEndpointRouteBuilder endpoints)
+    internal static IEndpointRouteBuilder MapNotificationsAndChat(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapHub<NotificationHub>("/notifications", options =>
+        {
+            options.CloseOnAuthenticationExpiration = true;
+        });
+
+        endpoints.MapHub<ChatHub>("/chat", options =>
         {
             options.CloseOnAuthenticationExpiration = true;
         });

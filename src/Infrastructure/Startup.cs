@@ -50,7 +50,7 @@ public static class Startup
             .AddSpeedSMS(config)
             .AddMediatR(Assembly.GetExecutingAssembly())
             .AddMultitenancy()
-            .AddNotifications(config)
+            .AddNotificationsAndChat(config)
             .AddOpenApiDocumentation(config)
             .AddPersistence()
             .AddRequestLogging(config)
@@ -100,7 +100,7 @@ public static class Startup
     {
         builder.MapControllers().RequireAuthorization();
         builder.MapHealthCheck();
-        builder.MapNotifications();
+        builder.MapNotificationsAndChat();
         return builder;
     }
 
