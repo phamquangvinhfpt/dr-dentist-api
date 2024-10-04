@@ -1,4 +1,5 @@
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Treatment;
 
 namespace FSH.WebApi.Domain.Examination;
@@ -15,7 +16,8 @@ public class GeneralExamination : AuditableEntity, IAggregateRoot
     public Appointment? Appointment { get; set; }
     public ICollection<Indication> Indications { get; set; } = new List<Indication>();
     public ICollection<Diagnosis> Diagnoses { get; set; } = new List<Diagnosis>();
-    public TreatmentPlan? TreatmentPlan { get; set; }
+    public Payment? Payment { get; set; }
+    public Prescription? Prescription { get; set; }
 
     public GeneralExamination()
     {

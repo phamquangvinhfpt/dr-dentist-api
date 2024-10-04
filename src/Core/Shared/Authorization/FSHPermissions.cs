@@ -221,8 +221,7 @@ public static class FSHPermissions
     };
 
     public static IReadOnlyList<FSHPermission> All { get; } = new ReadOnlyCollection<FSHPermission>(_all);
-    public static IReadOnlyList<FSHPermission> Root { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(ROOT)).ToArray());
-    public static IReadOnlyList<FSHPermission> Admin { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => !p.role.Contains(ROOT)).ToArray());
+    public static IReadOnlyList<FSHPermission> Admin { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(ROOT)).ToArray());
     public static IReadOnlyList<FSHPermission> Dentist { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(DENTIST)).ToArray());
     public static IReadOnlyList<FSHPermission> Staff { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(STAFF)).ToArray());
     public static IReadOnlyList<FSHPermission> Patient { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(PATIENT)).ToArray());

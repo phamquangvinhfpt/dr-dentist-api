@@ -29,7 +29,6 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<Procedure> Procedures { get; set; }
     public DbSet<ServiceProcedures> ServiceProcedures { get; set; }
-    public DbSet<TreatmentPlan> TreatmentPlans { get; set; }
     public DbSet<TreatmentPlanProcedures> TreatmentPlanProcedures { get; set; }
     public DbSet<Prescription> Prescriptions { get; set; }
     public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
