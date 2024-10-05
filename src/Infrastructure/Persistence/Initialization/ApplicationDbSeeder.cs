@@ -57,10 +57,10 @@ internal class ApplicationDbSeeder
             {
                 await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Admin, role);
 
-                //if (_currentTenant.Id == MultitenancyConstants.Root.Id)
-                //{
-                //    await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
-                //}
+                if (_currentTenant.Id == MultitenancyConstants.Root.Id)
+                {
+                   await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
+                }
             }
             else if (roleName == FSHRoles.Staff)
             {

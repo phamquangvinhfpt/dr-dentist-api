@@ -18,7 +18,7 @@ public class UsersController : VersionNeutralApiController
         _currentUserService = currentUserService;
     }
     [HttpPost("get-users")]
-    [AllowAnonymous]
+    [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get list of all users.", "")]
     public Task<PaginationResponse<ListUserDTO>> GetListAsync(UserListFilter request, CancellationToken cancellationToken)
     {

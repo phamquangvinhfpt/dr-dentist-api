@@ -91,8 +91,10 @@ internal partial class UserService : IUserService
         var list_user = new List<ListUserDTO>();
         var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(filter);
 
-        var users = await _userManager.Users.AsNoTracking()
-            .WithSpecification(spec).ProjectToType<UserDetailsDto>()
+        var users = await _userManager.Users
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .ProjectToType<UserDetailsDto>()
             .ToListAsync(cancellationToken);
         foreach (var user in users)
         {
