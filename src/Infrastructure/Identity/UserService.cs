@@ -121,8 +121,7 @@ internal partial class UserService : IUserService
     {
         EnsureValidTenant();
         var user = await _userManager.FindByIdAsync(userID);
-        var b = user is not null;
-        return b;
+        return user is not null;
     }
 
     public async Task<bool> ExistsWithNameAsync(string name)
@@ -193,7 +192,6 @@ internal partial class UserService : IUserService
             .AsNoTracking()
             .Where(u => u.Id == userId)
             .FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
-
         return user.Adapt<UserDetailsDto>();
     }
 
@@ -283,6 +281,7 @@ internal partial class UserService : IUserService
         {
             _db.Add(new DoctorProfile
             {
+                DoctorId = request.DoctorID,
                 CreatedBy = _currentUserService.GetUserId(),
                 Certification = request.Certification,
                 College = request.College,

@@ -31,13 +31,19 @@ public class RolesController : VersionNeutralApiController
     {
         return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
     }
-
+    [HttpGet("/permissions")]
+    [MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
+    [OpenApiOperation("Get all role with its permissions.", "")]
+    public Task<List<RoleDto>> GetAllRoleWithPermissionsAsync(CancellationToken cancellationToken)
+    {
+        return _roleService.GetListWithPermissionAsync(cancellationToken);
+    }
     [HttpPut("update/permissions")]
     [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]
     [OpenApiOperation("Update a role's permissions.", "")]
-    public async Task<ActionResult<string>> UpdatePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    public Task<string> UpdatePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
     {
-        return Ok(await _roleService.AssignPermissionsAsync(request, cancellationToken));
+        return Mediator.Send(request);
     }
     [HttpPut("delete/permissions")]
     [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]

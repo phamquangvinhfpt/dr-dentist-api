@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Identity.Users;
-public class UpdateDoctorProfile: IRequest<string>
+public class UpdateDoctorProfile : IRequest<string>
 {
     public string? DoctorID { get; set; }
     public string? Education { get; set; }

@@ -61,13 +61,7 @@ public class UsersController : VersionNeutralApiController
             var t = validation.Result;
             if (!t.IsValid)
             {
-                var message = "";
-                foreach(var i in t.Errors)
-                {
-                    message += i;
-                    message += " / ";
-                }
-                throw new BadRequestException(message);
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
         return _userService.CreateAsync(request, GetOriginFromRequest());
@@ -98,9 +92,6 @@ public class UsersController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public Task<string> SelfRegisterAsync(CreateUserRequest request)
     {
-        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-        // and return UnAuthorized when it isn't
-        // Also: add other protection to prevent automatic posting (captcha?)
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted) {
             var t = validation.Result;
