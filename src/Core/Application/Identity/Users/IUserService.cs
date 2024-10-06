@@ -49,5 +49,5 @@ public interface IUserService : ITransientService
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
-    Task<string> UpdateDoctorProfile(CreateDoctorProfile request, string doctorID);
+    Task UpdateDoctorProfile(UpdateDoctorProfile request);
 }

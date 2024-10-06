@@ -121,7 +121,8 @@ internal partial class UserService : IUserService
     {
         EnsureValidTenant();
         var user = await _userManager.FindByIdAsync(userID);
-        return user is not null;
+        var b = user is not null;
+        return b;
     }
 
     public async Task<bool> ExistsWithNameAsync(string name)
@@ -265,14 +266,9 @@ internal partial class UserService : IUserService
     {
         throw new NotImplementedException();
     }
-    public async Task<string> UpdateDoctorProfile(CreateDoctorProfile request, string doctorID)
+    public async Task UpdateDoctorProfile(UpdateDoctorProfile request)
     {
-        var user = _userManager.FindByIdAsync(doctorID);
-        if (user == null)
-        {
-            throw new BadRequestException("Can not find doctor");
-        }
-        var profile = _db.DoctorProfiles.Where(p => p.DoctorId == doctorID).FirstOrDefault();
+        var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
         if (profile != null)
         {
             profile.LastModifiedBy = _currentUserService.GetUserId();
@@ -296,6 +292,5 @@ internal partial class UserService : IUserService
             });
             _db.SaveChanges();
         }
-        return _t["Update Doctor Profile Success"];
     }
 }

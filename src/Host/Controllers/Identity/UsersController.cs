@@ -184,6 +184,14 @@ public class UsersController : VersionNeutralApiController
         return _userService.ResetPasswordAsync(request);
     }
 
+    [HttpPost("update-doctor-profile")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    [OpenApiOperation("Update Doctor Profile", "")]
+    public Task<string> UpdateDoctorProfile(UpdateDoctorProfile request)
+    {
+        return Mediator.Send(request);
+    }
+
     private string GetOriginFromRequest()
     {
         if (Request.Headers.TryGetValue("x-from-host", out var values))

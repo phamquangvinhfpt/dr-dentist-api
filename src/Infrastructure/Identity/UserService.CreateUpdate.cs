@@ -131,10 +131,10 @@ internal partial class UserService
         }
 
         await _userManager.AddToRoleAsync(user, role.Name);
-
+        request.DoctorProfile.DoctorID = user.Id;
         if (request.Role.Equals(FSHRoles.Dentist))
         {
-            await UpdateDoctorProfile(request.DoctorProfile, user.Id);
+            await UpdateDoctorProfile(request.DoctorProfile);
         }
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };

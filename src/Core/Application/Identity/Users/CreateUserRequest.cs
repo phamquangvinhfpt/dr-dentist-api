@@ -15,6 +15,6 @@ public class CreateUserRequest
     public string? PhoneNumber { get; set; }
     public string? Job { get; set; }
     public string? Address { get; set; }
-    public CreateDoctorProfile? DoctorProfile { get; set; }
+    public UpdateDoctorProfile? DoctorProfile { get; set; }
     public string? Role { get; set; } = FSHRoles.Patient;
 }

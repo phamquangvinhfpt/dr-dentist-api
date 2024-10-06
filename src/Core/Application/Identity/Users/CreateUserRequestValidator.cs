@@ -6,7 +6,6 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
 {
     public CreateUserRequestValidator(IUserService userService, ICurrentUser currentUser)
     {
-
         RuleFor(u => u.Email).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .EmailAddress()
