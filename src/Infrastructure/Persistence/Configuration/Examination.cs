@@ -335,13 +335,13 @@ public class PatientMessagesConfig : IEntityTypeConfiguration<PatientMessages>
         builder
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(b => b.PatientId)
+            .HasForeignKey(b => b.SenderId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(b => b.StaffId)
+            .HasForeignKey(b => b.receiverId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder

@@ -17,6 +17,7 @@ internal static class Startup
 
         if (!signalRSettings.UseBackplane)
         {
+            services.AddSingleton<PresenceTracker>();
             services.AddSignalR();
         }
         else
