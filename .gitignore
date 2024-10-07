@@ -463,3 +463,4 @@ $RECYCLE.BIN/
 Files/
 ##Except the following
 !Files/QuestionImportTemplate.docx
+/docker-compose/.env
