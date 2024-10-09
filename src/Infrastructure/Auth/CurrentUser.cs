@@ -55,4 +55,14 @@ public class CurrentUser : ICurrentUser, ICurrentUserInitializer
             _userId = Guid.Parse(userId);
         }
     }
+
+    public void SetCurrentUserId(Guid userId)
+    {
+        if (_userId != Guid.Empty)
+        {
+            throw new Exception("Method reserved for in-scope initialization");
+        }
+
+        _userId = userId;
+    }
 }

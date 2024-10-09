@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using DocumentFormat.OpenXml.InkML;
 using FSH.WebApi.Application.Chat;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.CustomerServices;
@@ -28,30 +30,51 @@ public class ChatService : IChatService
         _userManager = userManager;
     }
 
-    public async Task<List<ListMessageDto>> GetListMessageDtoAsync()
+    public async Task<List<ListUserDto>> GetListUserDtoAsync()
     {
-        // get all messages
-        var messages = await _dbContext.Set<PatientMessages>()
-            .Where(pm => pm.isStaffSender == false)
-            .Select(g => new ListMessageDto
-            {
-                Id = g.Id,
-                SenderId = g.SenderId,
-                LatestMessage = g.Message,
-                IsRead = g.IsRead,
-                CreatedOn = g.CreatedOn
-            })
+        var senderIds = await _dbContext.PatientMessages
+            .Where(pm => !pm.isStaffSender)
+            .Select(pm => pm.SenderId)
+            .Distinct()
             .ToListAsync();
 
-        // get image url
-        foreach (var message in messages)
+        var lastMessages = new List<ListUserDto>();
+
+        foreach (var senderId in senderIds)
         {
-            var user = await _userManager.FindByIdAsync(message.SenderId);
-            message.ImageUrl = user?.ImageUrl;
+            var latestMessage = await _dbContext.PatientMessages
+                .Where(pm => pm.SenderId == senderId && !pm.isStaffSender)
+                .OrderByDescending(pm => pm.CreatedOn)
+                .Select(pm => new ListUserDto
+                {
+                    Id = pm.Id,
+                    SenderId = pm.SenderId ?? string.Empty,
+                    LatestMessage = pm.Message ?? string.Empty,
+                    IsRead = pm.IsRead,
+                    CreatedOn = pm.CreatedOn
+                })
+                .FirstOrDefaultAsync();
+
+            foreach (var sender in senderIds)
+            {
+                var user = await _userManager.FindByIdAsync(sender);
+                if (user != null)
+                {
+                    latestMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
+                    latestMessage.ImageUrl = user.ImageUrl;
+                }
+            }
+
+            if (latestMessage != null)
+            {
+                lastMessages.Add(latestMessage);
+            }
         }
+
+        return lastMessages;
     }
 
-    public async Task<PatientMessages> SendMessageAsync(string? receiverId, string message, CancellationToken cancellationToken)
+    public async Task<ListMessageDto> SendMessageAsync(string? receiverId, string message, CancellationToken cancellationToken)
     {
         string senderId = _currentUser.GetUserId().ToString();
         bool isStaffSender = _currentUser.IsInRole(FSHRoles.Staff);
@@ -66,58 +89,96 @@ public class ChatService : IChatService
 
         _dbContext.Set<PatientMessages>().Add(patientMessage);
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return patientMessage;
-    }
 
-    public async Task<IEnumerable<PatientMessages>> GetConversationAsync(string? conversionId, CancellationToken cancellationToken)
-    {
-        var query = _dbContext.Set<PatientMessages>()
-            .Where(pm => pm.PatientId == conversionId);
-
-        return await query
-            .OrderByDescending(pm => pm.CreatedOn)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<int> GetUnreadMessageCountAsync(string patientId, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Set<PatientMessages>()
-            .CountAsync(pm => pm.PatientId == patientId && !pm.IsRead, cancellationToken);
-    }
-
-    public async Task MarkMessagesAsReadAsync(string patientId, string staffId, CancellationToken cancellationToken)
-    {
-        var unreadMessages = await _dbContext.Set<PatientMessages>()
-            .Where(pm => pm.PatientId == patientId && pm.StaffId == staffId && !pm.IsRead)
-            .ToListAsync(cancellationToken);
-
-        foreach (var message in unreadMessages)
+        var sentMessage = new ListMessageDto
         {
-            message.IsRead = true;
+            Id = patientMessage.Id,
+            SenderId = patientMessage.SenderId,
+            Message = patientMessage.Message,
+            CreatedOn = patientMessage.CreatedOn
+        };
+
+        var user = await _userManager.FindByIdAsync(senderId);
+        if (user != null)
+        {
+            sentMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
+            sentMessage.ImageUrl = user.ImageUrl;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        return sentMessage;
     }
 
-    public async Task<List<ListMessageDto>> GetListMessageDtosAsync(string senderId)
+    public async Task<IEnumerable<ListMessageDto>> GetConversationAsync(string? conversionId, CancellationToken cancellationToken)
     {
         var query = _dbContext.Set<PatientMessages>()
-            .Where(pm => pm.PatientId == senderId || pm.StaffId == senderId)
-            .GroupBy(pm => pm.PatientId)
-            .Select(g => new ListMessageDto
-            {
-                Id = g.Max(pm => pm.Id),
-                SenderId = g.Key,
-                LatestMessage = g.Max(pm => pm.Message),
-                IsRead = g.All(pm => pm.IsRead),
-                ImageUrl = g.Max(pm => pm.StaffId == senderId ? pm.Patient.ImageUrl : pm.Staff.ImageUrl),
-                CreatedOn = g.Max(pm => pm.CreatedOn)
-            });
+            .Where(pm => pm.SenderId == conversionId || pm.receiverId == conversionId);
 
-        return await query
-            .OrderByDescending(pm => pm.CreatedOn)
-            .ToListAsync();
+        var messages = await query
+            .OrderBy(pm => pm.CreatedOn)
+            .Select(pm => new ListMessageDto
+            {
+                Id = pm.Id,
+                SenderId = pm.SenderId,
+                Message = pm.Message,
+                CreatedOn = pm.CreatedOn
+            })
+            .ToListAsync(cancellationToken);
+
+        foreach (var message in messages)
+        {
+            var user = await _userManager.FindByIdAsync(message.SenderId);
+            if (user != null)
+            {
+                message.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
+                message.ImageUrl = user.ImageUrl;
+            }
+        }
+        return messages;
     }
 
+    // public async Task<int> GetUnreadMessageCountAsync(string patientId, CancellationToken cancellationToken)
+    // {
+    //     return await _dbContext.Set<PatientMessages>()
+    //         .CountAsync(pm => pm.PatientId == patientId && !pm.IsRead, cancellationToken);
+    // }
+
+    // public async Task MarkMessagesAsReadAsync(string patientId, string staffId, CancellationToken cancellationToken)
+    // {
+    //     var unreadMessages = await _dbContext.Set<PatientMessages>()
+    //         .Where(pm => pm.PatientId == patientId && pm.StaffId == staffId && !pm.IsRead)
+    //         .ToListAsync(cancellationToken);
+
+    //     foreach (var message in unreadMessages)
+    //     {
+    //         message.IsRead = true;
+    //     }
+
+    //     await _dbContext.SaveChangesAsync(cancellationToken);
+    // }
+
+    // public async Task<List<ListMessageDto>> GetListMessageDtosAsync(string senderId)
+    // {
+    //     var query = _dbContext.Set<PatientMessages>()
+    //         .Where(pm => pm.PatientId == senderId || pm.StaffId == senderId)
+    //         .GroupBy(pm => pm.PatientId)
+    //         .Select(g => new ListMessageDto
+    //         {
+    //             Id = g.Max(pm => pm.Id),
+    //             SenderId = g.Key,
+    //             LatestMessage = g.Max(pm => pm.Message),
+    //             IsRead = g.All(pm => pm.IsRead),
+    //             ImageUrl = g.Max(pm => pm.StaffId == senderId ? pm.Patient.ImageUrl : pm.Staff.ImageUrl),
+    //             CreatedOn = g.Max(pm => pm.CreatedOn)
+    //         });
+
+    //     return await query
+    //         .OrderByDescending(pm => pm.CreatedOn)
+    //         .ToListAsync();
+    // }
+
     private string GetPatientGroupName(string patientId) => $"Patient-{patientId}";
+    public void SetCurrentUser(ClaimsPrincipal user)
+    {
+        _currentUser.SetCurrentUser(user);
+    }
 }

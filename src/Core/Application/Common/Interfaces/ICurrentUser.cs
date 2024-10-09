@@ -17,4 +17,5 @@ public interface ICurrentUser
     bool IsInRole(string role);
 
     IEnumerable<Claim>? GetUserClaims();
+    void SetCurrentUser(ClaimsPrincipal user);
 }

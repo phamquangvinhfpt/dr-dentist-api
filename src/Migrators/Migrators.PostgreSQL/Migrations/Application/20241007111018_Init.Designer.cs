@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240926022542_Init")]
+    [Migration("20241007111018_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -222,10 +222,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("PatientId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StaffId")
+                    b.Property<string>("SenderId")
                         .HasColumnType("text");
 
                     b.Property<string>("TenantId")
@@ -233,11 +230,17 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<bool>("isStaffSender")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("receiverId")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientId");
+                    b.HasIndex("SenderId");
 
-                    b.HasIndex("StaffId");
+                    b.HasIndex("receiverId");
 
                     b.ToTable("PatientMessage", "CustomerService");
 
@@ -1351,12 +1354,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("PatientId")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("StaffId")
+                        .HasForeignKey("receiverId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

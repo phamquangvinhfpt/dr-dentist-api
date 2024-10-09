@@ -1,6 +1,8 @@
 using Finbuckle.MultiTenant;
+using FSH.WebApi.Application.Chat;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Domain.CustomerServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
@@ -30,95 +32,112 @@ public class ChatHub : Hub, ITransientService
             throw new UnauthorizedException("Authentication Failed.");
         }
 
+        var name = Context.User.Claims.FirstOrDefault(c => c.Type.EndsWith("nameidentifier"))?.Value;
+
         await Groups.AddToGroupAsync(Context.ConnectionId, $"GroupTenant-{_currentTenant.Id}");
 
-        var isOnline = await _presenceTracker.UserConnected(Context.User.Identity.Name, Context.ConnectionId);
+        var (isOnline, onlineUsers) = await _presenceTracker.UserConnected(name, Context.ConnectionId);
 
         if (isOnline)
         {
-            await Clients.Others.SendAsync("UserIsOnline", Context.User.Identity.Name);
+            await Clients.Others.SendAsync("UserIsOnline", onlineUsers);
         }
 
-        var currentUsers = await _presenceTracker.GetOnlineUsers();
-        await Clients.Caller.SendAsync("GetOnlineUsers", currentUsers);
+        await Clients.All.SendAsync("UpdateOnlineUsers", onlineUsers);
 
         await base.OnConnectedAsync();
 
         _logger.LogInformation("A client connected to ChatHub: {connectionId}", Context.ConnectionId);
     }
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception exception)
     {
-        if (_currentTenant != null)
+        if (_currentTenant is null)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"GroupTenant-{_currentTenant.Id}");
+            throw new UnauthorizedException("Authentication Failed.");
         }
 
-        var isOffline = await _presenceTracker.UserDisconnected(Context.User.Identity.Name, Context.ConnectionId);
+        var name = Context.User.Claims.FirstOrDefault(c => c.Type.EndsWith("nameidentifier"))?.Value;
+
+        var (isOffline, onlineUsers) = await _presenceTracker.UserDisconnected(name, Context.ConnectionId);
+
         if (isOffline)
         {
-            await Clients.Others.SendAsync("UserIsOffline", Context.User.Identity.Name);
+            await Clients.Others.SendAsync("UserIsOffline", onlineUsers);
         }
+
+        await Clients.All.SendAsync("UpdateOnlineUsers", onlineUsers);
 
         await base.OnDisconnectedAsync(exception);
 
         _logger.LogInformation("A client disconnected from ChatHub: {connectionId}", Context.ConnectionId);
     }
 
-    public async Task SendMessage(string? receiverId, string message, bool isStaffSender)
+    public async Task<List<ListUserDto>> GetListUserDto()
     {
         if (_currentTenant is null)
         {
             throw new UnauthorizedException("Authentication Failed.");
         }
 
-        var sentMessage = await _chatService.SendMessageAsync(receiverId, message, isStaffSender, default);
+        return await _chatService.GetListUserDtoAsync();
+    }
+
+    public async Task SendMessage(string? receiverId, string message)
+    {
+        if (_currentTenant is null)
+        {
+            throw new UnauthorizedException("Authentication Failed.");
+        }
+
+        _chatService.SetCurrentUser(Context.User);
+
+        var sentMessage = await _chatService.SendMessageAsync(receiverId, message, default);
         await Clients.Group($"GroupTenant-{_currentTenant.Id}").SendAsync("ReceiveMessage", sentMessage);
     }
 
-    public async Task GetConversation(string conversionId)
+    public async Task<IEnumerable<ListMessageDto>> GetConversation(string conversionId)
     {
         if (_currentTenant is null)
         {
             throw new UnauthorizedException("Authentication Failed.");
         }
 
-        var conversation = await _chatService.GetConversationAsync(conversionId, default);
-        await Clients.Caller.SendAsync("ReceiveConversation", conversation);
+        return await _chatService.GetConversationAsync(conversionId, default);
     }
 
-    public async Task JoinPatientGroup(string patientId)
+    public async Task JoinPatientGroup()
     {
         if (_currentTenant is null)
         {
             throw new UnauthorizedException("Authentication Failed.");
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, GetPatientGroupName(patientId));
-        _logger.LogInformation("User {userId} joined patient group {patientId}", Context.UserIdentifier, patientId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, GetPatientGroupName());
+        _logger.LogInformation("User {userId} joined patient group {patientId}", Context.UserIdentifier);
     }
 
-    public async Task LeavePatientGroup(string patientId)
+    public async Task LeavePatientGroup()
     {
         if (_currentTenant is null)
         {
             throw new UnauthorizedException("Authentication Failed.");
         }
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetPatientGroupName(patientId));
-        _logger.LogInformation("User {userId} left patient group {patientId}", Context.UserIdentifier, patientId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetPatientGroupName());
+        _logger.LogInformation("User {userId} left patient group {patientId}", Context.UserIdentifier);
     }
 
-    public async Task MarkMessagesAsRead(string patientId)
-    {
-        if (_currentTenant is null)
-        {
-            throw new UnauthorizedException("Authentication Failed.");
-        }
+    // public async Task MarkMessagesAsRead(string patientId)
+    // {
+    //     if (_currentTenant is null)
+    //     {
+    //         throw new UnauthorizedException("Authentication Failed.");
+    //     }
 
-        await _chatService.MarkMessagesAsReadAsync(patientId, Context.UserIdentifier, default);
-        _logger.LogInformation("Messages marked as read for patient {patientId} by user {userId}", patientId, Context.UserIdentifier);
-    }
+    //     await _chatService.MarkMessagesAsReadAsync(patientId, Context.UserIdentifier, default);
+    //     _logger.LogInformation("Messages marked as read for patient {patientId} by user {userId}", patientId, Context.UserIdentifier);
+    // }
 
-    private string GetPatientGroupName(string patientId) => $"Patient-{patientId}";
+    private string GetPatientGroupName() => $"GroupTenant-{_currentTenant.Id}";
 }

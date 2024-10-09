@@ -374,9 +374,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PatientId = table.Column<string>(type: "text", nullable: true),
-                    StaffId = table.Column<string>(type: "text", nullable: true),
+                    SenderId = table.Column<string>(type: "text", nullable: true),
+                    receiverId = table.Column<string>(type: "text", nullable: true),
                     Message = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    isStaffSender = table.Column<bool>(type: "boolean", nullable: false),
                     IsRead = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -390,15 +391,15 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_PatientMessage", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PatientMessage_Users_PatientId",
-                        column: x => x.PatientId,
+                        name: "FK_PatientMessage_Users_SenderId",
+                        column: x => x.SenderId,
                         principalSchema: "Identity",
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PatientMessage_Users_StaffId",
-                        column: x => x.StaffId,
+                        name: "FK_PatientMessage_Users_receiverId",
+                        column: x => x.receiverId,
                         principalSchema: "Identity",
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -969,16 +970,16 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "PatientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PatientMessage_PatientId",
+                name: "IX_PatientMessage_receiverId",
                 schema: "CustomerService",
                 table: "PatientMessage",
-                column: "PatientId");
+                column: "receiverId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PatientMessage_StaffId",
+                name: "IX_PatientMessage_SenderId",
                 schema: "CustomerService",
                 table: "PatientMessage",
-                column: "StaffId");
+                column: "SenderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payment_AppointmentId",

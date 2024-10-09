@@ -32,6 +32,7 @@ internal class ApplicationDbSeeder
         await SeedAdminUserAsync();
         await SeedAdmin2UserAsync();
         await SeedBasicUserAsync();
+        await SeedStaffUserAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -207,6 +208,44 @@ internal class ApplicationDbSeeder
         {
             _logger.LogInformation("Assigning Basic Role to Basic User for '{tenantId}' Tenant.", _currentTenant.Id);
             await _userManager.AddToRoleAsync(basicUser, FSHRoles.Patient);
+        }
+    }
+
+    private async Task SeedStaffUserAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentTenant.Id) || string.IsNullOrWhiteSpace("staff@root.com"))
+        {
+            return;
+        }
+
+        if (await _userManager.Users.FirstOrDefaultAsync(u => u.Email == "staff@root.com")
+                          is not ApplicationUser staffUser)
+        {
+            string staffUserName = $"{_currentTenant.Id.Trim()}.{FSHRoles.Staff}".ToLowerInvariant();
+            staffUser = new ApplicationUser
+            {
+                FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+                LastName = FSHRoles.Staff,
+                Email = "staff@root.com",
+                UserName = staffUserName,
+                EmailConfirmed = true,
+                PhoneNumberConfirmed = true,
+                NormalizedEmail = "staff@root.com"?.ToUpperInvariant(),
+                NormalizedUserName = staffUserName.ToUpperInvariant(),
+                IsActive = true
+            };
+
+            _logger.LogInformation("Seeding Default Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
+            var password = new PasswordHasher<ApplicationUser>();
+            staffUser.PasswordHash = password.HashPassword(staffUser, MultitenancyConstants.DefaultPassword);
+            await _userManager.CreateAsync(staffUser);
+        }
+
+        // Assign role to user
+        if (!await _userManager.IsInRoleAsync(staffUser, FSHRoles.Staff))
+        {
+            _logger.LogInformation("Assigning Staff Role to Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(staffUser, FSHRoles.Staff);
         }
     }
 }
