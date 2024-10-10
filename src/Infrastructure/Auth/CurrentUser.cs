@@ -55,4 +55,11 @@ public class CurrentUser : ICurrentUser, ICurrentUserInitializer
             _userId = Guid.Parse(userId);
         }
     }
+
+    public string GetRole()
+    {
+        return _user?.Claims?
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value).FirstOrDefault();
+    }
 }

@@ -22,22 +22,40 @@ public class UpdateDoctorProfileVaidator : CustomValidator<UpdateDoctorProfile>
     public UpdateDoctorProfileVaidator(IUserService userService, ICurrentUser currentUser)
     {
         RuleFor(p => p)
-            .Custom((profile, context) =>
+            .CustomAsync(async (profile, context, cancellationToken) =>
             {
-                if (!currentUser.IsInRole(FSHRoles.Admin) && !currentUser.IsInRole(FSHRoles.Dentist))
+                if (currentUser.IsInRole(FSHRoles.Admin))
                 {
-                    context.AddFailure(new ValidationFailure(string.Empty, "Unauthorized access. Only Admin or Doctor can update doctor profile.")
-                    {
-                        ErrorCode = "Unauthorized"
-                    });
+                    return;
                 }
-            });
 
-        RuleFor(u => u.DoctorID).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-                .WithMessage("Doctor is empty.")
-            .MustAsync(async (id, _) => await userService.ExistsWithUserIDAsync(id))
-                .WithMessage((_, id) => $"Doctor {id} is unavailable.");
+                if (currentUser.IsInRole(FSHRoles.Dentist))
+                {
+                    if (currentUser.GetUserId().ToString() != profile.DoctorID)
+                    {
+                        context.AddFailure(new ValidationFailure(nameof(profile.DoctorID),
+                            "You can only update your own profile.")
+                        {
+                            ErrorCode = "Unauthorized"
+                        });
+                    }
+                    if(!await userService.ExistsWithUserIDAsync(profile.DoctorID))
+                    {
+                        context.AddFailure(new ValidationFailure(nameof(profile.DoctorID),
+                            $"Doctor {profile.DoctorID} is unavailable.")
+                        {
+                            ErrorCode = "BadRequest"
+                        });
+                    }
+                    return;
+                }
+
+                context.AddFailure(new ValidationFailure(string.Empty,
+                    "Unauthorized access. Only Admin or the Doctor themselves can update doctor profile.")
+                {
+                    ErrorCode = "Unauthorized"
+                });
+            });
 
         RuleFor(p => p.Education)
                 .NotEmpty().WithMessage("Education is required for Doctor.");

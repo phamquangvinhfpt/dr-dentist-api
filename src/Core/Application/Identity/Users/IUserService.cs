@@ -1,5 +1,6 @@
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Shared.Authorization;
 using MediatR.Pipeline;
 using System.Security.Claims;
@@ -43,11 +44,12 @@ public interface IUserService : ITransientService
     Task<string> ResendEmailCodeConfirm(string userId, string origin);
     Task<string> ForgotPasswordAsync(ForgotPasswordRequest request, string origin);
     Task<string> ResetPasswordAsync(ResetPasswordRequest request);
-    Task ChangePasswordAsync(ChangePasswordRequest request, string userId);
+    Task ChangePasswordAsync(ChangePasswordRequest request);
     Task<UserDetailsDto> GetUserDetailByEmailAsync(string email, CancellationToken cancellationToken);
     Task<UserDetailsDto> GetUserDetailByPhoneAsync(string phoneNumber, CancellationToken cancellationToken);
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
     Task UpdateDoctorProfile(UpdateDoctorProfile request);
+    Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
 }

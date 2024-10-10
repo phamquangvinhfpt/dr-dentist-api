@@ -5,7 +5,7 @@ namespace FSH.WebApi.Application.Identity.Roles;
 
 public class UpdateRolePermissionsRequest : IRequest<string>
 {
-    public string RoleId { get; set; } = default!;
+    public string UserID { get; set; } = default!;
     public string Action { get; set; } = default!;
     public string Resource { get; set; } = default!;
 }
@@ -14,7 +14,7 @@ public class UpdateRolePermissionsRequestValidator : CustomValidator<UpdateRoleP
 {
     public UpdateRolePermissionsRequestValidator()
     {
-        RuleFor(r => r.RoleId)
+        RuleFor(r => r.UserID)
             .NotEmpty();
         RuleFor(r => r.Action)
             .NotNull()

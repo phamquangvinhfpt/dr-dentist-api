@@ -44,7 +44,6 @@ public static class FSHResource
     public const string Service = nameof(Service);
     public const string Prescription = nameof(Prescription);
     public const string PrescriptionItem = nameof(PrescriptionItem);
-    public const string TreatmentPlan = nameof(TreatmentPlan);
     public const string TreatmentPlanProcedures = nameof(TreatmentPlanProcedures);
 }
 
@@ -186,9 +185,9 @@ public static class FSHPermissions
 
         // Service Procedures
         new("View Service Procedures", FSHAction.View, FSHResource.ServiceProcedures, new[] { ROOT, PATIENT, STAFF, DENTIST }),
-        new("Create Service Procedures", FSHAction.Create, FSHResource.ServiceProcedures, new[] { DENTIST }),
-        new("Update Service Procedures", FSHAction.Update, FSHResource.ServiceProcedures, new[] { DENTIST }),
-        new("Delete Service Procedures", FSHAction.Delete, FSHResource.ServiceProcedures, new[] { DENTIST }),
+        new("Create Service Procedures", FSHAction.Create, FSHResource.ServiceProcedures, new[] { ROOT }),
+        new("Update Service Procedures", FSHAction.Update, FSHResource.ServiceProcedures, new[] { ROOT }),
+        new("Delete Service Procedures", FSHAction.Delete, FSHResource.ServiceProcedures, new[] { ROOT }),
         new("Search Service Procedures", FSHAction.Search, FSHResource.ServiceProcedures, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Prescription
@@ -204,13 +203,6 @@ public static class FSHPermissions
         new("Update Prescription Item", FSHAction.Update, FSHResource.PrescriptionItem, new[] { DENTIST }),
         new("Delete Prescription Item", FSHAction.Delete, FSHResource.PrescriptionItem, new[] { DENTIST }),
         new("Search Prescription Item", FSHAction.Search, FSHResource.PrescriptionItem, new[] { ROOT, PATIENT, STAFF, DENTIST }),
-
-        // Treatment Plan
-        new("View Treatment Plan", FSHAction.View, FSHResource.TreatmentPlan, new[] { ROOT, PATIENT, STAFF, DENTIST }),
-        new("Create Treatment Plan", FSHAction.Create, FSHResource.TreatmentPlan, new[] { DENTIST }),
-        new("Update Treatment Plan", FSHAction.Update, FSHResource.TreatmentPlan, new[] { DENTIST }),
-        new("Delete Treatment Plan", FSHAction.Delete, FSHResource.TreatmentPlan, new[] { DENTIST }),
-        new("Search Treatment Plan", FSHAction.Search, FSHResource.TreatmentPlan, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Treatment Plan Procedures
         new("View Treatment Plan Procedures", FSHAction.View, FSHResource.TreatmentPlanProcedures, new[] { ROOT, PATIENT, STAFF, DENTIST }),

@@ -24,12 +24,19 @@ public class RolesController : VersionNeutralApiController
         return _roleService.GetByIdAsync(id);
     }
 
+    //[HttpGet("{id}/permissions")]
+    //[MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
+    //[OpenApiOperation("Get role details with its permissions.", "")]
+    //public Task<RoleDto> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
+    //{
+    //    return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
+    //}
     [HttpGet("{id}/permissions")]
     [MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
-    [OpenApiOperation("Get role details with its permissions.", "")]
-    public Task<RoleDto> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
+    [OpenApiOperation("Get permissions of Staff or Doctor by using userID.", "")]
+    public Task<List<string>> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
     {
-        return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
+        return _roleService.GetUserPermissionByUserID(id, cancellationToken);
     }
     [HttpGet("/permissions")]
     [MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]

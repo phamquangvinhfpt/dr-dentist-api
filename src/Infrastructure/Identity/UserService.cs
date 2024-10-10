@@ -1,5 +1,6 @@
 using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
@@ -235,7 +236,7 @@ internal partial class UserService : IUserService
     {
         bool birthDayValid = false;
 
-        if (role.Equals(FSHRoles.Patient) || role.Equals(FSHRoles.Staff))
+        if (role.Equals(FSHRoles.Patient) || role.Equals(FSHRoles.Staff) || role.Equals(FSHRoles.Admin))
         {
             birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-18);
         }else if (role.Equals(FSHRoles.Dentist))
@@ -291,5 +292,39 @@ internal partial class UserService : IUserService
             });
             _db.SaveChanges();
         }
+    }
+
+    public async Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken)
+    {
+        var userId = _currentUserService.GetUserId();
+        if (userId == null)
+        {
+            throw new NotFoundException("Can not found user ID.");
+        }
+        var user = await _userManager.FindByIdAsync(userId.ToString()) ?? throw new BadRequestException("User is not found.");
+        var user_role = GetRolesAsync(user.Id, cancellationToken).Result;
+        var profile = new UserProfileResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Gender = user.Gender,
+            BirthDate = user.BirthDate,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            Job = user.Job,
+            ImageUrl = user.ImageUrl,
+            Address = user.Address,
+        };
+        if (user_role.RoleName.Equals(FSHRoles.Dentist))
+        {
+            profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
+        }
+        else if(user_role.RoleName.Equals(FSHRoles.Patient)) {
+            profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
+            profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
+        }
+        return profile;
     }
 }

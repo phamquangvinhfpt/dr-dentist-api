@@ -265,9 +265,11 @@ internal partial class UserService
 
     public async Task UpdateAvatarAsync(UpdateAvatarRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId);
-
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
+        if(_currentUserService.GetUserId().ToString() != request.UserId)
+        {
+            throw new BadRequestException("Only user update for personal.");
+        }
+        var user = await _userManager.FindByIdAsync(request.UserId) ?? throw new NotFoundException(_t["User Not Found."]);
 
         string currentImage = user.ImageUrl ?? string.Empty;
 

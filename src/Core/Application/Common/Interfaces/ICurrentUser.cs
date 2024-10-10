@@ -15,6 +15,7 @@ public interface ICurrentUser
     bool IsAuthenticated();
 
     bool IsInRole(string role);
+    string GetRole();
 
     IEnumerable<Claim>? GetUserClaims();
 }
