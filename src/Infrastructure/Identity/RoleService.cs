@@ -78,18 +78,29 @@ internal class RoleService : IRoleService
     {
         var user = await _userManager.FindByIdAsync(userId) ?? throw new NotFoundException("User is not found.");
         var roles = await _userManager.GetRolesAsync(user);
-
         var role = await _roleManager.FindByNameAsync(roles[0]);
+        var userClaims = await _userManager.GetClaimsAsync(user);
 
-        return await _db.RoleClaims
-        .Where(c => c.RoleId == role.Id
-                    && c.ClaimType == FSHClaims.Permission
-                    && (c.ClaimValue.Contains(FSHResource.Appointment)
-                        || c.ClaimValue.Contains(FSHResource.Users)
-                        || c.ClaimValue.Contains(FSHResource.MedicalHistory)
-                        || c.ClaimValue.Contains(FSHResource.GeneralExamination)))
-        .Select(c => c.ClaimValue!)
-        .ToListAsync(cancellationToken);
+        var filteredUserClaims = userClaims
+        .Where(c => c.Type == FSHClaims.Permission
+            && (c.Value.Contains(FSHResource.Appointment)
+                || c.Value.Contains(FSHResource.Users)
+                || c.Value.Contains(FSHResource.MedicalHistory)
+                || c.Value.Contains(FSHResource.GeneralExamination)))
+        .Select(c => c.Value)
+        .ToList();
+
+        var roleClaims = await _db.RoleClaims
+            .Where(c => c.RoleId == role.Id
+                && c.ClaimType == FSHClaims.Permission
+                && (c.ClaimValue.Contains(FSHResource.Appointment)
+                    || c.ClaimValue.Contains(FSHResource.Users)
+                    || c.ClaimValue.Contains(FSHResource.MedicalHistory)
+                    || c.ClaimValue.Contains(FSHResource.GeneralExamination)))
+            .Select(c => c.ClaimValue!)
+            .ToListAsync(cancellationToken);
+
+        return filteredUserClaims.Union(roleClaims).Distinct().ToList();
     }
 
     public async Task<string> CreateOrUpdateAsync(CreateOrUpdateRoleRequest request)
