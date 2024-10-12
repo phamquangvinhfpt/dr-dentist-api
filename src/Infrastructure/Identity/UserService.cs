@@ -265,7 +265,7 @@ internal partial class UserService : IUserService
     {
         throw new NotImplementedException();
     }
-    public async Task UpdateDoctorProfile(UpdateDoctorProfile request)
+    public async Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken)
     {
         var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
         if (profile != null)
@@ -276,11 +276,11 @@ internal partial class UserService : IUserService
             profile.Education = request.Education;
             profile.SeftDescription = request.SeftDescription;
             profile.YearOfExp = request.YearOfExp;
-            _db.SaveChanges();
+            await _db.SaveChangesAsync(cancellationToken);
         }
         else
         {
-            _db.Add(new DoctorProfile
+            _db.DoctorProfiles.Add(new DoctorProfile
             {
                 DoctorId = request.DoctorID,
                 CreatedBy = _currentUserService.GetUserId(),
@@ -290,7 +290,7 @@ internal partial class UserService : IUserService
                 SeftDescription = request.SeftDescription,
                 YearOfExp = request.YearOfExp,
             });
-            _db.SaveChanges();
+            await _db.SaveChangesAsync(cancellationToken);
         }
     }
 

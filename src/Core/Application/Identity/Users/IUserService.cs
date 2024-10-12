@@ -34,7 +34,7 @@ public interface IUserService : ITransientService
 
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
     Task<string> CreateAsync(CreateUserRequest request, string origin);
-    Task UpdateAsync(UpdateUserRequest request);
+    Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken);
     Task<string> UpdateEmailAsync(UpdateEmailRequest request);
     Task UpdatePhoneNumberAsync(UpdatePhoneNumberRequest request);
     Task UpdateAvatarAsync(UpdateAvatarRequest request, CancellationToken cancellationToken);
@@ -50,6 +50,7 @@ public interface IUserService : ITransientService
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
-    Task UpdateDoctorProfile(UpdateDoctorProfile request);
+    Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken);
     Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
+    Task<string> CreateOrUpdatePatientFamily(UpdatePatientFamilyRequest request, CancellationToken cancellationToken);
 }

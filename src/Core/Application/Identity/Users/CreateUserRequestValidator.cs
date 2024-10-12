@@ -37,15 +37,15 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
         RuleFor(p => p.LastName).Cascade(CascadeMode.Stop)
             .NotEmpty();
 
-        RuleFor(p => p.Job).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .When(p => p.Role == FSHRoles.Patient)
-            .WithMessage("Job is required for patients.");
+        //RuleFor(p => p.Job).Cascade(CascadeMode.Stop)
+        //    .NotEmpty()
+        //    .When(p => p.Role == FSHRoles.Patient)
+        //    .WithMessage("Job is required for patients.");
 
-        RuleFor(p => p.Address).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .When(p => p.Role == FSHRoles.Patient)
-            .WithMessage("Address is required for patients.");
+        //RuleFor(p => p.Address).Cascade(CascadeMode.Stop)
+        //    .NotEmpty()
+        //    .When(p => p.Role == FSHRoles.Patient)
+        //    .WithMessage("Address is required for patients.");
 
         RuleFor(p => p.DoctorProfile.Education).Cascade(CascadeMode.Stop)
             .NotEmpty()
@@ -65,7 +65,7 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
         RuleFor(p => p.DoctorProfile.SeftDescription).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .When(p => p.Role == FSHRoles.Dentist)
-            .WithMessage("SeftDescription is required for Doctor.");
+            .WithMessage("Seft-Description is required for Doctor.");
 
         RuleFor(p => p.Role).Cascade(CascadeMode.Stop)
             .MustAsync(async (_, role, context) =>

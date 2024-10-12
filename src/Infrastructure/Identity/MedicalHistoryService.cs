@@ -26,7 +26,7 @@ internal class MedicalHistoryService : IMedicalHistoryService
 
     public MedicalHistoryService(
         ApplicationDbContext db,
-        IStringLocalizer t,
+        IStringLocalizer<MedicalHistoryService> t,
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         ICurrentUser currentUser)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FSH.WebApi.Domain.Identity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,4 +12,5 @@ public class UpdatePatientFamilyRequest
     public string? Name { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public PatientFamilyRelationship Relationship { get; set; }
 }

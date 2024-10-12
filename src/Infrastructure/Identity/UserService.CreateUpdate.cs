@@ -161,7 +161,32 @@ internal partial class UserService
 
         return string.Join(Environment.NewLine, messages);
     }
-
+    public async Task<string> CreateOrUpdatePatientFamily(UpdatePatientFamilyRequest request, CancellationToken cancellationToken)
+    {
+        var n = await _db.PatientFamilys.Where(p => p.PatientId == request.PatientId).FirstOrDefaultAsync(cancellationToken);
+        if (n != null)
+        {
+            n.Name = request.Name ?? n.Name;
+            n.Email = request.Email ?? n.Email;
+            n.Phone = request.Phone ?? n.Phone;
+            n.Relationship = request.Relationship;
+            n.LastModifiedBy = _currentUserService.GetUserId();
+            n.LastModifiedOn = DateTime.Now;
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        else {
+            _db.PatientFamilys.Add(new PatientFamily {
+                Name = request.Name,
+                Email = request.Email,
+                Phone = request.Phone,
+                Relationship = request.Relationship,
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.Now,
+            });
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        return _t["Success"];
+    }
 
     //public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)
     //{
@@ -188,16 +213,27 @@ internal partial class UserService
     //    return _t["Update Record Successfully"];
     //}
 
-    public async Task UpdateAsync(UpdateUserRequest request)
+    public async Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId!);
-
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
+        var user = await _userManager.FindByIdAsync(request.UserId!) ?? throw new NotFoundException(_t["User Not Found."]);
+        var role = await GetRolesAsync(user.Id, cancellationToken);
 
         user.FirstName = request.FirstName ?? user.FirstName;
         user.LastName = request.LastName ?? user.LastName;
         user.Gender = request.Gender ?? user.Gender;
         user.BirthDate = request.BirthDate ?? user.BirthDate;
+
+        if (role.RoleName == FSHRoles.Patient)
+        {
+            user.Job = request.Job ?? user.Job;
+            user.Address = request.Address ?? user.Address;
+            if (request.PatientFamily != null) {
+                await CreateOrUpdatePatientFamily(request.PatientFamily, cancellationToken);
+            }
+        }else if(role.RoleName == FSHRoles.Dentist)
+        {
+            await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
+        }
 
         var result = await _userManager.UpdateAsync(user);
 
