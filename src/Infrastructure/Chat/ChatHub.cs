@@ -2,8 +2,10 @@ using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Chat;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
-using FSH.WebApi.Domain.CustomerServices;
+using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
@@ -16,13 +18,19 @@ public class ChatHub : Hub, ITransientService
     private readonly ILogger<ChatHub> _logger;
     private readonly IChatService _chatService;
     private readonly PresenceTracker _presenceTracker;
+    private readonly ICurrentUser _currentUser;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
 
-    public ChatHub(ITenantInfo? currentTenant, ILogger<ChatHub> logger, IChatService chatService, PresenceTracker presenceTracker)
+    public ChatHub(ITenantInfo? currentTenant, ILogger<ChatHub> logger, IChatService chatService, PresenceTracker presenceTracker, ICurrentUser currentUser, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager)
     {
         _currentTenant = currentTenant;
         _logger = logger;
         _chatService = chatService;
         _presenceTracker = presenceTracker;
+        _currentUser = currentUser;
+        _userManager = userManager;
+        _roleManager = roleManager;
     }
 
     public override async Task OnConnectedAsync()
@@ -32,11 +40,11 @@ public class ChatHub : Hub, ITransientService
             throw new UnauthorizedException("Authentication Failed.");
         }
 
-        var name = Context.User.Claims.FirstOrDefault(c => c.Type.EndsWith("nameidentifier"))?.Value;
+        var id = Context.User.Claims.FirstOrDefault(c => c.Type.EndsWith("nameidentifier"))?.Value;
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"GroupTenant-{_currentTenant.Id}");
 
-        var (isOnline, onlineUsers) = await _presenceTracker.UserConnected(name, Context.ConnectionId);
+        var (isOnline, onlineUsers) = await _presenceTracker.UserConnected(id, Context.ConnectionId);
 
         if (isOnline)
         {
@@ -92,8 +100,17 @@ public class ChatHub : Hub, ITransientService
 
         _chatService.SetCurrentUser(Context.User);
 
+        var listStaff = await _userManager.GetUsersInRoleAsync(FSHRoles.Staff);
+
         var sentMessage = await _chatService.SendMessageAsync(receiverId, message, default);
-        await Clients.Group($"GroupTenant-{_currentTenant.Id}").SendAsync("ReceiveMessage", sentMessage);
+        if (_currentUser.IsInRole(FSHRoles.Staff))
+        {
+            await Clients.User(receiverId).SendAsync("ReceiveMessage", sentMessage);
+        }
+        else
+        {
+            await Clients.Users(listStaff.Select(s => s.Id)).SendAsync("ReceiveMessage", sentMessage);
+        }
     }
 
     public async Task<IEnumerable<ListMessageDto>> GetConversation(string conversionId)
