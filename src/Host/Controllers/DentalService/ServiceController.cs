@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.DentalServices.Services;
+﻿using FSH.WebApi.Application.DentalServices.Procedures;
+using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Domain.Service;
 using Microsoft.AspNetCore.Http;
@@ -14,16 +15,16 @@ public class ServiceController : VersionNeutralApiController
         _serviceService = serviceService;
     }
     [HttpPost("get-all")]
-    [MustHavePermission(FSHAction.Create, FSHResource.Service)]
-    [OpenApiOperation("Create Service.", "")]
+    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [OpenApiOperation("Get Services.", "")]
     public async Task<PaginationResponse<Service>> CreateServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         return await _serviceService.GetServicesPaginationAsync(request, cancellationToken);
     }
     [HttpGet("{id}/get")]
-    [MustHavePermission(FSHAction.Create, FSHResource.Service)]
-    [OpenApiOperation("Create Service.", "")]
-    public async Task<Service> CreateServiceAsync(Guid id, CancellationToken cancellationToken)
+    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [OpenApiOperation("Get Service Detail.", "")]
+    public async Task<ServiceDTO> CreateServiceAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _serviceService.GetServiceByID(id, cancellationToken);
     }
@@ -40,6 +41,22 @@ public class ServiceController : VersionNeutralApiController
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Update Service.", "")]
     public Task<string> UpdateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpPost("create-procedure")]
+    [MustHavePermission(FSHAction.Create, FSHResource.Procedure)]
+    [OpenApiOperation("Create Procedure.", "")]
+    public Task<string> CreateProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpPost("update-procedure")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Procedure)]
+    [OpenApiOperation("Create Procedure.", "")]
+    public Task<string> UpdateProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
     }

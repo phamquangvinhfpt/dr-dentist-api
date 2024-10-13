@@ -32,6 +32,52 @@ internal class ServiceService : IServiceService
         _currentUserService = currentUserService;
     }
 
+    public async Task CreateOrUpdateProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
+    {
+        if (request.isDuplicate)
+        {
+            var entry = _db.Procedures.Add(new Procedure
+            {
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.Now,
+                Name = request.Name,
+                Price = request.Price,
+                Description = request.Description,
+            }).Entity;
+            await _db.SaveChangesAsync(cancellationToken);
+            if (request.hasService)
+            {
+                var service_procedure = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.Id);
+                if (service_procedure != null)
+                {
+                    service_procedure.ProcedureId = entry.Id;
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+            }
+        }
+        else {
+            if (request.Id == Guid.Empty) {
+                _db.Procedures.Add(new Procedure
+                {
+                    CreatedBy = _currentUserService.GetUserId(),
+                    CreatedOn = DateTime.Now,
+                    Name = request.Name,
+                    Price = request.Price,
+                    Description = request.Description,
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                var existing = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.Id) ?? throw new Exception("Procedure not found.");
+                existing.Name = request.Name ?? existing.Name;
+                existing.Price = request.Price;
+                existing.Description = request.Description ?? existing.Description;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+        }
+    }
+
     public async Task CreateOrUpdateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
     {
         if(request.ServiceID == Guid.Empty)

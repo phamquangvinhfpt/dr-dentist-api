@@ -27,6 +27,5 @@
     </ItemGroup>
     <ItemGroup>
       <Folder Include="DentalServices\ServiceProcedures\" />
-      <Folder Include="DentalServices\Procedures\" />
     </ItemGroup>
 </Project>
