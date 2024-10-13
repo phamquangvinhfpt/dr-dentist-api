@@ -25,9 +25,9 @@ public class UpdateUserRequestValidator : CustomValidator<UpdateUserRequest>
     {
         RuleFor(u => u.UserId).Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .MustAsync(async (id, _) => (currentUser.GetUserId().ToString() != id))
+            .MustAsync(async (id, _) => !(currentUser.GetUserId().ToString() != id))
                 .WithMessage($"Only Update for Personal.")
-            .MustAsync(async (id, _) => (!await userService.ExistsWithUserIDAsync(id)))
+            .MustAsync(async (id, _) => (await userService.ExistsWithUserIDAsync(id)))
                 .WithMessage($"User not found.");
 
         RuleFor(p => p.FirstName)
@@ -95,7 +95,7 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
                 }
             }
         }
-        await _userService.UpdateAsync(request);
+        await _userService.UpdateAsync(request, cancellationToken);
         return _t["Profile updated successfully."];
     }
 }

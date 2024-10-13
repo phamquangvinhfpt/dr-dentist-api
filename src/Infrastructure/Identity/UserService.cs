@@ -14,6 +14,7 @@ using FSH.WebApi.Application.Common.Persistence;
 using FSH.WebApi.Application.Common.ReCaptchaV3;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Common.SpeedSMS;
+using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Auth;
@@ -48,7 +49,7 @@ internal partial class UserService : IUserService
     private readonly IReCAPTCHAv3Service _reCAPTCHAv3Service;
     private readonly ISpeedSMSService _speedSMSService;
     private readonly ICurrentUser _currentUserService;
-
+    private readonly IMedicalHistoryService _medicalHistoryService;
     public UserService(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
@@ -66,7 +67,8 @@ internal partial class UserService : IUserService
         IReCAPTCHAv3Service reCAPTCHAv3Service,
         IOptions<SecuritySettings> securitySettings,
         ISpeedSMSService speedSMSService,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IMedicalHistoryService medicalHistoryService)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -85,6 +87,7 @@ internal partial class UserService : IUserService
         _securitySettings = securitySettings.Value;
         _speedSMSService = speedSMSService;
         _currentUserService = currentUser;
+        _medicalHistoryService = medicalHistoryService;
     }
 
     public async Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)

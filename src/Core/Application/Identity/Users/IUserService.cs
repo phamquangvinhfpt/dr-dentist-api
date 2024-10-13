@@ -33,7 +33,7 @@ public interface IUserService : ITransientService
     Task ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken);
 
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
-    Task<string> CreateAsync(CreateUserRequest request, string origin);
+    Task<string> CreateAsync(CreateUserRequest request, string origin, CancellationToken cancellationToken);
     Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken);
     Task<string> UpdateEmailAsync(UpdateEmailRequest request);
     Task UpdatePhoneNumberAsync(UpdatePhoneNumberRequest request);

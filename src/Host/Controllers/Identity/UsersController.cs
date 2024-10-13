@@ -53,7 +53,7 @@ public class UsersController : VersionNeutralApiController
     [HttpPost("create-user")]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
-    public Task<string> CreateAsync(CreateUserRequest request)
+    public Task<string> CreateAsync(CreateUserRequest request, CancellationToken cancellation)
     {
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted)
@@ -64,7 +64,7 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
-        return _userService.CreateAsync(request, GetOriginFromRequest());
+        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellation);
     }
 
     //[HttpPost("update-patient-record")]
@@ -90,7 +90,7 @@ public class UsersController : VersionNeutralApiController
     [AllowAnonymous]
     [OpenApiOperation("Regist new patient.", "")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
-    public Task<string> SelfRegisterAsync(CreateUserRequest request)
+    public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted) {
@@ -106,7 +106,7 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(message);
             }
         }
-        return _userService.CreateAsync(request, GetOriginFromRequest());
+        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellationToken);
     }
 
     [HttpPost("{id}/toggle-status")]

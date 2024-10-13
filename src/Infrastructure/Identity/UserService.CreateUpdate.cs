@@ -2,6 +2,7 @@
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.SpeedSMS;
+using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Domain.Identity;
@@ -103,7 +104,7 @@ internal partial class UserService
         return user;
     }
 
-    public async Task<string> CreateAsync(CreateUserRequest request, string origin)
+    public async Task<string> CreateAsync(CreateUserRequest request, string origin, CancellationToken cancellationToken)
     {
         var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
         var user = new ApplicationUser
@@ -134,7 +135,7 @@ internal partial class UserService
         request.DoctorProfile.DoctorID = user.Id;
         if (request.Role.Equals(FSHRoles.Dentist))
         {
-            await UpdateDoctorProfile(request.DoctorProfile);
+            await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
         }
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
@@ -176,6 +177,7 @@ internal partial class UserService
         }
         else {
             _db.PatientFamilys.Add(new PatientFamily {
+                PatientId = request.PatientId,
                 Name = request.Name,
                 Email = request.Email,
                 Phone = request.Phone,
@@ -230,7 +232,12 @@ internal partial class UserService
             if (request.PatientFamily != null) {
                 await CreateOrUpdatePatientFamily(request.PatientFamily, cancellationToken);
             }
-        }else if(role.RoleName == FSHRoles.Dentist)
+            if (request.MedicalHistory != null)
+            {
+                await _medicalHistoryService.CreateAndUpdateMedicalHistory(request.MedicalHistory, cancellationToken);
+            }
+        }
+        else if(role.RoleName == FSHRoles.Dentist)
         {
             await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
         }

@@ -84,7 +84,7 @@ public class UpdateDoctorProfileHandler : IRequestHandler<UpdateDoctorProfile, s
 
     public async Task<string> Handle(UpdateDoctorProfile request, CancellationToken cancellationToken)
     {
-        await _userService.UpdateDoctorProfile(request);
+        await _userService.UpdateDoctorProfile(request, cancellationToken);
         return _t["Profile updated successfully."];
     }
 }
