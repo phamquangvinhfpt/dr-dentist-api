@@ -58,20 +58,14 @@ public class ChatService : IChatService
                 })
                 .FirstOrDefaultAsync();
 
-            foreach (var sender in senderIds)
+            var user = await _userManager.FindByIdAsync(senderId);
+            if (user != null)
             {
-                var user = await _userManager.FindByIdAsync(sender);
-                if (user != null)
-                {
-                    latestMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
-                    latestMessage.ImageUrl = user.ImageUrl;
-                }
+                latestMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
+                latestMessage.ImageUrl = user.ImageUrl;
             }
 
-            if (latestMessage != null)
-            {
-                lastMessages.Add(latestMessage);
-            }
+            lastMessages.Add(latestMessage);
         }
 
         return lastMessages;
