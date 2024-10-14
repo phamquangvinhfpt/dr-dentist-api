@@ -17,17 +17,20 @@ public class ChatService : IChatService
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IJobService _jobService;
 
     public ChatService(
         IHubContext<ChatHub> chatHubContext,
         ApplicationDbContext dbContext,
         ICurrentUser currentUser,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IJobService jobService)
     {
         _chatHubContext = chatHubContext;
         _dbContext = dbContext;
         _currentUser = currentUser;
         _userManager = userManager;
+        _jobService = jobService;
     }
 
     public async Task<List<ListUserDto>> GetListUserDtoAsync()
@@ -136,47 +139,6 @@ public class ChatService : IChatService
         return messages;
     }
 
-    // public async Task<int> GetUnreadMessageCountAsync(string patientId, CancellationToken cancellationToken)
-    // {
-    //     return await _dbContext.Set<PatientMessages>()
-    //         .CountAsync(pm => pm.PatientId == patientId && !pm.IsRead, cancellationToken);
-    // }
-
-    // public async Task MarkMessagesAsReadAsync(string patientId, string staffId, CancellationToken cancellationToken)
-    // {
-    //     var unreadMessages = await _dbContext.Set<PatientMessages>()
-    //         .Where(pm => pm.PatientId == patientId && pm.StaffId == staffId && !pm.IsRead)
-    //         .ToListAsync(cancellationToken);
-
-    //     foreach (var message in unreadMessages)
-    //     {
-    //         message.IsRead = true;
-    //     }
-
-    //     await _dbContext.SaveChangesAsync(cancellationToken);
-    // }
-
-    // public async Task<List<ListMessageDto>> GetListMessageDtosAsync(string senderId)
-    // {
-    //     var query = _dbContext.Set<PatientMessages>()
-    //         .Where(pm => pm.PatientId == senderId || pm.StaffId == senderId)
-    //         .GroupBy(pm => pm.PatientId)
-    //         .Select(g => new ListMessageDto
-    //         {
-    //             Id = g.Max(pm => pm.Id),
-    //             SenderId = g.Key,
-    //             LatestMessage = g.Max(pm => pm.Message),
-    //             IsRead = g.All(pm => pm.IsRead),
-    //             ImageUrl = g.Max(pm => pm.StaffId == senderId ? pm.Patient.ImageUrl : pm.Staff.ImageUrl),
-    //             CreatedOn = g.Max(pm => pm.CreatedOn)
-    //         });
-
-    //     return await query
-    //         .OrderByDescending(pm => pm.CreatedOn)
-    //         .ToListAsync();
-    // }
-
-    private string GetPatientGroupName(string patientId) => $"Patient-{patientId}";
     public void SetCurrentUser(ClaimsPrincipal user)
     {
         _currentUser.SetCurrentUser(user);

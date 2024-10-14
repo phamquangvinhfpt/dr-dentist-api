@@ -46,6 +46,8 @@ public class ChatHub : Hub, ITransientService
 
         var (isOnline, onlineUsers) = await _presenceTracker.UserConnected(id, Context.ConnectionId);
 
+        var listStaff = await _userManager.GetUsersInRoleAsync(FSHRoles.Staff);
+
         if (isOnline)
         {
             await Clients.Others.SendAsync("UserIsOnline", onlineUsers);
@@ -106,6 +108,7 @@ public class ChatHub : Hub, ITransientService
         if (_currentUser.IsInRole(FSHRoles.Staff))
         {
             await Clients.User(receiverId).SendAsync("ReceiveMessage", sentMessage);
+            await Clients.Users(listStaff.Select(s => s.Id)).SendAsync("ReceiveMessage", sentMessage);
         }
         else
         {
@@ -122,39 +125,4 @@ public class ChatHub : Hub, ITransientService
 
         return await _chatService.GetConversationAsync(conversionId, default);
     }
-
-    public async Task JoinPatientGroup()
-    {
-        if (_currentTenant is null)
-        {
-            throw new UnauthorizedException("Authentication Failed.");
-        }
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, GetPatientGroupName());
-        _logger.LogInformation("User {userId} joined patient group {patientId}", Context.UserIdentifier);
-    }
-
-    public async Task LeavePatientGroup()
-    {
-        if (_currentTenant is null)
-        {
-            throw new UnauthorizedException("Authentication Failed.");
-        }
-
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetPatientGroupName());
-        _logger.LogInformation("User {userId} left patient group {patientId}", Context.UserIdentifier);
-    }
-
-    // public async Task MarkMessagesAsRead(string patientId)
-    // {
-    //     if (_currentTenant is null)
-    //     {
-    //         throw new UnauthorizedException("Authentication Failed.");
-    //     }
-
-    //     await _chatService.MarkMessagesAsReadAsync(patientId, Context.UserIdentifier, default);
-    //     _logger.LogInformation("Messages marked as read for patient {patientId} by user {userId}", patientId, Context.UserIdentifier);
-    // }
-
-    private string GetPatientGroupName() => $"GroupTenant-{_currentTenant.Id}";
 }

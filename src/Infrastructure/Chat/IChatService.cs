@@ -10,6 +10,4 @@ public interface IChatService : ITransientService
     Task<ListMessageDto> SendMessageAsync(string? receiverId, string message, CancellationToken cancellationToken);
     void SetCurrentUser(ClaimsPrincipal user);
     Task<IEnumerable<ListMessageDto>> GetConversationAsync(string? conversionId, CancellationToken cancellationToken);
-    // Task<int> GetUnreadMessageCountAsync(string patientId, CancellationToken cancellationToken);
-    // Task MarkMessagesAsReadAsync(string patientId, string staffId, CancellationToken cancellationToken);
 }
