@@ -103,6 +103,8 @@ public class ChatHub : Hub, ITransientService
         _chatService.SetCurrentUser(Context.User);
 
         var listStaff = await _userManager.GetUsersInRoleAsync(FSHRoles.Staff);
+        // remove current user from list
+        listStaff = listStaff.Where(s => s.Id != _currentUser.GetUserId().ToString()).ToList();
 
         var sentMessage = await _chatService.SendMessageAsync(receiverId, message, default);
         if (_currentUser.IsInRole(FSHRoles.Staff))
