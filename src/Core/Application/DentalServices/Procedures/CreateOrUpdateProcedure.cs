@@ -41,16 +41,15 @@ public class CreateOrUpdateProcedureValidator : CustomValidator<CreateOrUpdatePr
                                 ErrorCode = "BadRequest"
                             });
                         }
-                        if (profile.Id == Guid.Empty)
-                        {
-                            context.AddFailure(new ValidationFailure(string.Empty,
-                                "The procedure is empty. Procedure can not update")
-                            {
-                                ErrorCode = "BadRequest"
-                            });
-                        }
                     }
-
+                    if (profile.Id == Guid.Empty)
+                    {
+                        context.AddFailure(new ValidationFailure(string.Empty,
+                            "The procedure is empty. Procedure can not update")
+                        {
+                            ErrorCode = "BadRequest"
+                        });
+                    }
                 }
             });
 

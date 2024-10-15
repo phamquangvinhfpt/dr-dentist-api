@@ -274,11 +274,11 @@ internal partial class UserService : IUserService
         if (profile != null)
         {
             profile.LastModifiedBy = _currentUserService.GetUserId();
-            profile.Certification = request.Certification;
-            profile.College = request.College;
-            profile.Education = request.Education;
-            profile.SeftDescription = request.SeftDescription;
-            profile.YearOfExp = request.YearOfExp;
+            profile.Certification = request.Certification ?? profile.Certification;
+            profile.College = request.College ?? profile.College;
+            profile.Education = request.Education ?? profile.Education;
+            profile.SeftDescription = request.SeftDescription ?? profile.SeftDescription;
+            profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
             await _db.SaveChangesAsync(cancellationToken);
         }
         else

@@ -80,7 +80,8 @@ internal class ServiceService : IServiceService
 
     public async Task CreateOrUpdateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
     {
-        if(request.ServiceID == Guid.Empty)
+        var existing = await _db.Services.Where(p => p.Id == request.ServiceID).FirstOrDefaultAsync(cancellationToken);
+        if (existing == null)
         {
             _db.Services.Add(new Domain.Service.Service
             {
@@ -93,11 +94,6 @@ internal class ServiceService : IServiceService
         }
         else
         {
-            var existing = await _db.Services.Where(p => p.Id == request.ServiceID).FirstOrDefaultAsync(cancellationToken);
-            if (existing == null)
-            {
-                throw new Exception("Service is not found.");
-            }
             existing.ServiceName = request.Name ?? existing.ServiceName;
             existing.ServiceDescription = request.Description ?? existing.ServiceDescription;
             existing.LastModifiedBy = _currentUserService.GetUserId();
@@ -117,12 +113,42 @@ internal class ServiceService : IServiceService
             throw new Exception("Service is not found.");
         }
 
-        _db.Services.Remove(existing);
+        existing.DeletedOn = DateTime.Now;
+        existing.DeletedBy = _currentUserService.GetUserId();
+
         await _db.SaveChangesAsync(cancellationToken);
         return _t["Delete Success"];
     }
 
-    public async Task<ServiceDTO> GetServiceByID(DefaultIdType serviceID, CancellationToken cancellationToken)
+    public async Task<Procedure> GetProcedureByID(Guid procedureID, CancellationToken cancellationToken)
+    {
+        if (procedureID == Guid.Empty) {
+            throw new Exception($"{nameof(Procedure)} is not empty");
+        }
+        return await _db.Procedures.FirstOrDefaultAsync(p => p.Id == procedureID, cancellationToken: cancellationToken);
+    }
+
+    public async Task<PaginationResponse<Procedure>> GetProcedurePaginationAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        var list = new List<Procedure>();
+        var spec = new EntitiesByPaginationFilterSpec<Procedure>(request);
+        var procedures = await _db.Procedures
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .ToListAsync(cancellationToken);
+
+        int count = await _db.Procedures
+            .CountAsync(cancellationToken);
+        return new PaginationResponse<Procedure>(list, count, request.PageNumber, request.PageSize);
+    }
+
+    public async Task<List<Procedure>> GetProceduresAsync(CancellationToken cancellationToken)
+    {
+        return await _db.Procedures
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ServiceDTO> GetServiceByID(Guid serviceID, CancellationToken cancellationToken)
     {
         if (serviceID == Guid.Empty)
         {
@@ -152,6 +178,12 @@ internal class ServiceService : IServiceService
             }
         }
         return result;
+    }
+
+    public async Task<List<Service>> GetServicesAsync(CancellationToken cancellationToken)
+    {
+        return await _db.Services
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<PaginationResponse<Service>> GetServicesPaginationAsync(PaginationFilter filter, CancellationToken cancellation)

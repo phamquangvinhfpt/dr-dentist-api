@@ -14,4 +14,9 @@ public interface IServiceService : ITransientService
     Task<string> DeleteServiceAsync(Guid serviceID, CancellationToken cancellationToken);
     Task<ServiceDTO> GetServiceByID(Guid serviceID, CancellationToken cancellationToken);
     Task CreateOrUpdateProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken);
+    Task<PaginationResponse<Procedure>> GetProcedurePaginationAsync(PaginationFilter request, CancellationToken cancellationToken);
+    Task<List<Procedure>> GetProceduresAsync(CancellationToken cancellationToken);
+    Task<List<Service>> GetServicesAsync(CancellationToken cancellationToken);
+
+    Task<Procedure> GetProcedureByID(Guid procedureID, CancellationToken cancellationToken);
 }
