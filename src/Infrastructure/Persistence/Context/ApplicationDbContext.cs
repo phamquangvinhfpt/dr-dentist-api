@@ -4,6 +4,7 @@ using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Notification;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
@@ -28,7 +29,6 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<Procedure> Procedures { get; set; }
     public DbSet<ServiceProcedures> ServiceProcedures { get; set; }
-    public DbSet<TreatmentPlan> TreatmentPlans { get; set; }
     public DbSet<TreatmentPlanProcedures> TreatmentPlanProcedures { get; set; }
     public DbSet<Prescription> Prescriptions { get; set; }
     public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
@@ -37,6 +37,9 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<PatientMessages> PatientMessages { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
     public DbSet<ContactInfor> ContactInfor { get; set; }
+    public DbSet<PatientFamily> PatientFamilys { get; set; }
+    public DbSet<MedicalHistory> MedicalHistorys { get; set; }
+    public DbSet<DoctorProfile> DoctorProfiles { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

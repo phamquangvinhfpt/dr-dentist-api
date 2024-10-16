@@ -24,27 +24,41 @@ public class RolesController : VersionNeutralApiController
         return _roleService.GetByIdAsync(id);
     }
 
+    //[HttpGet("{id}/permissions")]
+    //[MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
+    //[OpenApiOperation("Get role details with its permissions.", "")]
+    //public Task<RoleDto> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
+    //{
+    //    return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
+    //}
     [HttpGet("{id}/permissions")]
     [MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
-    [OpenApiOperation("Get role details with its permissions.", "")]
-    public Task<RoleDto> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
+    [OpenApiOperation("Get permissions of Staff or Doctor by using userID.", "")]
+    public Task<List<string>> GetByIdWithPermissionsAsync(string id, CancellationToken cancellationToken)
     {
-        return _roleService.GetByIdWithPermissionsAsync(id, cancellationToken);
+        return _roleService.GetUserPermissionByUserID(id, cancellationToken);
     }
-
-    [HttpPut("{id}/permissions")]
+    [HttpGet("/permissions")]
+    [MustHavePermission(FSHAction.View, FSHResource.RoleClaims)]
+    [OpenApiOperation("Get all role with its permissions.", "")]
+    public Task<List<RoleDto>> GetAllRoleWithPermissionsAsync(CancellationToken cancellationToken)
+    {
+        return _roleService.GetListWithPermissionAsync(cancellationToken);
+    }
+    [HttpPut("update/permissions")]
     [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]
     [OpenApiOperation("Update a role's permissions.", "")]
-    public async Task<ActionResult<string>> UpdatePermissionsAsync(string id, UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    public Task<string> UpdatePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
     {
-        if (id != request.RoleId)
-        {
-            return BadRequest();
-        }
-
-        return Ok(await _roleService.UpdatePermissionsAsync(request, cancellationToken));
+        return Mediator.Send(request);
     }
-
+    [HttpPut("delete/permissions")]
+    [MustHavePermission(FSHAction.Update, FSHResource.RoleClaims)]
+    [OpenApiOperation("Delete a role's permissions.", "")]
+    public async Task<ActionResult<string>> DeletePermissionsAsync(UpdateRolePermissionsRequest request, CancellationToken cancellationToken)
+    {
+        return Ok(await _roleService.DeletePermissionsAsync(request, cancellationToken));
+    }
     [HttpPost]
     [MustHavePermission(FSHAction.Create, FSHResource.Roles)]
     [OpenApiOperation("Create or update a role.", "")]

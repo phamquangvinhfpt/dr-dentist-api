@@ -18,23 +18,15 @@ public class PersonalController : VersionNeutralApiController
 
     [HttpGet("profile")]
     [OpenApiOperation("Get profile details of currently logged in user.", "")]
-    public async Task<ActionResult<UserDetailsDto>> GetProfileAsync(CancellationToken cancellationToken)
+    public async Task<UserProfileResponse> GetProfileAsync(CancellationToken cancellationToken)
     {
-        return User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId)
-            ? Unauthorized()
-            : Ok(await _userService.GetAsync(userId, cancellationToken));
+        return await _userService.GetUserProfileAsync(cancellationToken);
     }
 
     [HttpPut("profile")]
     [OpenApiOperation("Update profile details of currently logged in user.", "")]
     public Task<string> UpdateProfileAsync(UpdateUserRequest request)
     {
-        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException();
-        }
-
-        request.UserId = userId;
         return Mediator.Send(request);
     }
 
@@ -43,12 +35,7 @@ public class PersonalController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public async Task<ActionResult> ChangePasswordAsync(ChangePasswordRequest model)
     {
-        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized();
-        }
-
-        await _userService.ChangePasswordAsync(model, userId);
+        await _userService.ChangePasswordAsync(model);
         return Ok();
     }
 

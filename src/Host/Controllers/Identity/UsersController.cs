@@ -1,3 +1,5 @@
+using FSH.WebApi.Application.Common.Exceptions;
+using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
@@ -8,15 +10,19 @@ namespace FSH.WebApi.Host.Controllers.Identity;
 public class UsersController : VersionNeutralApiController
 {
     private readonly IUserService _userService;
+    private readonly ICurrentUser _currentUserService;
 
-    public UsersController(IUserService userService) => _userService = userService;
-
-    [HttpGet]
+    public UsersController(IUserService userService, ICurrentUser currentUserService)
+    {
+        _userService = userService;
+        _currentUserService = currentUserService;
+    }
+    [HttpPost("get-users")]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get list of all users.", "")]
-    public Task<List<UserDetailsDto>> GetListAsync(CancellationToken cancellationToken)
+    public Task<PaginationResponse<ListUserDTO>> GetListAsync(UserListFilter request, CancellationToken cancellationToken)
     {
-        return _userService.GetListAsync(cancellationToken);
+        return _userService.SearchAsync(request, cancellationToken);
     }
 
     [HttpGet("{id}")]
@@ -30,10 +36,10 @@ public class UsersController : VersionNeutralApiController
     [HttpGet("{id}/roles")]
     [MustHavePermission(FSHAction.View, FSHResource.UserRoles)]
     [OpenApiOperation("Get a user's roles.", "")]
-    public Task<List<UserRoleDto>> GetRolesAsync(string id, CancellationToken cancellationToken)
+    public Task<UserRoleDto> GetRolesAsync(string id, CancellationToken cancellationToken)
     {
         return _userService.GetRolesAsync(id, cancellationToken);
-    }   
+    }
 
     [HttpPost("{id}/roles")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
@@ -44,41 +50,71 @@ public class UsersController : VersionNeutralApiController
         return _userService.AssignRolesAsync(id, request, cancellationToken);
     }
 
-    [HttpPost]
+    [HttpPost("create-user")]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
-    [OpenApiOperation("Creates a new user.", "")]
-    public Task<string> CreateAsync(CreateUserRequest request)
+    [OpenApiOperation("Creates a new Staff/Doctor.", "")]
+    public Task<string> CreateAsync(CreateUserRequest request, CancellationToken cancellation)
     {
-        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-        // and return UnAuthorized when it isn't
-        // Also: add other protection to prevent automatic posting (captcha?)
-        return _userService.CreateAsync(request, GetOriginFromRequest());
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
+        if (!validation.IsCompleted)
+        {
+            var t = validation.Result;
+            if (!t.IsValid)
+            {
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
+            }
+        }
+        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellation);
     }
+
+    //[HttpPost("update-patient-record")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    //[OpenApiOperation("Update Patient Record.", "")]
+    //public Task<string> UpdatePatientRecord(CreatePatientRecord request)
+    //{
+    //    // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
+    //    // and return UnAuthorized when it isn't
+    //    // Also: add other protection to prevent automatic posting (captcha?)
+    //    var validation = new CreatePatientRecordValidator(_userService).ValidateAsync(request);
+    //    if (!validation.IsCompleted)
+    //    {
+    //        var t = validation.Result;
+    //        if (!t.IsValid)
+    //            throw new BadRequestException(t.Errors[0].ErrorMessage);
+    //    }
+    //    return _userService.UpdatePatientRecordAsync(request);
+    //}
 
     [HttpPost("self-register")]
     [TenantIdHeader]
     [AllowAnonymous]
-    [OpenApiOperation("Anonymous user creates a user.", "")]
+    [OpenApiOperation("Regist new patient.", "")]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
-    public Task<string> SelfRegisterAsync(CreateUserRequest request)
+    public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
-        // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-        // and return UnAuthorized when it isn't
-        // Also: add other protection to prevent automatic posting (captcha?)
-        return _userService.CreateAsync(request, GetOriginFromRequest());
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
+        if (!validation.IsCompleted) {
+            var t = validation.Result;
+            if (!t.IsValid)
+            {
+                var message = "";
+                foreach (var i in t.Errors)
+                {
+                    message += i;
+                    message += " / ";
+                }
+                throw new BadRequestException(message);
+            }
+        }
+        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellationToken);
     }
 
     [HttpPost("{id}/toggle-status")]
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     [OpenApiOperation("Toggle a user's active status.", "")]
-    public async Task<ActionResult> ToggleStatusAsync(string id, ToggleUserStatusRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult> ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken)
     {
-        if (id != request.UserId)
-        {
-            return BadRequest();
-        }
-
         await _userService.ToggleStatusAsync(request, cancellationToken);
         return Ok();
     }
@@ -137,6 +173,14 @@ public class UsersController : VersionNeutralApiController
     public Task<string> ResetPasswordAsync(ResetPasswordRequest request)
     {
         return _userService.ResetPasswordAsync(request);
+    }
+
+    [HttpPost("update-doctor-profile")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    [OpenApiOperation("Update Doctor Profile", "")]
+    public Task<string> UpdateDoctorProfile(UpdateDoctorProfile request)
+    {
+        return Mediator.Send(request);
     }
 
     private string GetOriginFromRequest()

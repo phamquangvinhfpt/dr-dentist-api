@@ -137,7 +137,9 @@ internal class TokenService : ITokenService
             if (applicationRole is not null)
             {
                 var roleC = _roleManager.GetClaimsAsync(applicationRole).Result;
+                var roleB = _userManager.GetClaimsAsync(user).Result;
                 roleClaims.AddRange(roleC);
+                roleClaims.AddRange(roleB);
             }
         }
 

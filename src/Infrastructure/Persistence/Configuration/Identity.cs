@@ -1,4 +1,5 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,47 @@ public class ApplicationUserConfig : IEntityTypeConfiguration<ApplicationUser>
         builder
             .Property(u => u.ObjectId)
                 .HasMaxLength(256);
+
+        builder.Property(u => u.Address)
+            .HasMaxLength(256);
+    }
+}
+
+public class MedicalHistoryConfig : IEntityTypeConfiguration<MedicalHistory>
+{
+    public void Configure(EntityTypeBuilder<MedicalHistory> builder)
+    {
+        builder
+            .ToTable("MedicalHistory", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<MedicalHistory>("PatientId");
+
+        builder
+            .Property(b => b.Note)
+            .HasMaxLength(256);
+    }
+}
+
+public class PatientFamilyConfig : IEntityTypeConfiguration<PatientFamily>
+{
+    public void Configure(EntityTypeBuilder<PatientFamily> builder)
+    {
+        builder
+            .ToTable("PatientFamily", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<PatientFamily>("PatientId");
+
+        builder
+            .Property(b => b.Email)
+            .HasMaxLength(100);
     }
 }
 
@@ -67,4 +109,23 @@ public class IdentityUserTokenConfig : IEntityTypeConfiguration<IdentityUserToke
         builder
             .ToTable("UserTokens", SchemaNames.Identity)
             .IsMultiTenant();
+}
+
+public class DoctorProfileConfig : IEntityTypeConfiguration<DoctorProfile>
+{
+    public void Configure(EntityTypeBuilder<DoctorProfile> builder)
+    {
+        builder
+            .ToTable("DoctorProfile", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<DoctorProfile>("DoctorId");
+
+        builder
+            .Property(b => b.SeftDescription)
+            .HasColumnType("text");
+    }
 }
