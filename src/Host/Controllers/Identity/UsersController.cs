@@ -93,7 +93,8 @@ public class UsersController : VersionNeutralApiController
     public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
-        if (!validation.IsCompleted) {
+        if (!validation.IsCompleted)
+        {
             var t = validation.Result;
             if (!t.IsValid)
             {

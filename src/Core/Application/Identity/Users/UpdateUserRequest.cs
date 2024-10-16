@@ -23,13 +23,6 @@ public class UpdateUserRequestValidator : CustomValidator<UpdateUserRequest>
 {
     public UpdateUserRequestValidator(IUserService userService, ICurrentUser currentUser, IStringLocalizer<UpdateUserRequestValidator> T)
     {
-        RuleFor(u => u.UserId).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .MustAsync(async (id, _) => !(currentUser.GetUserId().ToString() != id))
-                .WithMessage($"Only Update for Personal.")
-            .MustAsync(async (id, _) => (await userService.ExistsWithUserIDAsync(id)))
-                .WithMessage($"User not found.");
-
         RuleFor(p => p.FirstName)
            .MaximumLength(75);
 
@@ -73,7 +66,8 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
     public async Task<string> Handle(UpdateUserRequest request, CancellationToken cancellationToken)
     {
         var role = await _userService.GetRolesAsync(request.UserId, cancellationToken);
-        if (role.RoleName == FSHRoles.Dentist) {
+        if (role.RoleName == FSHRoles.Dentist)
+        {
             var check = new UpdateDoctorProfileVaidator(_userService, _currentUser).ValidateAsync(request.DoctorProfile);
             if (check.IsCompleted)
             {
@@ -83,7 +77,8 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
                     throw new BadRequestException(t.Errors[0].ErrorMessage);
                 }
             }
-        }else if (role.RoleName == FSHRoles.Patient)
+        }
+        else if (role.RoleName == FSHRoles.Patient)
         {
             var check = new CreateAndUpdateMedicalHistoryVaidator(_userService, _currentUser).ValidateAsync(request.MedicalHistory);
             if (check.IsCompleted)
@@ -95,6 +90,13 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
                 }
             }
         }
+
+        var user = await _userService.GetAsync(request.UserId!, cancellationToken);
+        if (user is null)
+        {
+            throw new NotFoundException(_t["User not found."]);
+        }
+
         await _userService.UpdateAsync(request, cancellationToken);
         return _t["Profile updated successfully."];
     }

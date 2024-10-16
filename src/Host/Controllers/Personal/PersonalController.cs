@@ -27,6 +27,12 @@ public class PersonalController : VersionNeutralApiController
     [OpenApiOperation("Update profile details of currently logged in user.", "")]
     public Task<string> UpdateProfileAsync(UpdateUserRequest request)
     {
+        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        request.UserId = userId;
         return Mediator.Send(request);
     }
 
