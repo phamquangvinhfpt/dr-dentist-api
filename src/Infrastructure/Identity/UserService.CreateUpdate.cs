@@ -130,11 +130,12 @@ internal partial class UserService
         {
             throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
         }
-
+        
         await _userManager.AddToRoleAsync(user, role.Name);
-        request.DoctorProfile.DoctorID = user.Id;
+        
         if (request.Role.Equals(FSHRoles.Dentist))
         {
+            request.DoctorProfile.DoctorID = user.Id;
             await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
         }
 
@@ -153,7 +154,7 @@ internal partial class UserService
             var mailRequest = new MailRequest(
                 new List<string> { user.Email },
                 _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation", eMailModel));
+                _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
             _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
             messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
         }

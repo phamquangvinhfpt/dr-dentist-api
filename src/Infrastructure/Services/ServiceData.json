@@ -1,0 +1,52 @@
+[
+  {
+    "Id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "ServiceName": "General Dentistry",
+    "ServiceDescription": "Comprehensive dental examinations, cleanings, and preventive care."
+  },
+  {
+    "Id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "ServiceName": "Teeth Whitening",
+    "ServiceDescription": "Professional teeth whitening treatments for a brighter smile."
+  },
+  {
+    "Id": "b1c2d3e4-f5a6-7890-abcd-ef1234567891",
+    "ServiceName": "Root Canal Therapy",
+    "ServiceDescription": "Treatment for infected or damaged tooth pulp to save the tooth."
+  },
+  {
+    "Id": "c1d2e3f4-g5a6-7890-abcd-ef1234567892",
+    "ServiceName": "Dental Implants",
+    "ServiceDescription": "Permanent solution for missing teeth using implant technology."
+  },
+  {
+    "Id": "d1e2f3g4-h5a6-7890-abcd-ef1234567893",
+    "ServiceName": "Orthodontics",
+    "ServiceDescription": "Braces and aligners to straighten teeth and improve bite."
+  },
+  {
+    "Id": "e1f2g3h4-i5a6-7890-abcd-ef1234567894",
+    "ServiceName": "Periodontal Care",
+    "ServiceDescription": "Treatment for gum disease to maintain gum health."
+  },
+  {
+    "Id": "f1g2h3i4-j5a6-7890-abcd-ef1234567895",
+    "ServiceName": "Pediatric Dentistry",
+    "ServiceDescription": "Dental care specifically for children, ensuring a positive experience."
+  },
+  {
+    "Id": "g1h2i3j4-k5a6-7890-abcd-ef1234567896",
+    "ServiceName": "Emergency Dental Care",
+    "ServiceDescription": "Immediate treatment for dental emergencies such as pain or injury."
+  },
+  {
+    "Id": "h1i2j3k4-l5a6-7890-abcd-ef1234567897",
+    "ServiceName": "Cosmetic Dentistry",
+    "ServiceDescription": "Enhancements for a more aesthetically pleasing smile."
+  },
+  {
+    "Id": "i1j2k3l4-m5a6-7890-abcd-ef1234567898",
+    "ServiceName": "Dentures",
+    "ServiceDescription": "Removable replacements for missing teeth to restore function and appearance."
+  }
+]

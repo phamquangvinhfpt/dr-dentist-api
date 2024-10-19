@@ -40,59 +40,59 @@ public class UserSeeder : ICustomSeeder
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string dataPath = Path.Combine(path!, "Identity", "UserData.json");
-        _logger.LogInformation("Started to Seed Users.");
-        string userData = await File.ReadAllTextAsync(dataPath, cancellationToken);
-        var users = _serializerService.Deserialize<List<ApplicationUser>>(userData);
-        //var users = await _db.Users.Where(u => u.UserName == "root.admin").FirstOrDefaultAsync();
-        List<ApplicationUser> doctor = new List<ApplicationUser>();
-        List<ApplicationUser> staff = new List<ApplicationUser>();
-        List<ApplicationUser> patient = new List<ApplicationUser>();
-        int flash = 0;
-        foreach (var user in users)
-        {
-            var entry = _db.Users.Add(user).Entity;
-            if (flash < 5)
-            {
-                doctor.Add(entry);
-                flash++;
-            }
-            else if (flash >= 5 && flash < 10)
-            {
-                staff.Add(entry);
-                flash++;
-            }
-            else
-            {
-                patient.Add(entry);
-            }
-        }
-        _ = await _db.SaveChangesAsync(cancellationToken);
-        foreach (var user in doctor)
-        {
-            if (!await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))
-            {
-                _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
-                await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
-            }
-        }
-        foreach (var user in staff)
-        {
-            if (!await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
-            {
-                _logger.LogInformation("Assigning Staff Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
-                await _userManager.AddToRoleAsync(user, FSHRoles.Staff);
-            }
-        }
-        foreach (var user in patient)
-        {
-            if (!await _userManager.IsInRoleAsync(user, FSHRoles.Patient))
-            {
-                _logger.LogInformation("Assigning Patient Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
-                await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
-            }
-        }
+        //string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        //string dataPath = Path.Combine(path!, "Identity", "UserData.json");
+        //_logger.LogInformation("Started to Seed Users.");
+        //string userData = await File.ReadAllTextAsync(dataPath, cancellationToken);
+        //var users = _serializerService.Deserialize<List<ApplicationUser>>(userData);
+        ////var users = await _db.Users.Where(u => u.UserName == "root.admin").FirstOrDefaultAsync();
+        //List<ApplicationUser> doctor = new List<ApplicationUser>();
+        //List<ApplicationUser> staff = new List<ApplicationUser>();
+        //List<ApplicationUser> patient = new List<ApplicationUser>();
+        //int flash = 0;
+        //foreach (var user in users)
+        //{
+        //    var entry = _db.Users.Add(user).Entity;
+        //    if (flash < 5)
+        //    {
+        //        doctor.Add(entry);
+        //        flash++;
+        //    }
+        //    else if (flash >= 5 && flash < 10)
+        //    {
+        //        staff.Add(entry);
+        //        flash++;
+        //    }
+        //    else
+        //    {
+        //        patient.Add(entry);
+        //    }
+        //}
+        //_ = await _db.SaveChangesAsync(cancellationToken);
+        //foreach (var user in doctor)
+        //{
+        //    if (!await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))
+        //    {
+        //        _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+        //        await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
+        //    }
+        //}
+        //foreach (var user in staff)
+        //{
+        //    if (!await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
+        //    {
+        //        _logger.LogInformation("Assigning Staff Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+        //        await _userManager.AddToRoleAsync(user, FSHRoles.Staff);
+        //    }
+        //}
+        //foreach (var user in patient)
+        //{
+        //    if (!await _userManager.IsInRoleAsync(user, FSHRoles.Patient))
+        //    {
+        //        _logger.LogInformation("Assigning Patient Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+        //        await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
+        //    }
+        //}
         _logger.LogInformation("Seeded Users.");
     }
 }

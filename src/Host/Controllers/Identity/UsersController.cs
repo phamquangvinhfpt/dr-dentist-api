@@ -92,6 +92,7 @@ public class UsersController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
+        var acceptLanguage = HttpContext.Request.Headers["Accept-Language"].ToString();
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {
