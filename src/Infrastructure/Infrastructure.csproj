@@ -92,6 +92,9 @@
         <None Update="Class\*\*.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
     <ItemGroup>
+        <None Update="Identity\*.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup>
       <None Update="Assignment\assignment.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
