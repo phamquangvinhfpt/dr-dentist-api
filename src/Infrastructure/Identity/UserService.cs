@@ -333,4 +333,29 @@ internal partial class UserService : IUserService
         }
         return profile;
     }
+
+    public Task<List<GetDoctorResponse>> GetAllDoctor()
+    {
+        var users = _userManager.Users.AsNoTracking().ProjectToType<UserDetailsDto>().ToList();
+        List<GetDoctorResponse> list = new List<GetDoctorResponse>();
+
+        //foreach (var user in users) {
+        //    if (_userManager.IsInRoleAsync(user, FSHRoles.Dentist).Result)
+        //    {
+        //        list.Add(new GetDoctorResponse
+        //        {
+        //            Id = user.Id,
+        //            Email = user.Email,
+        //            FirstName = user.FirstName,
+        //            Gender = user.Gender,
+        //            ImageUrl = user.ImageUrl,
+        //            LastName = user.LastName,
+        //            PhoneNumber = user.PhoneNumber,
+        //            UserName = user.UserName,
+        //            DoctorProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id) ?? null,
+        //        });
+        //    }
+        //}
+        return null;
+    }
 }

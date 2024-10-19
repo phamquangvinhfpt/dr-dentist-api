@@ -9,7 +9,7 @@ namespace FSH.WebApi.Infrastructure.Identity;
 
 internal partial class UserService
 {
-    public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request, string origin)
+    public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request, string local, string origin)
     {
         EnsureValidTenant();
 
@@ -33,12 +33,22 @@ internal partial class UserService
             UserName = user.UserName,
             Url = passwordResetUrl
         };
-        var mailRequest = new MailRequest(
+        if (local.Equals("en"))
+        {
+            var mailRequest = new MailRequest(
             new List<string> { request.Email },
             _t["Reset Password"],
-            _templateService.GenerateEmailTemplate("reset-password", eMailModel));
-        _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
-
+            _templateService.GenerateEmailTemplate("reset-password-en", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
+        else
+        {
+            var mailRequest = new MailRequest(
+            new List<string> { request.Email },
+            _t["Reset Password"],
+            _templateService.GenerateEmailTemplate("reset-password-vie", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
         return _t["Password Reset Mail has been sent to your authorized Email."];
     }
 

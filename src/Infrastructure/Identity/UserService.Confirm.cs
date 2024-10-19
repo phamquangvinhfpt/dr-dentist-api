@@ -77,7 +77,7 @@ internal partial class UserService
         return "Send code successfully!";
     }
 
-    public async Task<string> ResendEmailCodeConfirm(string userId, string origin)
+    public async Task<string> ResendEmailCodeConfirm(string userId, string local, string origin)
     {
         var user = await _userManager.FindByIdAsync(userId);
 
@@ -95,12 +95,23 @@ internal partial class UserService
             UserName = user.UserName,
             Url = emailVerificationUri
         };
-        var mailRequest = new MailRequest(
-                new List<string> { user.Email },
-                _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation", eMailModel));
-        _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
 
+        if (local.Equals("en"))
+        {
+            var mailRequest = new MailRequest(
+            new List<string> { user.Email },
+            _t["Confirm Registration"],
+            _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
+        else
+        {
+            var mailRequest = new MailRequest(
+            new List<string> { user.Email },
+            _t["Confirm Registration"],
+            _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
         return $"Please check {user.Email} to verify your account!";
     }
 }

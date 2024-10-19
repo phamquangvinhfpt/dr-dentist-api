@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ namespace FSH.WebApi.Application.Identity.Users.Verify;
 public class ResendEmailConfirmRequest : IRequest<string>
 {
     public string Origin { get; set; }
+    public string Local {  get; set; }
 }
 
 public class ResendEmailConfirmRequestHandler : IRequestHandler<ResendEmailConfirmRequest, string>
@@ -23,6 +25,6 @@ public class ResendEmailConfirmRequestHandler : IRequestHandler<ResendEmailConfi
 
     public async Task<string> Handle(ResendEmailConfirmRequest request, CancellationToken cancellationToken)
     {
-        return await _userService.ResendEmailCodeConfirm(_currentUser.GetUserId().ToString(), request.Origin);
+        return await _userService.ResendEmailCodeConfirm(_currentUser.GetUserId().ToString(), request.Local, request.Origin);
     }
 }

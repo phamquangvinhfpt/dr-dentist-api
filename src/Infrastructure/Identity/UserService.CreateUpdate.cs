@@ -104,7 +104,7 @@ internal partial class UserService
         return user;
     }
 
-    public async Task<string> CreateAsync(CreateUserRequest request, string origin, CancellationToken cancellationToken)
+    public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
     {
         var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
         var user = new ApplicationUser
@@ -130,9 +130,9 @@ internal partial class UserService
         {
             throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
         }
-        
+
         await _userManager.AddToRoleAsync(user, role.Name);
-        
+
         if (request.Role.Equals(FSHRoles.Dentist))
         {
             request.DoctorProfile.DoctorID = user.Id;
@@ -151,11 +151,22 @@ internal partial class UserService
                 UserName = user.UserName,
                 Url = emailVerificationUri
             };
-            var mailRequest = new MailRequest(
+            if (local.Equals("en"))
+            {
+                var mailRequest = new MailRequest(
                 new List<string> { user.Email },
                 _t["Confirm Registration"],
                 _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
-            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+            }
+            else
+            {
+                var mailRequest = new MailRequest(
+                new List<string> { user.Email },
+                _t["Confirm Registration"],
+                _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+            }
             messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
         }
 

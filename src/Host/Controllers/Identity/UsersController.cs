@@ -64,26 +64,16 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
-        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellation);
+        return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
     }
 
-    //[HttpPost("update-patient-record")]
-    //[MustHavePermission(FSHAction.Update, FSHResource.Users)]
-    //[OpenApiOperation("Update Patient Record.", "")]
-    //public Task<string> UpdatePatientRecord(CreatePatientRecord request)
-    //{
-    //    // TODO: check if registering anonymous users is actually allowed (should probably be an appsetting)
-    //    // and return UnAuthorized when it isn't
-    //    // Also: add other protection to prevent automatic posting (captcha?)
-    //    var validation = new CreatePatientRecordValidator(_userService).ValidateAsync(request);
-    //    if (!validation.IsCompleted)
-    //    {
-    //        var t = validation.Result;
-    //        if (!t.IsValid)
-    //            throw new BadRequestException(t.Errors[0].ErrorMessage);
-    //    }
-    //    return _userService.UpdatePatientRecordAsync(request);
-    //}
+    [HttpGet("get-doctors")]
+    [AllowAnonymous]
+    [OpenApiOperation("Get All Doctor For Customer.", "")]
+    public Task<List<GetDoctorResponse>> GetAllDoctor()
+    {
+        return _userService.GetAllDoctor();
+    }
 
     [HttpPost("self-register")]
     [TenantIdHeader]
@@ -92,7 +82,6 @@ public class UsersController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
-        var acceptLanguage = HttpContext.Request.Headers["Accept-Language"].ToString();
         var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {
@@ -108,7 +97,7 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(message);
             }
         }
-        return _userService.CreateAsync(request, GetOriginFromRequest(), cancellationToken);
+        return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
     }
 
     [HttpPost("{id}/toggle-status")]
@@ -154,7 +143,7 @@ public class UsersController : VersionNeutralApiController
     [OpenApiOperation("Resend email confirmation code.", "")]
     public Task<string> ResendEmailConfirmAsync()
     {
-        var request = new ResendEmailConfirmRequest { Origin = GetOriginFromRequest() };
+        var request = new ResendEmailConfirmRequest { Origin = GetOriginFromRequest(), Local = GetLanguageFromRequest() };
         return Mediator.Send(request);
     }
 
@@ -165,7 +154,7 @@ public class UsersController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public Task<string> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
-        return _userService.ForgotPasswordAsync(request, GetOriginFromRequest());
+        return _userService.ForgotPasswordAsync(request, GetLanguageFromRequest(), GetOriginFromRequest());
     }
 
     [HttpPost("reset-password")]
@@ -193,5 +182,9 @@ public class UsersController : VersionNeutralApiController
         }
 
         return $"{Request.Scheme}://{Request.Host.Value}{Request.PathBase.Value}";
+    }
+    private string GetLanguageFromRequest()
+    {
+        return HttpContext.Request.Headers["Accept-Language"].ToString();
     }
 }
