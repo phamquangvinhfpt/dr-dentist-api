@@ -68,6 +68,7 @@ public class UsersController : VersionNeutralApiController
     }
 
     [HttpGet("get-doctors")]
+    [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get All Doctor For Customer.", "")]
     public Task<List<GetDoctorResponse>> GetAllDoctor()

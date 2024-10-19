@@ -1,7 +1,5 @@
 using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Events;
@@ -10,7 +8,6 @@ using FSH.WebApi.Application.Common.FileStorage;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.Models;
-using FSH.WebApi.Application.Common.Persistence;
 using FSH.WebApi.Application.Common.ReCaptchaV3;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Common.SpeedSMS;
@@ -25,8 +22,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -169,7 +164,7 @@ internal partial class UserService : IUserService
     {
         var list_user = new List<ListUserDTO>();
         var list = await _userManager.Users.AsNoTracking().ToListAsync(cancellationToken);
-        foreach(var user in list)
+        foreach (var user in list)
         {
             list_user.Add(new ListUserDTO
             {
@@ -242,7 +237,8 @@ internal partial class UserService : IUserService
         if (role.Equals(FSHRoles.Patient) || role.Equals(FSHRoles.Staff) || role.Equals(FSHRoles.Admin))
         {
             birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-18);
-        }else if (role.Equals(FSHRoles.Dentist))
+        }
+        else if (role.Equals(FSHRoles.Dentist))
         {
             birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-25);
         }
@@ -327,35 +323,41 @@ internal partial class UserService : IUserService
         {
             profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
         }
-        else if(user_role.RoleName.Equals(FSHRoles.Patient)) {
+        else if (user_role.RoleName.Equals(FSHRoles.Patient))
+        {
             profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
             profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
         }
         return profile;
     }
 
-    public Task<List<GetDoctorResponse>> GetAllDoctor()
+    public async Task<List<GetDoctorResponse>> GetAllDoctor()
     {
-        var users = _userManager.Users.AsNoTracking().ProjectToType<UserDetailsDto>().ToList();
-        List<GetDoctorResponse> list = new List<GetDoctorResponse>();
+        var users = await _userManager.GetUsersInRoleAsync(FSHRoles.Dentist);
+        var list_doctor = new List<GetDoctorResponse>();
 
-        //foreach (var user in users) {
-        //    if (_userManager.IsInRoleAsync(user, FSHRoles.Dentist).Result)
-        //    {
-        //        list.Add(new GetDoctorResponse
-        //        {
-        //            Id = user.Id,
-        //            Email = user.Email,
-        //            FirstName = user.FirstName,
-        //            Gender = user.Gender,
-        //            ImageUrl = user.ImageUrl,
-        //            LastName = user.LastName,
-        //            PhoneNumber = user.PhoneNumber,
-        //            UserName = user.UserName,
-        //            DoctorProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id) ?? null,
-        //        });
-        //    }
-        //}
-        return null;
+        var doctorResponses = new List<GetDoctorResponse>();
+
+        foreach (var user in users)
+        {
+            var doctorProfile = await _db.DoctorProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+
+            doctorResponses.Add(new GetDoctorResponse
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                Gender = user.Gender,
+                ImageUrl = user.ImageUrl,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                UserName = user.UserName,
+                DoctorProfile = doctorProfile
+            });
+        }
+
+        return doctorResponses;
     }
 }
