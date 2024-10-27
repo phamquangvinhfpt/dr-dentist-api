@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -37,9 +38,31 @@ public class ServiceSeeder : ICustomSeeder
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string dataPath = Path.Combine(path!, "Identity", "UserData.json");
-        _logger.LogInformation("Started to Seed Users.");
-        string userData = await File.ReadAllTextAsync(dataPath, cancellationToken);
-        var users = _serializerService.Deserialize<List<ApplicationUser>>(userData);
+        string dataPath = Path.Combine(path!, "Services", "ServiceData.json");
+        if(_db.Services.Count() < 1)
+        {
+            _logger.LogInformation("Started to Seed Service.");
+            string serviceData = await File.ReadAllTextAsync(dataPath, cancellationToken);
+            var services = _serializerService.Deserialize<List<Service>>(serviceData);
+            await _db.Services.AddRangeAsync(services, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+            dataPath = Path.Combine(path!, "Services", "ProcedureData.json");
+            string proceData = await File.ReadAllTextAsync(dataPath, cancellationToken);
+            var procedures = _serializerService.Deserialize<List<Procedure>>(proceData);
+            await _db.Procedures.AddRangeAsync(procedures, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+            foreach (var service in services) {
+                for (int i = 0; i < procedures.Count(); i++) {
+                    _db.ServiceProcedures.Add(new ServiceProcedures
+                    {
+                        ServiceId = service.Id,
+                        ProcedureId = procedures[i].Id,
+                        StepOrder = i + 1,
+                    });
+                }
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Seeded Services.");
+        }
     }
 }

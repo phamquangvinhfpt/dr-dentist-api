@@ -34,7 +34,7 @@ public class UserSeeder : ICustomSeeder
     {
         string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         string dataPath = Path.Combine(path!, "Identity", "UserData.json");
-        if (_db.Users.Count() < 5)
+        if (_db.Users.Count() <= 5)
         {
             _logger.LogInformation("Started to Seed Users.");
             string userData = await File.ReadAllTextAsync(dataPath, cancellationToken);

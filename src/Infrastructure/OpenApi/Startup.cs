@@ -117,6 +117,7 @@ internal static class Startup
                 options.DefaultModelsExpandDepth = -1;
                 options.DocExpansion = "none";
                 options.TagsSorter = "alpha";
+                options.AdditionalSettings.Add("displayRequestDuration", true);
                 if (config["SecuritySettings:Provider"].Equals("AzureAd", StringComparison.OrdinalIgnoreCase))
                 {
                     options.OAuth2Client = new OAuth2ClientSettings

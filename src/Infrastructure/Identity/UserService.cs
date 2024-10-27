@@ -97,18 +97,22 @@ internal partial class UserService : IUserService
             .ToListAsync(cancellationToken);
         foreach (var user in users)
         {
-            list_user.Add(new ListUserDTO
+            var role = await GetRolesAsync(user.Id.ToString(), cancellationToken);
+            if(role.RoleName != FSHRoles.Admin)
             {
-                Id = user.Id.ToString(),
-                UserName = user.UserName,
-                Address = user.Address,
-                Email = user.Email,
-                Gender = user.Gender,
-                ImageUrl = user.ImageUrl,
-                PhoneNumber = user.PhoneNumber,
-                IsActive = user.IsActive,
-                Role = await GetRolesAsync(user.Id.ToString(), cancellationToken),
-            });
+                list_user.Add(new ListUserDTO
+                {
+                    Id = user.Id.ToString(),
+                    UserName = user.UserName,
+                    Address = user.Address,
+                    Email = user.Email,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    PhoneNumber = user.PhoneNumber,
+                    IsActive = user.IsActive,
+                    Role = role,
+                });
+            }
         }
         int count = await _userManager.Users
             .CountAsync(cancellationToken);
