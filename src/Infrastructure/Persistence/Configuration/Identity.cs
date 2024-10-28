@@ -33,9 +33,9 @@ public class MedicalHistoryConfig : IEntityTypeConfiguration<MedicalHistory>
             .IsMultiTenant();
 
         builder
-            .HasOne<ApplicationUser>()
-            .WithOne()
-            .HasForeignKey<MedicalHistory>("PatientId");
+            .HasOne(b => b.PatientProfile)
+            .WithOne(b => b.MedicalHistory)
+            .HasForeignKey<MedicalHistory>(b => b.PatientProfileId);
 
         builder
             .Property(b => b.Note)
@@ -52,9 +52,9 @@ public class PatientFamilyConfig : IEntityTypeConfiguration<PatientFamily>
             .IsMultiTenant();
 
         builder
-            .HasOne<ApplicationUser>()
-            .WithOne()
-            .HasForeignKey<PatientFamily>("PatientId");
+            .HasOne(b => b.PatientProfile)
+            .WithOne(b => b.PatientFamily)
+            .HasForeignKey<PatientFamily>(b => b. PatientProfileId);
 
         builder
             .Property(b => b.Email)
@@ -127,5 +127,20 @@ public class DoctorProfileConfig : IEntityTypeConfiguration<DoctorProfile>
         builder
             .Property(b => b.SeftDescription)
             .HasColumnType("text");
+    }
+}
+
+public class PatientProfileConfig : IEntityTypeConfiguration<PatientProfile>
+{
+    public void Configure(EntityTypeBuilder<PatientProfile> builder)
+    {
+        builder
+            .ToTable("PatientProfile", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<PatientProfile>("UserId");
     }
 }

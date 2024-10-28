@@ -329,8 +329,8 @@ internal partial class UserService : IUserService
         }
         else if (user_role.RoleName.Equals(FSHRoles.Patient))
         {
-            profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
-            profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
+            // profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
+            // profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
         }
         return profile;
     }

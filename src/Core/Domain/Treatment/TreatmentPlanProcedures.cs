@@ -1,9 +1,12 @@
-﻿namespace FSH.WebApi.Domain.Treatment;
+﻿using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Service;
+
+namespace FSH.WebApi.Domain.Treatment;
 
 public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
 {
-    public Guid? ProcedureId { get; set; }
-    public Guid? DiagnosisId { get; set; }
+    public Guid? ServiceProcedureId { get; set; }
+    public Guid? RecordId { get; set; }
     public int Quantity { get; set; }
     public TreatmentPlanStatus Status { get; set; }
     public DateOnly? StartDate { get; set; }
@@ -11,14 +14,18 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     public string? Reason { get; set; }
     public string? RescheduledBy { get; set; }
 
+    // navigation properties
+    public MedicalRecord? MedicalRecord { get; set; }
+    public ServiceProcedures? ServiceProcedure { get; set; }
+
     public TreatmentPlanProcedures()
     {
     }
 
-    public TreatmentPlanProcedures(Guid procedureId, Guid diagnosisId, int quantity, TreatmentPlanStatus status, DateOnly? startDate, DateOnly? endDate, string? reason, string? rescheduledBy)
+    public TreatmentPlanProcedures(Guid? serviceProcedureId, Guid? recordId, int quantity, TreatmentPlanStatus status, DateOnly? startDate, DateOnly? endDate, string? reason, string? rescheduledBy)
     {
-        ProcedureId = procedureId;
-        DiagnosisId = diagnosisId;
+        ServiceProcedureId = serviceProcedureId;
+        RecordId = recordId;
         Quantity = quantity;
         Status = status;
         StartDate = startDate;

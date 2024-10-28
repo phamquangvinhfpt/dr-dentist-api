@@ -176,30 +176,31 @@ internal partial class UserService
     }
     public async Task<string> CreateOrUpdatePatientFamily(UpdatePatientFamilyRequest request, CancellationToken cancellationToken)
     {
-        var n = await _db.PatientFamilys.Where(p => p.PatientId == request.PatientId).FirstOrDefaultAsync(cancellationToken);
-        if (n != null)
-        {
-            n.Name = request.Name ?? n.Name;
-            n.Email = request.Email ?? n.Email;
-            n.Phone = request.Phone ?? n.Phone;
-            n.Relationship = request.Relationship;
-            n.LastModifiedBy = _currentUserService.GetUserId();
-            n.LastModifiedOn = DateTime.Now;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        else {
-            _db.PatientFamilys.Add(new PatientFamily {
-                PatientId = request.PatientId,
-                Name = request.Name,
-                Email = request.Email,
-                Phone = request.Phone,
-                Relationship = request.Relationship,
-                CreatedBy = _currentUserService.GetUserId(),
-                CreatedOn = DateTime.Now,
-            });
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        return _t["Success"];
+        // var n = await _db.PatientFamilys.Where(p => p.PatientId == request.PatientId).FirstOrDefaultAsync(cancellationToken);
+        // if (n != null)
+        // {
+        //     n.Name = request.Name ?? n.Name;
+        //     n.Email = request.Email ?? n.Email;
+        //     n.Phone = request.Phone ?? n.Phone;
+        //     n.Relationship = request.Relationship;
+        //     n.LastModifiedBy = _currentUserService.GetUserId();
+        //     n.LastModifiedOn = DateTime.Now;
+        //     await _db.SaveChangesAsync(cancellationToken);
+        // }
+        // else {
+        //     _db.PatientFamilys.Add(new PatientFamily {
+        //         PatientId = request.PatientId,
+        //         Name = request.Name,
+        //         Email = request.Email,
+        //         Phone = request.Phone,
+        //         Relationship = request.Relationship,
+        //         CreatedBy = _currentUserService.GetUserId(),
+        //         CreatedOn = DateTime.Now,
+        //     });
+        //     await _db.SaveChangesAsync(cancellationToken);
+        // }
+        // return _t["Success"];
+        return "";
     }
 
     //public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)

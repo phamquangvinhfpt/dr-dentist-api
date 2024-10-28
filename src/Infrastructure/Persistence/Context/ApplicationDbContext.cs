@@ -23,7 +23,6 @@ public class ApplicationDbContext : BaseDbContext
     }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
-    public DbSet<GeneralExamination> GeneralExaminations { get; set; }
     public DbSet<Indication> Indications { get; set; }
     public DbSet<Diagnosis> Diagnoses { get; set; }
     public DbSet<Service> Services { get; set; }
@@ -40,6 +39,9 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<PatientFamily> PatientFamilys { get; set; }
     public DbSet<MedicalHistory> MedicalHistorys { get; set; }
     public DbSet<DoctorProfile> DoctorProfiles { get; set; }
+    public DbSet<PatientProfile> PatientProfiles { get; set; }
+    public DbSet<MedicalRecord> MedicalRecords { get; set; }
+    public DbSet<BasicExamination> BasicExaminations { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

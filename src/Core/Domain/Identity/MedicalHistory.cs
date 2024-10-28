@@ -1,17 +1,20 @@
 ﻿namespace FSH.WebApi.Domain.Identity;
 public class MedicalHistory : AuditableEntity, IAggregateRoot
 {
-    public string? PatientId { get; set; }
+    public Guid? PatientProfileId { get; set; }
     public string[] MedicalName { get; set; } = Array.Empty<string>();
     public string? Note { get; set; }
+
+    // Navigation property
+    public PatientProfile? PatientProfile { get; set; }
 
     public MedicalHistory()
     {
     }
 
-    public MedicalHistory(string? patientId, string[] medicalName, string? note)
+    public MedicalHistory(Guid? patientProfileId, string[] medicalName, string? note)
     {
-        PatientId = patientId;
+        PatientProfileId = patientProfileId;
         MedicalName = medicalName;
         Note = note;
     }

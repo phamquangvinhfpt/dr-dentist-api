@@ -1,5 +1,4 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
-using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Payments;
@@ -8,68 +7,7 @@ using FSH.WebApi.Domain.Treatment;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Namotion.Reflection;
 namespace FSH.WebApi.Infrastructure.Persistence.Configuration;
-
-public class GeneralExaminationConfig : IEntityTypeConfiguration<GeneralExamination>
-{
-    public void Configure(EntityTypeBuilder<GeneralExamination> builder)
-    {
-        builder
-              .ToTable("GeneralExamination", SchemaNames.Treatment)
-              .IsMultiTenant();
-
-        builder
-            .HasOne(b => b.Appointment)
-            .WithOne(b => b.GeneralExamination)
-            .HasForeignKey<GeneralExamination>(b => b.AppointmentId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasMany(b => b.Indications)
-            .WithOne(b => b.GeneralExamination)
-            .HasForeignKey(tp => tp.GeneralExaminationId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasMany(b => b.Diagnoses)
-            .WithOne(b => b.GeneralExamination)
-            .HasForeignKey(tp => tp.GeneralExaminationId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne(tp => tp.Payment)
-            .WithOne(ge => ge.GeneralExamination)
-            .HasForeignKey<Payment>(tp => tp.GeneralExaminationId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne(tp => tp.Prescription)
-            .WithOne(ge => ge.GeneralExamination)
-            .HasForeignKey<Prescription>(tp => tp.GeneralExaminationId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(b => b.PatientId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(b => b.DentistId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .Property(b => b.TreatmentPlanNotes)
-                .HasMaxLength(256);
-
-        builder
-            .Property(b => b.ExamContent)
-                .HasMaxLength(256);
-    }
-}
 
 public class IndicationConfig : IEntityTypeConfiguration<Indication>
 {
@@ -83,6 +21,12 @@ public class IndicationConfig : IEntityTypeConfiguration<Indication>
             .HasMany(b => b.Images)
             .WithOne(b => b.Indication)
             .HasForeignKey(b => b.IndicationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.MedicalRecord)
+            .WithOne(b => b.Indication)
+            .HasForeignKey<Indication>(b => b.RecordId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
@@ -104,10 +48,9 @@ public class DiagnosisConfig : IEntityTypeConfiguration<Diagnosis>
               .IsMultiTenant();
 
         builder
-            .HasOne<GeneralExamination>()
-            .WithMany(b => b.Diagnoses)
-            .HasForeignKey(b => b.GeneralExaminationId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(b => b.MedicalRecord)
+            .WithOne(b => b.Diagnosis)
+            .HasForeignKey<Diagnosis>(b => b.RecordId);
 
         builder
             .Property(b => b.TeethConditions)
@@ -180,22 +123,23 @@ public class TreatmentPlanProceduresConfig : IEntityTypeConfiguration<TreatmentP
         builder
               .ToTable("TreatmentPlanProcedures", SchemaNames.Treatment)
               .IsMultiTenant();
-        builder
-            .HasOne<Diagnosis>()
-            .WithMany(b => b.TreatmentPlanProcedures)
-            .HasForeignKey(b => b.DiagnosisId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne<Procedure>()
-            .WithMany()
-            .HasForeignKey(b => b.ProcedureId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(b => b.RescheduledBy)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.MedicalRecord)
+            .WithMany(b => b.TreatmentPlanProcedures)
+            .HasForeignKey(b => b.RecordId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.ServiceProcedure)
+            .WithMany(b => b.TreatmentPlanProcedures)
+            .HasForeignKey(b => b.ServiceProcedureId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
@@ -211,6 +155,12 @@ public class PrescriptionsConfig : IEntityTypeConfiguration<Prescription>
         builder
             .Property(b => b.Notes)
                 .HasMaxLength(256);
+
+        builder
+            .HasOne(b => b.MedicalRecord)
+            .WithOne(b => b.Prescription)
+            .HasForeignKey<Prescription>(b => b.RecordId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -251,6 +201,23 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
         builder
               .ToTable("Payment", SchemaNames.Payment)
               .IsMultiTenant();
+
+        builder
+            .HasOne(b => b.Appointment)
+            .WithOne(b => b.Payment)
+            .HasForeignKey<Payment>(b => b.AppointmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder
+            .HasOne(b => b.Service)
+            .WithMany(b => b.Payments)
+            .HasForeignKey(b => b.ServiceId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.PatientProfile)
+            .WithMany(b => b.Payments)
+            .HasForeignKey(b => b.PatientProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -289,15 +256,15 @@ public class FeedbackConfig : IEntityTypeConfiguration<Feedback>
               .IsMultiTenant();
 
         builder
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(b => b.PatientId)
+            .HasOne(b => b.PatientProfile)
+            .WithMany(b => b.Feedbacks)
+            .HasForeignKey(b => b.PatientProfileId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(b => b.DoctorId)
+            .HasOne(b => b.DoctorProfile)
+            .WithMany(b => b.Feedbacks)
+            .HasForeignKey(b => b.DoctorProfileId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
@@ -319,5 +286,49 @@ public class ContactInforConfig : IEntityTypeConfiguration<ContactInfor>
         builder
               .ToTable("ContactInfor", SchemaNames.CustomerService)
               .IsMultiTenant();
+    }
+}
+
+public class MedicalRecordConfig : IEntityTypeConfiguration<MedicalRecord>
+{
+    public void Configure(EntityTypeBuilder<MedicalRecord> builder)
+    {
+        builder
+              .ToTable("MedicalRecord", SchemaNames.Treatment)
+              .IsMultiTenant();
+
+        builder
+            .HasOne(b => b.DoctorProfile)
+            .WithMany(b => b.MedicalRecords)
+            .HasForeignKey(b => b.DoctorProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.PatientProfile)
+            .WithMany()
+            .HasForeignKey(b => b.PatientProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.Appointment)
+            .WithOne(b => b.MedicalRecord)
+            .HasForeignKey<MedicalRecord>(b => b.AppointmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class BasicExaminationConfig : IEntityTypeConfiguration<BasicExamination>
+{
+    public void Configure(EntityTypeBuilder<BasicExamination> builder)
+    {
+        builder
+              .ToTable("BasicExamination", SchemaNames.Treatment)
+              .IsMultiTenant();
+
+        builder
+            .HasOne(b => b.MedicalRecord)
+            .WithOne(b => b.BasicExamination)
+            .HasForeignKey<BasicExamination>(b => b.RecordId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

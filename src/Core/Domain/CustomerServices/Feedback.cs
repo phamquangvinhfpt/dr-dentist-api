@@ -1,21 +1,27 @@
+using FSH.WebApi.Domain.Identity;
+
 namespace FSH.WebApi.Domain.CustomerServices;
 
 public class Feedback : AuditableEntity, IAggregateRoot
 {
-    public string? PatientId { get; set; }
-    public string? DoctorId { get; set; }
+    public Guid? PatientProfileId { get; set; }
+    public Guid? DoctorProfileId { get; set; }
     public Guid ServiceId { get; set; }
     public string Message { get; set; } = string.Empty;
     public int Rating { get; set; }
+
+    // Navigation properties
+    public PatientProfile? PatientProfile { get; set; }
+    public DoctorProfile? DoctorProfile { get; set; }
 
     public Feedback()
     {
     }
 
-    public Feedback(string? patientId, string? doctorId, Guid serviceId, string message, int rating)
+    public Feedback(Guid? patientProfileId, Guid? doctorProfileId, Guid serviceId, string message, int rating)
     {
-        PatientId = patientId;
-        DoctorId = doctorId;
+        PatientProfileId = patientProfileId;
+        DoctorProfileId = doctorProfileId;
         ServiceId = serviceId;
         Message = message;
         Rating = rating;
