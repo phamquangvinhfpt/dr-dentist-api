@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Infrastructure.Persistence.Initialization;
@@ -33,23 +34,33 @@ public class UserSeeder : ICustomSeeder
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string dataPath = Path.Combine(path!, "Identity", "UserData.json");
+        string userDataPath = Path.Combine(path!, "Identity", "UserData.json");
+        string patientDataPath = Path.Combine(path!, "Identity", "PatientProfileData.json");
+        string doctorDataPath = Path.Combine(path!, "Identity", "DoctorProfileData.json");
         if (_db.Users.Count() <= 5)
         {
             _logger.LogInformation("Started to Seed Users.");
-            string userData = await File.ReadAllTextAsync(dataPath, cancellationToken);
+            string userData = await File.ReadAllTextAsync(userDataPath, cancellationToken);
+            string patientData = await File.ReadAllTextAsync(patientDataPath, cancellationToken);
+            string doctorData = await File.ReadAllTextAsync(doctorDataPath, cancellationToken);
             var users = _serializerService.Deserialize<List<ApplicationUser>>(userData);
+            var patients = _serializerService.Deserialize<List<PatientProfile>>(patientData);
+            var doctors = _serializerService.Deserialize<List<DoctorProfile>>(doctorData);
             List<ApplicationUser> doctor = new List<ApplicationUser>();
             List<ApplicationUser> staff = new List<ApplicationUser>();
             List<ApplicationUser> patient = new List<ApplicationUser>();
             int flash = 0;
+            int d_profile_index = 0;
+            int p_profile_index = 0;
             foreach (var user in users)
             {
                 var entry = _db.Users.Add(user).Entity;
                 if (flash < 5)
                 {
+                    doctors[d_profile_index].DoctorId = entry.Id;
                     doctor.Add(entry);
                     flash++;
+                    d_profile_index++;
                 }
                 else if (flash >= 5 && flash < 10)
                 {
@@ -58,10 +69,16 @@ public class UserSeeder : ICustomSeeder
                 }
                 else
                 {
+                    patients[p_profile_index].UserId = entry.Id;
                     patient.Add(entry);
+                    p_profile_index++;
                 }
             }
-            _ = await _db.SaveChangesAsync(cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
+            await _db.DoctorProfiles.AddRangeAsync(doctors);
+            await _db.SaveChangesAsync(cancellationToken);
+            await _db.PatientProfiles.AddRangeAsync(patients);
+            await _db.SaveChangesAsync(cancellationToken);
             foreach (var user in doctor)
             {
                 if (!await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))

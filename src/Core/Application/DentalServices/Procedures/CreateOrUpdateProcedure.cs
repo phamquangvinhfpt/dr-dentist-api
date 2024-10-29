@@ -15,7 +15,7 @@ public class CreateOrUpdateProcedure : IRequest<string>
     public Guid Id { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
-    public decimal Price { get; set; }
+    public double Price { get; set; }
     public bool isDuplicate { get; set; } = false;
     public bool hasService { get; set; } = false;
     public Guid ServiceID { get; set; }

@@ -29,15 +29,6 @@
         <Content Update="Configurations\*.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
-        <None Update="Files\full-stack-hero-logo.png">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Files\QuestionImportTemplate.docx">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update="Files\QuestionTemplate.txt">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
         <None Update="libwkhtmltox.dll">
           <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
