@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
 
 namespace FSH.WebApi.Domain.Treatment;
@@ -17,7 +18,7 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     // navigation properties
     public MedicalRecord? MedicalRecord { get; set; }
     public ServiceProcedures? ServiceProcedure { get; set; }
-
+    public PaymentDetail? PaymentDetail { get; set; }
     public TreatmentPlanProcedures()
     {
     }

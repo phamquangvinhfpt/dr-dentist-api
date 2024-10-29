@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -17,18 +18,20 @@ public class UserSeeder : ICustomSeeder
     private readonly ILogger<UserSeeder> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly FSHTenantInfo _currentTenant;
-
+    private readonly IWorkingCalendarService _workingCalendarService;
     public UserSeeder(ISerializerService serializerService,
         ApplicationDbContext db,
         ILogger<UserSeeder> logger,
         UserManager<ApplicationUser> userManager,
-        FSHTenantInfo currentTenant)
+        FSHTenantInfo currentTenant,
+        IWorkingCalendarService workingCalendarService)
     {
         _serializerService = serializerService;
         _db = db;
         _logger = logger;
         _userManager = userManager;
         _currentTenant = currentTenant;
+        _workingCalendarService = workingCalendarService;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -86,7 +89,10 @@ public class UserSeeder : ICustomSeeder
                     _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
                     await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
                 }
+                List<WorkingCalendar> calendars = _workingCalendarService.CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
+                await _db.WorkingCalendars.AddRangeAsync(calendars);
             }
+            await _db.SaveChangesAsync(cancellationToken);
             foreach (var user in staff)
             {
                 if (!await _userManager.IsInRoleAsync(user, FSHRoles.Staff))

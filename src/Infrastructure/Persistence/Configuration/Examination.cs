@@ -221,6 +221,33 @@ public class PaymentConfig : IEntityTypeConfiguration<Payment>
     }
 }
 
+public class PaymentDetailConfig : IEntityTypeConfiguration<PaymentDetail>
+{
+    public void Configure(EntityTypeBuilder<PaymentDetail> builder)
+    {
+        builder
+              .ToTable("PaymentDetail", SchemaNames.Payment)
+              .IsMultiTenant();
+
+        builder
+            .HasOne(b => b.Payment)
+            .WithMany(b => b.PaymentDetails)
+            .HasForeignKey(b => b.PaymentID)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder
+            .HasOne(b => b.PlanProcedures)
+            .WithOne(b => b.PaymentDetail)
+            .HasForeignKey<PaymentDetail>(b => b.TreatmentID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne(b => b.Procedure)
+            .WithMany(b => b.PaymentDetails)
+            .HasForeignKey(b => b.ProcedureID)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class PatientMessagesConfig : IEntityTypeConfiguration<PatientMessages>
 {
     public void Configure(EntityTypeBuilder<PatientMessages> builder)

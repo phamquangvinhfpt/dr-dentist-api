@@ -40,6 +40,7 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<MedicalHistory> MedicalHistorys { get; set; }
     public DbSet<DoctorProfile> DoctorProfiles { get; set; }
     public DbSet<PatientProfile> PatientProfiles { get; set; }
+    public DbSet<WorkingCalendar> WorkingCalendars { get; set; }
     public DbSet<MedicalRecord> MedicalRecords { get; set; }
     public DbSet<BasicExamination> BasicExaminations { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)

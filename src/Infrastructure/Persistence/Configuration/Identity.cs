@@ -144,3 +144,18 @@ public class PatientProfileConfig : IEntityTypeConfiguration<PatientProfile>
             .HasForeignKey<PatientProfile>("UserId");
     }
 }
+
+public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
+{
+    public void Configure(EntityTypeBuilder<WorkingCalendar> builder)
+    {
+        builder
+            .ToTable("WorkingCalendar", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey("DoctorId");
+    }
+}

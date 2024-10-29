@@ -12,6 +12,7 @@ public class Appointment : AuditableEntity, IAggregateRoot
     public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
     public AppointmentStatus Status { get; set; }
+    public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
 
     // navigation

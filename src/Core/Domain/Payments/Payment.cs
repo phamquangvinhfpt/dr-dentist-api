@@ -21,7 +21,7 @@ public class Payment : AuditableEntity, IAggregateRoot
     public Appointment? Appointment { get; set; }
     public Service.Service? Service { get; set; }
     public PatientProfile? PatientProfile { get; set; }
-
+    public List<PaymentDetail> PaymentDetails { get; set; }
     public Payment()
     {
     }
