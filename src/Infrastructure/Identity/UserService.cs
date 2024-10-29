@@ -13,6 +13,7 @@ using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Common.SpeedSMS;
 using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
+using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Auth;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -45,6 +46,7 @@ internal partial class UserService : IUserService
     private readonly ISpeedSMSService _speedSMSService;
     private readonly ICurrentUser _currentUserService;
     private readonly IMedicalHistoryService _medicalHistoryService;
+    private readonly IWorkingCalendarService _workingCalendarService;
     public UserService(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
@@ -63,7 +65,8 @@ internal partial class UserService : IUserService
         IOptions<SecuritySettings> securitySettings,
         ISpeedSMSService speedSMSService,
         ICurrentUser currentUser,
-        IMedicalHistoryService medicalHistoryService)
+        IMedicalHistoryService medicalHistoryService,
+        IWorkingCalendarService workingCalendarService)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -83,6 +86,7 @@ internal partial class UserService : IUserService
         _speedSMSService = speedSMSService;
         _currentUserService = currentUser;
         _medicalHistoryService = medicalHistoryService;
+        _workingCalendarService = workingCalendarService;
     }
 
     public async Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)
@@ -326,11 +330,13 @@ internal partial class UserService : IUserService
         if (user_role.RoleName.Equals(FSHRoles.Dentist))
         {
             profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
+            profile.WorkingCalendar = await _db.WorkingCalendars.Where(p => p.DoctorId == user.Id).ToListAsync(cancellationToken);
         }
         else if (user_role.RoleName.Equals(FSHRoles.Patient))
         {
-            // profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
-            // profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientId == user.Id).FirstOrDefaultAsync();
+             profile.PatientProfile = await _db.PatientProfiles.Where(p => p.UserId == user.Id).FirstOrDefaultAsync(cancellationToken);
+             profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+             profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
         }
         return profile;
     }

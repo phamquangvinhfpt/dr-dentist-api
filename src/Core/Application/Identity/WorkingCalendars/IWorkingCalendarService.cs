@@ -9,4 +9,5 @@ namespace FSH.WebApi.Application.Identity.WorkingCalendars;
 public interface IWorkingCalendarService : ITransientService
 {
     public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null);
+    public List<WorkingCalendar> GetWorkingCalendars(string doctorId, CancellationToken cancellation);
 }

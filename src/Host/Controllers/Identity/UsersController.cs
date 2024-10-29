@@ -17,6 +17,7 @@ public class UsersController : VersionNeutralApiController
         _userService = userService;
         _currentUserService = currentUserService;
     }
+    //checked
     [HttpPost("get-users")]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get list of all users.", "")]
@@ -24,7 +25,7 @@ public class UsersController : VersionNeutralApiController
     {
         return _userService.SearchAsync(request, cancellationToken);
     }
-
+    //check
     [HttpGet("{id}")]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get a user's details.", "")]
@@ -49,7 +50,7 @@ public class UsersController : VersionNeutralApiController
     {
         return _userService.AssignRolesAsync(id, request, cancellationToken);
     }
-
+    //Not yet
     [HttpPost("create-user")]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
@@ -66,7 +67,7 @@ public class UsersController : VersionNeutralApiController
         }
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
     }
-
+    //Not yet
     [HttpGet("get-doctors")]
     [TenantIdHeader]
     [AllowAnonymous]
@@ -75,7 +76,7 @@ public class UsersController : VersionNeutralApiController
     {
         return _userService.GetAllDoctor();
     }
-
+    //Not yet
     [HttpPost("self-register")]
     [TenantIdHeader]
     [AllowAnonymous]
@@ -100,7 +101,7 @@ public class UsersController : VersionNeutralApiController
         }
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
     }
-
+    //Not yet
     [HttpPost("{id}/toggle-status")]
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
@@ -166,7 +167,7 @@ public class UsersController : VersionNeutralApiController
     {
         return _userService.ResetPasswordAsync(request);
     }
-
+    //Not yet
     [HttpPost("update-doctor-profile")]
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [OpenApiOperation("Update Doctor Profile", "")]

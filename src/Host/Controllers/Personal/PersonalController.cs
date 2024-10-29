@@ -15,14 +15,14 @@ public class PersonalController : VersionNeutralApiController
         _userService = userService;
         _auditService = auditService;
     }
-
+    //checked
     [HttpGet("profile")]
     [OpenApiOperation("Get profile details of currently logged in user.", "")]
     public async Task<UserProfileResponse> GetProfileAsync(CancellationToken cancellationToken)
     {
         return await _userService.GetUserProfileAsync(cancellationToken);
     }
-
+    //Not yet
     [HttpPut("profile")]
     [OpenApiOperation("Update profile details of currently logged in user.", "")]
     public Task<string> UpdateProfileAsync(UpdateUserRequest request)

@@ -137,6 +137,9 @@ internal partial class UserService
         {
             request.DoctorProfile.DoctorID = user.Id;
             await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
+            List<WorkingCalendar> workingCalendars = _workingCalendarService.CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
+            await _db.WorkingCalendars.AddRangeAsync(workingCalendars);
+            await _db.SaveChangesAsync(cancellationToken);
         }
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };

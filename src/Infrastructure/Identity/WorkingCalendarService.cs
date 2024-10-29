@@ -47,7 +47,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 Status = "Available",
                 Note = note,
                 CreatedOn = DateTime.Now,
-                //CreatedBy = doctorId // Giả sử người tạo là chính bác sĩ đó
+                CreatedBy = _currentUserService.GetUserId(),
             };
 
             result.Add(workingCalendar);
@@ -55,5 +55,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
 
         return result;
+    }
+
+    public List<WorkingCalendar> GetWorkingCalendars(string doctorId, CancellationToken cancellation)
+    {
+        throw new NotImplementedException();
     }
 }

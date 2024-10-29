@@ -23,7 +23,9 @@ public class UserProfileResponse
     public string? Address { get; set; }
     public string? ImageUrl { get; set; }
     public string? Role { get; set; }
+    public PatientProfile? PatientProfile { get; set; }
     public MedicalHistory? MedicalHistory { get; set; }
     public PatientFamily? PatientFamily { get; set; }
     public DoctorProfile? DoctorProfile { get; set; }
+    public List<WorkingCalendar>? WorkingCalendar { get; set; }
 }
