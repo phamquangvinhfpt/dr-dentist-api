@@ -34,12 +34,12 @@ public class UserSeeder : ICustomSeeder
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        string userDataPath = Path.Combine(path!, "Identity", "UserData.json");
-        string patientDataPath = Path.Combine(path!, "Identity", "PatientProfileData.json");
-        string doctorDataPath = Path.Combine(path!, "Identity", "DoctorProfileData.json");
         if (_db.Users.Count() <= 5)
         {
+            string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string userDataPath = Path.Combine(path!, "Identity", "UserData.json");
+            string patientDataPath = Path.Combine(path!, "Identity", "PatientProfileData.json");
+            string doctorDataPath = Path.Combine(path!, "Identity", "DoctorProfileData.json");
             _logger.LogInformation("Started to Seed Users.");
             string userData = await File.ReadAllTextAsync(userDataPath, cancellationToken);
             string patientData = await File.ReadAllTextAsync(patientDataPath, cancellationToken);
@@ -85,8 +85,8 @@ public class UserSeeder : ICustomSeeder
                     _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
                     await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
                 }
-                List<WorkingCalendar> calendars = CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
-                await _db.WorkingCalendars.AddRangeAsync(calendars);
+                //List<WorkingCalendar> calendars = CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
+                //await _db.WorkingCalendars.AddRangeAsync(calendars);
             }
             await _db.SaveChangesAsync(cancellationToken);
             foreach (var user in staff)
@@ -109,34 +109,34 @@ public class UserSeeder : ICustomSeeder
             _logger.LogInformation("Seeded Users.");
         }
     }
-    public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
-    {
-        var result = new List<WorkingCalendar>();
+    //public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
+    //{
+    //    var result = new List<WorkingCalendar>();
 
-        var currentDate = DateOnly.FromDateTime(DateTime.Now);
+    //    var currentDate = DateOnly.FromDateTime(DateTime.Now);
 
-        var lastDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month));
-        var lastDate = DateOnly.FromDateTime(lastDayOfMonth);
+    //    var lastDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month));
+    //    var lastDate = DateOnly.FromDateTime(lastDayOfMonth);
 
-        var date = currentDate;
-        while (date <= lastDate)
-        {
-            var workingCalendar = new WorkingCalendar
-            {
-                DoctorId = doctorId,
-                Date = date,
-                StartTime = startTime,
-                EndTime = endTime,
-                Status = "Available",
-                Note = note,
-                CreatedOn = DateTime.Now,
-                //CreatedBy = doctorId // Giả sử người tạo là chính bác sĩ đó
-            };
+    //    var date = currentDate;
+    //    while (date <= lastDate)
+    //    {
+    //        var workingCalendar = new WorkingCalendar
+    //        {
+    //            DoctorId = doctorId,
+    //            Date = date,
+    //            StartTime = startTime,
+    //            EndTime = endTime,
+    //            Status = "Available",
+    //            Note = note,
+    //            CreatedOn = DateTime.Now,
+    //            //CreatedBy = doctorId // Giả sử người tạo là chính bác sĩ đó
+    //        };
 
-            result.Add(workingCalendar);
-            date = date.AddDays(1);
-        }
+    //        result.Add(workingCalendar);
+    //        date = date.AddDays(1);
+    //    }
 
-        return result;
-    }
+    //    return result;
+    //}
 }

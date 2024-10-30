@@ -136,9 +136,9 @@ internal partial class UserService
         {
             request.DoctorProfile.DoctorID = user.Id;
             await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
-            List<WorkingCalendar> workingCalendars = _workingCalendarService.CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
-            await _db.WorkingCalendars.AddRangeAsync(workingCalendars);
-            await _db.SaveChangesAsync(cancellationToken);
+            //List<WorkingCalendar> workingCalendars = _workingCalendarService.CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
+            //await _db.WorkingCalendars.AddRangeAsync(workingCalendars);
+            //await _db.SaveChangesAsync(cancellationToken);
         }
         else if (request.Role.Equals(FSHRoles.Patient)) {
             var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);

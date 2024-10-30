@@ -31,7 +31,6 @@ internal class ApplicationDbSeeder
         await SeedRolesAsync(dbContext);
         await SeedAdminUserAsync();
         await SeedAdmin2UserAsync();
-        await SeedBasicUserAsync();
         await SeedStaffUserAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
@@ -170,44 +169,6 @@ internal class ApplicationDbSeeder
         {
             _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
             await _userManager.AddToRoleAsync(admin2User, FSHRoles.Admin);
-        }
-    }
-
-    private async Task SeedBasicUserAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_currentTenant.Id) || string.IsNullOrWhiteSpace("basic@root.com"))
-        {
-            return;
-        }
-
-        if (await _userManager.Users.FirstOrDefaultAsync(u => u.Email == "basic@root.com")
-                       is not ApplicationUser basicUser)
-        {
-            string basicUserName = $"{_currentTenant.Id.Trim()}.{FSHRoles.Patient}".ToLowerInvariant();
-            basicUser = new ApplicationUser
-            {
-                FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-                LastName = FSHRoles.Patient,
-                Email = "basic@root.com",
-                UserName = basicUserName,
-                EmailConfirmed = true,
-                PhoneNumberConfirmed = true,
-                NormalizedEmail = "basic@root.com"?.ToUpperInvariant(),
-                NormalizedUserName = basicUserName.ToUpperInvariant(),
-                IsActive = true
-            };
-
-            _logger.LogInformation("Seeding Default Basic User for '{tenantId}' Tenant.", _currentTenant.Id);
-            var password = new PasswordHasher<ApplicationUser>();
-            basicUser.PasswordHash = password.HashPassword(basicUser, MultitenancyConstants.DefaultPassword);
-            await _userManager.CreateAsync(basicUser);
-        }
-
-        // Assign role to user
-        if (!await _userManager.IsInRoleAsync(basicUser, FSHRoles.Patient))
-        {
-            _logger.LogInformation("Assigning Basic Role to Basic User for '{tenantId}' Tenant.", _currentTenant.Id);
-            await _userManager.AddToRoleAsync(basicUser, FSHRoles.Patient);
         }
     }
 

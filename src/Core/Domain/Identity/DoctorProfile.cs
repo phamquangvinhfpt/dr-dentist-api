@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
@@ -17,6 +18,8 @@ public class DoctorProfile : AuditableEntity, IAggregateRoot
     public string? SeftDescription { get; set; }
 
     // Navigation property
+    [JsonIgnore]
     public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
+    [JsonIgnore]
     public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
 }

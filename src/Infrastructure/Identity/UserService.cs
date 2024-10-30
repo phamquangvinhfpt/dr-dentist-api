@@ -13,6 +13,7 @@ using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Common.SpeedSMS;
 using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
+using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Auth;
@@ -128,7 +129,8 @@ internal partial class UserService : IUserService
     {
         EnsureValidTenant();
         var user = await _userManager.FindByIdAsync(userID);
-        return user is not null;
+        var re = user is not null;
+        return re;
     }
 
     public async Task<bool> ExistsWithNameAsync(string name)
@@ -369,5 +371,76 @@ internal partial class UserService : IUserService
         }
 
         return doctorResponses;
+    }
+
+    public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)
+    {
+        if (request.IsUpdateProfile)
+        {
+            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.Profile.UserId) ?? throw new BadRequestException("Profile is not found.");
+            profile.IDCardNumber = request.Profile.IDCardNumber ?? profile.IDCardNumber;
+            profile.Occupation = request.Profile.Occupation ?? profile.Occupation;
+            profile.LastModifiedBy = _currentUserService.GetUserId();
+            profile.LastModifiedOn = DateTime.Now;
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        if (request.IsUpdateMedicalHistory)
+        {
+            var history = await _db.MedicalHistorys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
+            if(history != null)
+            {
+                history.MedicalName = request.MedicalHistory.MedicalName ?? history.MedicalName;
+                history.Note = request.MedicalHistory.Note ?? history.Note;
+                history.LastModifiedBy = _currentUserService.GetUserId();
+                history.LastModifiedOn = DateTime.Now;
+            }
+            else
+            {
+                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+                await _db.MedicalHistorys.AddAsync(new MedicalHistory
+                {
+                    PatientProfileId = request.PatientProfileId,
+                    MedicalName = request.MedicalHistory.MedicalName,
+                    Note = request.MedicalHistory.Note,
+                    CreatedBy = _currentUserService.GetUserId(),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        if (request.IsUpdatePatientFamily)
+        {
+            var family = await _db.PatientFamilys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
+            var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone).FirstOrDefaultAsync();
+            if (phone_existing != null)
+            {
+                throw new BadRequestException("Phone number is existing");
+            }
+            if (family != null) {
+                family.Phone = request.PatientFamily.Phone ?? family.Phone;
+                family.Relationship = request.PatientFamily.Relationship;
+                family.Name = request.PatientFamily.Name ?? family.Name;
+                family.Email = request.PatientFamily.Email ?? family.Email;
+                family.LastModifiedBy = _currentUserService.GetUserId();
+                family.LastModifiedOn = DateTime.Now;
+            }
+            else
+            {
+                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+                await _db.PatientFamilys.AddAsync(new PatientFamily
+                {
+                    PatientProfileId = request.PatientProfileId,
+                    Name = request.PatientFamily.Name,
+                    Relationship = request.PatientFamily.Relationship,
+                    Email = request.PatientFamily.Email,
+                    Phone = request.PatientFamily.Phone,
+                    CreatedBy = _currentUserService.GetUserId(),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+        }
     }
 }

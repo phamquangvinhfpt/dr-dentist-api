@@ -106,6 +106,17 @@ public class PersonalController : VersionNeutralApiController
         return Mediator.Send(request);
     }
 
+    [HttpPut("patient/update-profile")]
+    [OpenApiOperation("Update Patient Profile, Medical History, Patient Family.", "")]
+    public Task<string> UpdatePatientProfileAsync(UpdateOrCreatePatientProfile request)
+    {
+        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException();
+        }
+        return Mediator.Send(request);
+    }
+
     private string GetOriginFromRequest()
     {
         if (Request.Headers.TryGetValue("x-from-host", out var values))

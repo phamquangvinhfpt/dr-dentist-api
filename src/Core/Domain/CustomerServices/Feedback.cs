@@ -1,4 +1,5 @@
 using FSH.WebApi.Domain.Identity;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.CustomerServices;
 
@@ -11,7 +12,9 @@ public class Feedback : AuditableEntity, IAggregateRoot
     public int Rating { get; set; }
 
     // Navigation properties
+    [JsonIgnore]
     public PatientProfile? PatientProfile { get; set; }
+    [JsonIgnore]
     public DoctorProfile? DoctorProfile { get; set; }
 
     public Feedback()

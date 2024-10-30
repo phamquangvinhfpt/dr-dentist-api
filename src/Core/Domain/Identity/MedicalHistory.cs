@@ -1,4 +1,6 @@
-﻿namespace FSH.WebApi.Domain.Identity;
+﻿using System.Text.Json.Serialization;
+
+namespace FSH.WebApi.Domain.Identity;
 public class MedicalHistory : AuditableEntity, IAggregateRoot
 {
     public Guid? PatientProfileId { get; set; }
@@ -6,6 +8,7 @@ public class MedicalHistory : AuditableEntity, IAggregateRoot
     public string? Note { get; set; }
 
     // Navigation property
+    [JsonIgnore]
     public PatientProfile? PatientProfile { get; set; }
 
     public MedicalHistory()
