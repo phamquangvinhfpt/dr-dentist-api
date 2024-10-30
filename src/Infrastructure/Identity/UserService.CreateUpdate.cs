@@ -103,7 +103,7 @@ internal partial class UserService
 
         return user;
     }
-
+    //checked
     public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
     {
         var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
@@ -116,12 +116,12 @@ internal partial class UserService
             LastName = request.LastName,
             UserName = request.UserName,
             PhoneNumber = request.PhoneNumber,
+            Address = request.Address,
             IsActive = true
         };
         if (request.Role.Equals(FSHRoles.Patient))
         {
             user.Job = request.Job;
-            user.Address = request.Address;
         }
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -132,13 +132,34 @@ internal partial class UserService
         }
 
         await _userManager.AddToRoleAsync(user, role.Name);
-
         if (request.Role.Equals(FSHRoles.Dentist))
         {
             request.DoctorProfile.DoctorID = user.Id;
             await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
             List<WorkingCalendar> workingCalendars = _workingCalendarService.CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
             await _db.WorkingCalendars.AddRangeAsync(workingCalendars);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        else if (request.Role.Equals(FSHRoles.Patient)) {
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = user.Id,
+                PatientCode = code
+            });
             await _db.SaveChangesAsync(cancellationToken);
         }
 

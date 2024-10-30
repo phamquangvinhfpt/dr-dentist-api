@@ -88,7 +88,7 @@ internal partial class UserService : IUserService
         _medicalHistoryService = medicalHistoryService;
         _workingCalendarService = workingCalendarService;
     }
-
+    //checked
     public async Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)
     {
         var list_user = new List<ListUserDTO>();
@@ -192,7 +192,7 @@ internal partial class UserService : IUserService
 
     public Task<int> GetCountAsync(CancellationToken cancellationToken) =>
         _userManager.Users.AsNoTracking().CountAsync(cancellationToken);
-
+    //checked
     public async Task<UserDetailsDto> GetAsync(string userId, CancellationToken cancellationToken)
     {
         var user = await _userManager.Users
