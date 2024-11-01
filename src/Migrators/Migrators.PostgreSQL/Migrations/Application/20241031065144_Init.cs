@@ -495,7 +495,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DoctorId = table.Column<string>(type: "text", nullable: true),
+                    DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
                     Date = table.Column<DateOnly>(type: "date", nullable: true),
                     StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
                     EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
@@ -513,10 +513,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_WorkingCalendar_Users_DoctorId",
+                        name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
                         column: x => x.DoctorId,
                         principalSchema: "Identity",
-                        principalTable: "Users",
+                        principalTable: "DoctorProfile",
                         principalColumn: "Id");
                 });
 

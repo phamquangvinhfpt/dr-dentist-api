@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.DentalServices.Procedures;
+﻿using FSH.WebApi.Application.DentalServices;
+using FSH.WebApi.Application.DentalServices.Procedures;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Domain.Service;
@@ -14,6 +15,7 @@ public class ServiceController : VersionNeutralApiController
     {
         _serviceService = serviceService;
     }
+    //checked
     [HttpPost("pagination/get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.Service)]
     [OpenApiOperation("Get Services with pagination.", "")]
@@ -21,6 +23,7 @@ public class ServiceController : VersionNeutralApiController
     {
         return await _serviceService.GetServicesPaginationAsync(request, cancellationToken);
     }
+    //checked
     [HttpGet("{id}/get")]
     [MustHavePermission(FSHAction.View, FSHResource.Service)]
     [OpenApiOperation("Get Service Detail.", "")]
@@ -28,23 +31,40 @@ public class ServiceController : VersionNeutralApiController
     {
         return await _serviceService.GetServiceByID(id, cancellationToken);
     }
-
-    [HttpGet("{id}/delete")]
+    //checked
+    [HttpPost("/toggle")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Service)]
+    [OpenApiOperation("Toggle Service Status.", "")]
+    public async Task<string> DeleteServiceAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
+    {
+        return await _serviceService.ToggleServiceAsync(request, cancellationToken);
+    }
+    //checked
+    [HttpDelete("{id}/delete")]
     [MustHavePermission(FSHAction.Delete, FSHResource.Service)]
     [OpenApiOperation("Delete Service.", "")]
-    public async Task<string> DeleteServiceAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<string> DeleteServicesAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _serviceService.DeleteServiceAsync(id, cancellationToken);
     }
-
-    [HttpGet("/get-all")]
+    //checked
+    [HttpPost("bin")]
     [MustHavePermission(FSHAction.View, FSHResource.Service)]
-    [OpenApiOperation("Get all Service.", "")]
-    public async Task<List<Service>> GetServicesAsync(CancellationToken cancellationToken)
+    [OpenApiOperation("Get all service that was deleted.", "")]
+    public async Task<PaginationResponse<Service>> GetDeleteServicesAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
-        return await _serviceService.GetServicesAsync(cancellationToken);
+        return await _serviceService.GetDeletedServiceAsync(request, cancellationToken);
+    }
+    //checked
+    [HttpGet("{id}/restore")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Service)]
+    [OpenApiOperation("Restore service that was deleted.", "")]
+    public async Task<string> RestoreServicesAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.RestoreServiceAsync(id, cancellationToken);
     }
 
+    //checked
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.Service)]
     [OpenApiOperation("Create Service.", "")]
@@ -53,14 +73,15 @@ public class ServiceController : VersionNeutralApiController
         return Mediator.Send(request);
     }
 
-    [HttpPost("update")]
+    //checked
+    [HttpPost("modify")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
-    [OpenApiOperation("Update Service.", "")]
-    public Task<string> UpdateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
+    [OpenApiOperation("Update if service don't have any procedure, otherwise Modify Existing Service and deactivate this service.", "")]
+    public Task<string> ModifyServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
     }
-
+    //checked
     [HttpPost("procedure/create-procedure")]
     [MustHavePermission(FSHAction.Create, FSHResource.Procedure)]
     [OpenApiOperation("Create Procedure.", "")]
@@ -76,7 +97,7 @@ public class ServiceController : VersionNeutralApiController
     {
         return Mediator.Send(request);
     }
-
+    //checked
     [HttpPost("procedure/pagination/get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.Procedure)]
     [OpenApiOperation("Get Procedures with pagination.", "")]
@@ -84,19 +105,62 @@ public class ServiceController : VersionNeutralApiController
     {
         return await _serviceService.GetProcedurePaginationAsync(request, cancellationToken);
     }
+    //checked
     [HttpGet("procedure/get-all")]
-    [MustHavePermission(FSHAction.View, FSHResource.Procedure)]
+    [TenantIdHeader]
+    [AllowAnonymous]
     [OpenApiOperation("Get all list procedure.", "")]
     public async Task<List<Procedure>> GetProceduresAsync(CancellationToken cancellationToken)
     {
         return await _serviceService.GetProceduresAsync(cancellationToken);
     }
-
-    [HttpGet("procedure/{id}/get-all")]
+    //checked
+    [HttpGet("procedure/{id}/get")]
     [MustHavePermission(FSHAction.View, FSHResource.Procedure)]
     [OpenApiOperation("Get procedure By ID.", "")]
-    public async Task<Procedure> GetProcedureByIDAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<ProcedureDTOs> GetProcedureByIDAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _serviceService.GetProcedureByID(id,cancellationToken);
+    }
+
+    //checked
+    [HttpGet("/customer-get-all")]
+    [TenantIdHeader]
+    [AllowAnonymous]
+    [OpenApiOperation("Get all service for customer.", "")]
+    public async Task<List<Service>> GetAllServicesAsync()
+    {
+        return await _serviceService.GetServicesAsync();
+    }
+
+    [HttpPost("/add-delete-procedure")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Service)]
+    [OpenApiOperation("Add or Delete Procedure throw Service.", "")]
+    public Task<string> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpDelete("procedure/{id}/delete")]
+    [MustHavePermission(FSHAction.Delete, FSHResource.Procedure)]
+    [OpenApiOperation("Delete procedure.", "")]
+    public async Task<string> DeleteProcedureAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.DeleteProcedureAsync(id, cancellationToken);
+    }
+    [HttpPost("procedure/bin")]
+    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [OpenApiOperation("Get all procedure that was deleted.", "")]
+    public async Task<PaginationResponse<Procedure>> GetDeleteProceduresAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetDeletedProcedureAsync(request, cancellationToken);
+    }
+    //checked
+    [HttpGet("procedure/{id}/restore")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Procedure)]
+    [OpenApiOperation("Restore procedure that was deleted.", "")]
+    public async Task<string> RestoreProcedureAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.RestoreProcedureAsync(id, cancellationToken);
     }
 }

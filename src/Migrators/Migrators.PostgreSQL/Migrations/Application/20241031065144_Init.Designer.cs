@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241029132111_Init")]
+    [Migration("20241031065144_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -750,8 +750,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DoctorId")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("DoctorId")
+                        .HasColumnType("uuid");
 
                     b.Property<TimeSpan?>("EndTime")
                         .HasColumnType("interval");
@@ -1776,7 +1776,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
                 {
-                    b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()
                         .HasForeignKey("DoctorId");
                 });

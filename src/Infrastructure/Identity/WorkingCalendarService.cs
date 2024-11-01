@@ -2,6 +2,7 @@
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
@@ -16,17 +17,17 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly ApplicationDbContext _db;
     private readonly IStringLocalizer<WorkingCalendarService> _t;
     private readonly ICurrentUser _currentUserService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public WorkingCalendarService(ApplicationDbContext db,
-        ICurrentUser currentUser,
-        IStringLocalizer<WorkingCalendarService> t)
+    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _t = t;
-        _currentUserService = currentUser;
+        _currentUserService = currentUserService;
+        _userManager = userManager;
     }
 
-    public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
+    public List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
     {
         var result = new List<WorkingCalendar>();
 
@@ -57,8 +58,22 @@ internal class WorkingCalendarService : IWorkingCalendarService
         return result;
     }
 
-    public List<WorkingCalendar> GetWorkingCalendars(string doctorId, CancellationToken cancellation)
+    public List<WorkingCalendarResponse> GetWorkingCalendars(CancellationToken cancellation)
     {
-        throw new NotImplementedException();
+        var doctors = _db.DoctorProfiles.ToList();
+        var result = new List<WorkingCalendarResponse>();
+        foreach (var doctor in doctors)
+        {
+            var user = _userManager.FindByIdAsync(doctor.DoctorId).Result;
+            var schedules = _db.WorkingCalendars.Where(p => p.DoctorId == doctor.Id).ToList() ?? null;
+            result.Add(new WorkingCalendarResponse
+            {
+                DoctorProfileID = doctor.Id,
+                ImageUrl = user.ImageUrl,
+                UserName = user.UserName,
+                WorkingCalendars = schedules,
+            });
+        }
+        return result;
     }
 }

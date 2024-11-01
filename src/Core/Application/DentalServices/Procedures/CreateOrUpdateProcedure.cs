@@ -16,8 +16,8 @@ public class CreateOrUpdateProcedure : IRequest<string>
     public string Name { get; set; }
     public string Description { get; set; }
     public double Price { get; set; }
-    public bool isDuplicate { get; set; } = false;
-    public bool hasService { get; set; } = false;
+    public bool isModify { get; set; } = false;
+    //public bool hasService { get; set; } = false;
     public Guid ServiceID { get; set; }
 }
 
@@ -25,33 +25,15 @@ public class CreateOrUpdateProcedureValidator : CustomValidator<CreateOrUpdatePr
 {
     public CreateOrUpdateProcedureValidator()
     {
-        RuleFor(p => p)
-            .CustomAsync(async (profile, context, cancellationToken) =>
-            {
-                // For Duplicate
-                if (profile.isDuplicate)
-                {
-                    if (profile.hasService)
-                    {
-                        if (profile.ServiceID == Guid.Empty)
-                        {
-                            context.AddFailure(new ValidationFailure(string.Empty,
-                                "The service is empty. Procedure can not duplicate")
-                            {
-                                ErrorCode = "BadRequest"
-                            });
-                        }
-                    }
-                    if (profile.Id == Guid.Empty)
-                    {
-                        context.AddFailure(new ValidationFailure(string.Empty,
-                            "The procedure is empty. Procedure can not update")
-                        {
-                            ErrorCode = "BadRequest"
-                        });
-                    }
-                }
-            });
+        RuleFor(p => p.Id)
+            .NotEmpty()
+            .When(p => p.isModify)
+            .WithMessage("Update what procedure ?.");
+
+        RuleFor(p => p.ServiceID)
+            .NotEmpty()
+            .When(p => p.isModify)
+            .WithMessage("Update for what service ?.");
 
         RuleFor(p => p.Name)
             .NotEmpty()
@@ -63,8 +45,8 @@ public class CreateOrUpdateProcedureValidator : CustomValidator<CreateOrUpdatePr
         RuleFor(p => p.Price)
             .NotEmpty()
             .WithMessage("Price should not be empty.")
-            .Must(p => p > 0)
-            .WithMessage("Price must be valid.");
+            .Must(p => p >= 100000)
+            .WithMessage("Price must be greater or equal 100.000.");
     }
 }
 public class CreateOrUpdateProcedureHandler : IRequestHandler<CreateOrUpdateProcedure, string>
@@ -80,7 +62,13 @@ public class CreateOrUpdateProcedureHandler : IRequestHandler<CreateOrUpdateProc
 
     public async Task<string> Handle(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
     {
-        await _serviceService.CreateOrUpdateProcedureAsync(request, cancellationToken);
+        if (request.isModify) {
+            await _serviceService.ModifyProcedureAsync(request, cancellationToken);
+        }
+        else
+        {
+            await _serviceService.CreateProcedureAsync(request, cancellationToken);
+        }
         return _t["Update Service Sucsess"];
     }
 }

@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Domain.Treatment;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Service;
 
@@ -9,6 +10,7 @@ public class ServiceProcedures : AuditableEntity, IAggregateRoot
     public int StepOrder { get; set; }
 
     // navigation properties
+    [JsonIgnore]
     public ICollection<TreatmentPlanProcedures> TreatmentPlanProcedures { get; set; } = new List<TreatmentPlanProcedures>();
 
     public ServiceProcedures()

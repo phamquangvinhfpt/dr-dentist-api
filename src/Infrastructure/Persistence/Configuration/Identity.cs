@@ -154,7 +154,7 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
             .IsMultiTenant();
 
         builder
-            .HasOne<ApplicationUser>()
+            .HasOne<DoctorProfile>()
             .WithMany()
             .HasForeignKey("DoctorId");
     }

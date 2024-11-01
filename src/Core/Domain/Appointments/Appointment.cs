@@ -1,5 +1,6 @@
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Payments;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Appointments;
 
@@ -16,7 +17,9 @@ public class Appointment : AuditableEntity, IAggregateRoot
     public string? Notes { get; set; }
 
     // navigation
+    [JsonIgnore]
     public MedicalRecord? MedicalRecord { get; set; }
+    [JsonIgnore]
     public Payment? Payment { get; set; }
 
     public Appointment()

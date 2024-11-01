@@ -1,3 +1,6 @@
+using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Domain.Identity;
+
 namespace FSH.WebApi.Application.Identity.Users;
 
 public class UserDetailsDto

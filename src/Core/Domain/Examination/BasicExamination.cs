@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FSH.WebApi.Domain.Examination;
 
 public class BasicExamination : AuditableEntity, IAggregateRoot
@@ -7,6 +9,7 @@ public class BasicExamination : AuditableEntity, IAggregateRoot
     public string? TreatmentPlanNote { get; set; }
 
     // navigation
+    [JsonIgnore]
     public MedicalRecord? MedicalRecord { get; set; }
 
     public BasicExamination()

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FSH.WebApi.Domain.Examination;
 
 public class Indication : AuditableEntity, IAggregateRoot
@@ -7,7 +9,9 @@ public class Indication : AuditableEntity, IAggregateRoot
     public string Description { get; set; } = string.Empty;
 
     // navigation
+    [JsonIgnore]
     public ICollection<PatientImage> Images { get; set; } = new List<PatientImage>();
+    [JsonIgnore]
     public MedicalRecord? MedicalRecord { get; set; }
 
     public Indication()

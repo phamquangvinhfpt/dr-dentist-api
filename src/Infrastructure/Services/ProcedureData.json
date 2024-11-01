@@ -3,60 +3,70 @@
     "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "name": "Khám Tổng Quát",
     "description": "Kiểm tra sức khỏe tổng thể bao gồm đo huyết áp, chiều cao, cân nặng và các chỉ số cơ bản",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 500000.00
   },
   {
     "id": "7d793fc9-24ec-4a24-af73-9544d9c46882",
     "name": "Chụp X-Quang Ngực",
     "description": "Chụp X-quang vùng ngực để kiểm tra phổi và xương sườn",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 250000.00
   },
   {
     "id": "e3d9b0d3-76d7-4d91-9f41-5d6739b26d24",
     "name": "Xét Nghiệm Máu Cơ Bản",
     "description": "Phân tích các chỉ số máu cơ bản bao gồm công thức máu và đường huyết",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 300000.00
   },
   {
     "id": "b5c67892-9f8d-4bbf-8a32-05d4c3b52d36",
     "name": "Siêu Âm Ổ Bụng",
     "description": "Kiểm tra các cơ quan trong ổ bụng bằng siêu âm",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 400000.00
   },
   {
     "id": "c9d4c4f8-f8d7-4b23-a3d9-f3d2d2d2c1b1",
     "name": "Nội Soi Dạ Dày",
     "description": "Kiểm tra dạ dày và thực quản bằng ống nội soi",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 1200000.00
   },
   {
     "id": "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5d4c3b2e",
     "name": "Điện Tâm Đồ",
     "description": "Ghi lại hoạt động điện của tim để đánh giá chức năng tim mạch",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 200000.00
   },
   {
     "id": "d4e5f6a7-b8c9-4d5e-bf6a-8b9c0d1e2f3a",
     "name": "Đo Mật Độ Xương",
     "description": "Kiểm tra độ chắc khỏe của xương và đánh giá nguy cơ loãng xương",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 800000.00
   },
   {
     "id": "e5f6a7b8-c9d1-4f5b-b6a8-d7e9c0d1f2b3",
     "name": "Khám Mắt Toàn Diện",
     "description": "Kiểm tra thị lực, nhãn áp và các bệnh lý về mắt",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 450000.00
   },
   {
     "id": "f6a7b8c9-d1e2-4f5b-b6a8-d7e9c0f1b2c3",
     "name": "Chụp MRI Não",
     "description": "Chụp cộng hưởng từ não để phát hiện các bất thường",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 2500000.00
   },
   {
     "id": "a7b8c9d1-e2f3-4b5c-b6d7-e8f9a0b1c2d3",
     "name": "Xét Nghiệm Hormone",
     "description": "Kiểm tra các chỉ số hormone trong cơ thể",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "price": 900000.00
   }
 ]

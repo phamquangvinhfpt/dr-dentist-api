@@ -18,41 +18,10 @@ public class CreateAndUpdateMedicalHistoryVaidator : CustomValidator<CreateAndUp
 {
     public CreateAndUpdateMedicalHistoryVaidator(IUserService userService, ICurrentUser currentUser)
     {
-        RuleFor(p => p)
-            .CustomAsync(async (profile, context, cancellationToken) =>
-            {
-                if (currentUser.IsInRole(FSHRoles.Admin) || currentUser.IsInRole(FSHRoles.Staff))
-                {
-                    return;
-                }
-
-                if (currentUser.IsInRole(FSHRoles.Patient))
-                {
-                    if (currentUser.GetUserId().ToString() != profile.PatientId)
-                    {
-                        context.AddFailure(new ValidationFailure(nameof(profile.PatientId),
-                            "You can only update your own Medical History.")
-                        {
-                            ErrorCode = "Unauthorized"
-                        });
-                    }
-                    if (!await userService.ExistsWithUserIDAsync(profile.PatientId))
-                    {
-                        context.AddFailure(new ValidationFailure(nameof(profile.PatientId),
-                            $"Doctor {profile.PatientId} is unavailable.")
-                        {
-                            ErrorCode = "BadRequest"
-                        });
-                    }
-                    return;
-                }
-
-                context.AddFailure(new ValidationFailure(string.Empty,
-                    "Unauthorized access. Doctor can not update patient medical history.")
-                {
-                    ErrorCode = "Unauthorized"
-                });
-            });
+        RuleFor(p => p.PatientId)
+            .NotNull()
+            .MustAsync(async (id, _) => await userService.CheckUserInRoleAsync(id, FSHRoles.Patient))
+            .WithMessage((_, id) => $"User {id} is not patient.");
 
         RuleFor(p => p.MedicalName)
                 .NotEmpty().WithMessage("Medical Name is required.");

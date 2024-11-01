@@ -4,6 +4,7 @@ using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -32,27 +33,29 @@ internal class MedicalHistoryService : IMedicalHistoryService
 
     public async Task CreateAndUpdateMedicalHistory(CreateAndUpdateMedicalHistoryRequest request, CancellationToken cancellationToken)
     {
-        // var mdch = await _db.MedicalHistorys.Where(p => p.PatientId ==  request.PatientId).FirstOrDefaultAsync();
-        // if (mdch != null)
-        // {
-        //     mdch.MedicalName = request.MedicalName;
-        //     mdch.Note = request.Note;
-        //     mdch.LastModifiedBy = _currentUser.GetUserId();
-        //     mdch.LastModifiedOn = DateTime.Now;
-        //     await _db.SaveChangesAsync(cancellationToken);
-        // }
-        // else {
-        //     var n = new MedicalHistory
-        //     {
-        //         PatientId = request.PatientId,
-        //         CreatedBy = _currentUser.GetUserId(),
-        //         CreatedOn = DateTime.Now,
-        //         MedicalName = request.MedicalName,
-        //         Note = request.Note
-        //     };
-        //     _db.MedicalHistorys.Add(n);
-        //     await _db.SaveChangesAsync(cancellationToken);
-        // }
+        var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.PatientId) ?? throw new BadRequestException("Profile not found.");
+        var mdch = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.Id).FirstOrDefaultAsync();
+        if (mdch != null)
+        {
+            mdch.MedicalName = request.MedicalName ?? mdch.MedicalName;
+            mdch.Note = request.Note ?? mdch.Note;
+            mdch.LastModifiedBy = _currentUser.GetUserId();
+            mdch.LastModifiedOn = DateTime.Now;
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            var n = new MedicalHistory
+            {
+                PatientProfileId = profile.Id,
+                CreatedBy = _currentUser.GetUserId(),
+                CreatedOn = DateTime.Now,
+                MedicalName = request.MedicalName,
+                Note = request.Note
+            };
+            _db.MedicalHistorys.Add(n);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     public async Task<string> DeleteMedicalHistory(string patientID, CancellationToken cancellationToken)

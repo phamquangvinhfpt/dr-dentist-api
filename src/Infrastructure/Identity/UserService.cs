@@ -204,9 +204,9 @@ internal partial class UserService : IUserService
         return user.Adapt<UserDetailsDto>();
     }
 
-    public async Task ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken)
+    public async Task ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.Users.Where(u => u.Id == request.UserId).FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
+        var user = await _userManager.Users.Where(u => u.Id == request.Id).FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
 
 
         bool isAdmin = await _userManager.IsInRoleAsync(user, FSHRoles.Admin);
@@ -215,7 +215,7 @@ internal partial class UserService : IUserService
             throw new ConflictException(_t["Administrators Profile's Status cannot be toggled"]);
         }
 
-        user.IsActive = request.ActivateUser;
+        user.IsActive = request.Activate;
 
         await _userManager.UpdateAsync(user);
 
@@ -332,7 +332,6 @@ internal partial class UserService : IUserService
         if (user_role.RoleName.Equals(FSHRoles.Dentist))
         {
             profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
-            profile.WorkingCalendar = await _db.WorkingCalendars.Where(p => p.DoctorId == user.Id).ToListAsync(cancellationToken);
         }
         else if (user_role.RoleName.Equals(FSHRoles.Patient))
         {
@@ -346,28 +345,29 @@ internal partial class UserService : IUserService
     public async Task<List<GetDoctorResponse>> GetAllDoctor()
     {
         var users = await _userManager.GetUsersInRoleAsync(FSHRoles.Dentist);
-        var list_doctor = new List<GetDoctorResponse>();
-
         var doctorResponses = new List<GetDoctorResponse>();
 
         foreach (var user in users)
         {
-            var doctorProfile = await _db.DoctorProfiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
-
-            doctorResponses.Add(new GetDoctorResponse
+            if (user.IsActive)
             {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                Gender = user.Gender,
-                ImageUrl = user.ImageUrl,
-                LastName = user.LastName,
-                PhoneNumber = user.PhoneNumber,
-                UserName = user.UserName,
-                DoctorProfile = doctorProfile
-            });
+                var doctorProfile = await _db.DoctorProfiles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+
+                doctorResponses.Add(new GetDoctorResponse
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    UserName = user.UserName,
+                    DoctorProfile = doctorProfile
+                });
+            }
         }
 
         return doctorResponses;
@@ -442,5 +442,11 @@ internal partial class UserService : IUserService
             }
             await _db.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    public async Task<bool> CheckUserInRoleAsync(string userID, string roleName)
+    {
+        var user = await _userManager.FindByIdAsync(userID) ?? throw new BadRequestException("User Not Found");
+        return await _userManager.IsInRoleAsync(user, roleName);
     }
 }

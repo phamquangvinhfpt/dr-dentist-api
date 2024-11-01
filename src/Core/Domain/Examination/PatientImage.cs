@@ -1,4 +1,6 @@
 
+using System.Text.Json.Serialization;
+
 namespace FSH.WebApi.Domain.Examination;
 
 public class PatientImage : AuditableEntity, IAggregateRoot
@@ -8,6 +10,7 @@ public class PatientImage : AuditableEntity, IAggregateRoot
     public string ImageType { get; set; } = string.Empty;
 
     // navigation
+    [JsonIgnore]
     public Indication? Indication { get; set; }
 
     public PatientImage()

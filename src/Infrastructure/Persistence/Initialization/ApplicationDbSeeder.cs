@@ -1,4 +1,6 @@
-﻿using FSH.WebApi.Infrastructure.Identity;
+﻿using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Domain.Service;
+using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
@@ -6,6 +8,8 @@ using FSH.WebApi.Shared.Multitenancy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
+using System.Threading;
 
 namespace FSH.WebApi.Infrastructure.Persistence.Initialization;
 
@@ -16,14 +20,18 @@ internal class ApplicationDbSeeder
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly CustomSeederRunner _seederRunner;
     private readonly ILogger<ApplicationDbSeeder> _logger;
+    private readonly ApplicationDbContext _db;
+    private readonly ISerializerService _serializerService;
 
-    public ApplicationDbSeeder(FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger)
+    public ApplicationDbSeeder(ISerializerService serializerService, ApplicationDbContext db, FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger)
     {
         _currentTenant = currentTenant;
         _roleManager = roleManager;
         _userManager = userManager;
         _seederRunner = seederRunner;
         _logger = logger;
+        _db = db;
+        _serializerService = serializerService;
     }
 
     public async Task SeedDatabaseAsync(ApplicationDbContext dbContext, CancellationToken cancellationToken)
@@ -32,6 +40,7 @@ internal class ApplicationDbSeeder
         await SeedAdminUserAsync();
         await SeedAdmin2UserAsync();
         await SeedStaffUserAsync();
+        await SeedServiceAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -110,6 +119,7 @@ internal class ApplicationDbSeeder
             string adminUserName = $"{_currentTenant.Id.Trim()}.{FSHRoles.Admin}".ToLowerInvariant();
             adminUser = new ApplicationUser
             {
+                Id = "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
                 FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
                 LastName = FSHRoles.Admin,
                 Email = _currentTenant.AdminEmail,
@@ -208,5 +218,70 @@ internal class ApplicationDbSeeder
             _logger.LogInformation("Assigning Staff Role to Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
             await _userManager.AddToRoleAsync(staffUser, FSHRoles.Staff);
         }
+    }
+    private async Task SeedServiceAsync()
+    {
+        if (_db.Services.Count() < 1)
+        {
+            string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string dataPath = Path.Combine(path!, "Services", "ProcedureData.json");
+            _logger.LogInformation("Started to Seed Service.");
+            string proceData = await File.ReadAllTextAsync(dataPath);
+            var procedures = _serializerService.Deserialize<List<Procedure>>(proceData);
+            await _db.Procedures.AddRangeAsync(procedures);
+            await _db.SaveChangesAsync();
+
+            dataPath = Path.Combine(path!, "Services", "ServiceData.json");
+            string serviceData = await File.ReadAllTextAsync(dataPath);
+            var services = _serializerService.Deserialize<List<Service>>(serviceData);
+            var totalPrice = GetToltalPrice(procedures);
+            foreach (var service in services)
+            {
+                service.TotalPrice = totalPrice;
+            }
+            await _db.Services.AddRangeAsync(services);
+            await _db.SaveChangesAsync();
+
+            foreach (var service in services)
+            {
+                for (int i = 0; i < procedures.Count(); i++)
+                {
+                    _db.ServiceProcedures.Add(new ServiceProcedures
+                    {
+                        ServiceId = service.Id,
+                        ProcedureId = procedures[i].Id,
+                        StepOrder = i + 1
+                    });
+                }
+            }
+            await _db.SaveChangesAsync();
+            var pros = await _db.Procedures.ToListAsync();
+            foreach (var pro in pros)
+            {
+                pro.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            await _db.SaveChangesAsync();
+            var sers = await _db.Services.ToListAsync();
+            foreach (var i in sers)
+            {
+                i.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            var sps = await _db.ServiceProcedures.ToListAsync();
+            foreach (var i in sps)
+            {
+                i.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Seeded Services.");
+        }
+    }
+    private double GetToltalPrice(List<Procedure> procedures)
+    {
+        double result = 0;
+        foreach (Procedure procedure in procedures)
+        {
+            result += procedure.Price;
+        }
+        return result;
     }
 }

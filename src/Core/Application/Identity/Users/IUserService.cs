@@ -9,6 +9,7 @@ namespace FSH.WebApi.Application.Identity.Users;
 
 public interface IUserService : ITransientService
 {
+    Task<bool> CheckUserInRoleAsync(string userID, string roleName);
     Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken);
     Task<bool> ExistsWithUserIDAsync(string userID);
     Task<bool> CheckConfirmEmail(string userID);
@@ -30,7 +31,7 @@ public interface IUserService : ITransientService
     Task<bool> HasPermissionAsync(string userId, string permission, CancellationToken cancellationToken = default);
     Task InvalidatePermissionCacheAsync(string userId, CancellationToken cancellationToken);
 
-    Task ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken);
+    Task ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken);
 
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
     Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken);

@@ -101,17 +101,16 @@ public class UsersController : VersionNeutralApiController
         }
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
     }
-    
+    //checked
     [HttpPost("{id}/toggle-status")]
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     [OpenApiOperation("Toggle a user's active status.", "")]
-    public async Task<ActionResult> ToggleStatusAsync(ToggleUserStatusRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult> ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         await _userService.ToggleStatusAsync(request, cancellationToken);
         return Ok();
     }
-    
     [HttpGet("confirm-email")]
     [AllowAnonymous]
     [OpenApiOperation("Confirm email address for a user.", "")]
@@ -166,14 +165,6 @@ public class UsersController : VersionNeutralApiController
     public Task<string> ResetPasswordAsync(ResetPasswordRequest request)
     {
         return _userService.ResetPasswordAsync(request);
-    }
-    //checked
-    [HttpPost("update-doctor-profile")]
-    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
-    [OpenApiOperation("Update Doctor Profile", "")]
-    public Task<string> UpdateDoctorProfile(UpdateDoctorProfile request)
-    {
-        return Mediator.Send(request);
     }
 
     private string GetOriginFromRequest()

@@ -261,23 +261,22 @@ internal partial class UserService
         user.LastName = request.LastName ?? user.LastName;
         user.Gender = request.Gender ?? user.Gender;
         user.BirthDate = request.BirthDate ?? user.BirthDate;
-
+        user.Address = request.Address ?? user.Address;
         if (role.RoleName == FSHRoles.Patient)
         {
             user.Job = request.Job ?? user.Job;
-            user.Address = request.Address ?? user.Address;
-            if (request.PatientFamily != null) {
-                await CreateOrUpdatePatientFamily(request.PatientFamily, cancellationToken);
-            }
-            if (request.MedicalHistory != null)
-            {
-                await _medicalHistoryService.CreateAndUpdateMedicalHistory(request.MedicalHistory, cancellationToken);
-            }
+            //if (request.PatientFamily != null) {
+            //    await CreateOrUpdatePatientFamily(request.PatientFamily, cancellationToken);
+            //}
+            //if (request.MedicalHistory != null)
+            //{
+            //    await _medicalHistoryService.CreateAndUpdateMedicalHistory(request.MedicalHistory, cancellationToken);
+            //}
         }
-        else if(role.RoleName == FSHRoles.Dentist)
-        {
-            await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
-        }
+        //else if(role.RoleName == FSHRoles.Dentist)
+        //{
+        //    await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
+        //}
 
         var result = await _userManager.UpdateAsync(user);
 

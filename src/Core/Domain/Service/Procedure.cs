@@ -1,4 +1,5 @@
 using FSH.WebApi.Domain.Payments;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Service;
 
@@ -9,6 +10,7 @@ public class Procedure : AuditableEntity, IAggregateRoot
     public double Price { get; set; }
 
     //Navigation
+    [JsonIgnore]
     public List<PaymentDetail> PaymentDetails { get; set; }
     public Procedure()
     {

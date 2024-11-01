@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FSH.WebApi.Domain.Examination;
 
 public class Diagnosis : AuditableEntity, IAggregateRoot
@@ -7,6 +9,7 @@ public class Diagnosis : AuditableEntity, IAggregateRoot
     public string[] TeethConditions { get; set; } = Array.Empty<string>();
 
     // navigation
+    [JsonIgnore]
     public MedicalRecord? MedicalRecord { get; set; }
 
     public Diagnosis()

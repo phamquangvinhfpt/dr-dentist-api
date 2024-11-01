@@ -8,6 +8,6 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Identity.WorkingCalendars;
 public interface IWorkingCalendarService : ITransientService
 {
-    public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null);
-    public List<WorkingCalendar> GetWorkingCalendars(string doctorId, CancellationToken cancellation);
+    public List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null);
+    public List<WorkingCalendarResponse> GetWorkingCalendars(CancellationToken cancellation);
 }

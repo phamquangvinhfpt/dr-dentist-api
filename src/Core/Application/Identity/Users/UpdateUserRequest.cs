@@ -14,9 +14,6 @@ public class UpdateUserRequest : IRequest<string>
     public DateOnly? BirthDate { get; set; }
     public string? Job { get; set; }
     public string? Address { get; set; }
-    public CreateAndUpdateMedicalHistoryRequest? MedicalHistory { get; set; }
-    public UpdatePatientFamilyRequest? PatientFamily { get; set; }
-    public UpdateDoctorProfile? DoctorProfile { get; set; }
 }
 
 public class UpdateUserRequestValidator : CustomValidator<UpdateUserRequest>
@@ -65,31 +62,31 @@ public class UpdateUserRequestHandler : IRequestHandler<UpdateUserRequest, strin
 
     public async Task<string> Handle(UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var role = await _userService.GetRolesAsync(request.UserId, cancellationToken);
-        if (role.RoleName == FSHRoles.Dentist)
-        {
-            var check = new UpdateDoctorProfileVaidator(_userService, _currentUser).ValidateAsync(request.DoctorProfile);
-            if (check.IsCompleted)
-            {
-                var t = check.Result;
-                if (!t.IsValid)
-                {
-                    throw new BadRequestException(t.Errors[0].ErrorMessage);
-                }
-            }
-        }
-        else if (role.RoleName == FSHRoles.Patient)
-        {
-            var check = new CreateAndUpdateMedicalHistoryVaidator(_userService, _currentUser).ValidateAsync(request.MedicalHistory);
-            if (check.IsCompleted)
-            {
-                var t = check.Result;
-                if (!t.IsValid)
-                {
-                    throw new BadRequestException(t.Errors[0].ErrorMessage);
-                }
-            }
-        }
+        //var role = await _userService.GetRolesAsync(request.UserId, cancellationToken);
+        //if (role.RoleName == FSHRoles.Dentist)
+        //{
+        //    var check = new UpdateDoctorProfileVaidator(_userService, _currentUser).ValidateAsync(request.DoctorProfile);
+        //    if (check.IsCompleted)
+        //    {
+        //        var t = check.Result;
+        //        if (!t.IsValid)
+        //        {
+        //            throw new BadRequestException(t.Errors[0].ErrorMessage);
+        //        }
+        //    }
+        //}
+        //else if (role.RoleName == FSHRoles.Patient)
+        //{
+        //    var check = new CreateAndUpdateMedicalHistoryVaidator(_userService, _currentUser).ValidateAsync(request.MedicalHistory);
+        //    if (check.IsCompleted)
+        //    {
+        //        var t = check.Result;
+        //        if (!t.IsValid)
+        //        {
+        //            throw new BadRequestException(t.Errors[0].ErrorMessage);
+        //        }
+        //    }
+        //}
 
         var user = await _userService.GetAsync(request.UserId!, cancellationToken);
         if (user is null)

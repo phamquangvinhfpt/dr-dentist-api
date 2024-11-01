@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Domain.Payments;
@@ -17,8 +18,11 @@ public class PaymentDetail : AuditableEntity, IAggregateRoot
     public PaymentStatus PaymentStatus { get; set; }
 
     //Navigation
+    [JsonIgnore]
     public TreatmentPlanProcedures PlanProcedures { get; set; }
+    [JsonIgnore]
     public Payment Payment { get; set; }
+    [JsonIgnore]
     public Procedure Procedure { get; set; }
 
     public PaymentDetail()

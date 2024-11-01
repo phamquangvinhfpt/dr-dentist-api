@@ -1,6 +1,7 @@
 ﻿using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Treatment;
 
@@ -16,8 +17,11 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     public string? RescheduledBy { get; set; }
 
     // navigation properties
+    [JsonIgnore]
     public MedicalRecord? MedicalRecord { get; set; }
+    [JsonIgnore]
     public ServiceProcedures? ServiceProcedure { get; set; }
+    [JsonIgnore]
     public PaymentDetail? PaymentDetail { get; set; }
     public TreatmentPlanProcedures()
     {

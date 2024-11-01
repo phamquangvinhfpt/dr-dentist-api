@@ -27,5 +27,4 @@ public class UserProfileResponse
     public MedicalHistory? MedicalHistory { get; set; }
     public PatientFamily? PatientFamily { get; set; }
     public DoctorProfile? DoctorProfile { get; set; }
-    public List<WorkingCalendar>? WorkingCalendar { get; set; }
 }
