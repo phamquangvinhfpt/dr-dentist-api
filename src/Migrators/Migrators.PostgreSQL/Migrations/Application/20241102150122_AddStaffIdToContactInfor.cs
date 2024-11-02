@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class AddStaffIdToContactInfor : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -80,29 +80,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditTrails", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ContactInfor",
-                schema: "CustomerService",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Title = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    Phone = table.Column<string>(type: "text", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: false),
-                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ContactInfor", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -290,6 +267,36 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalTable: "Service",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ContactInfor",
+                schema: "CustomerService",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    StaffId = table.Column<string>(type: "text", nullable: true),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    Phone = table.Column<string>(type: "text", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ContactInfor", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ContactInfor_Users_StaffId",
+                        column: x => x.StaffId,
+                        principalSchema: "Identity",
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -496,6 +503,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     Date = table.Column<DateOnly>(type: "date", nullable: true),
                     StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
                     EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
@@ -512,6 +520,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_Appointment_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalSchema: "Treatment",
+                        principalTable: "Appointment",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
                         column: x => x.DoctorId,
@@ -1000,6 +1014,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ContactInfor_StaffId",
+                schema: "CustomerService",
+                table: "ContactInfor",
+                column: "StaffId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Diagnosis_RecordId",
                 schema: "Treatment",
                 table: "Diagnosis",
@@ -1232,6 +1253,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity",
                 table: "Users",
                 columns: new[] { "NormalizedUserName", "TenantId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkingCalendar_AppointmentId",
+                schema: "Identity",
+                table: "WorkingCalendar",
+                column: "AppointmentId",
                 unique: true);
 
             migrationBuilder.CreateIndex(

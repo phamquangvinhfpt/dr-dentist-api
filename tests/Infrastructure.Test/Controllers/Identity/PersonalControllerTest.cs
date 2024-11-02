@@ -6,6 +6,7 @@ using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Host.Controllers.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -24,6 +25,7 @@ public class PersonalControllerTest
     private readonly Mock<ISender> _mediatorMock;
     private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly PersonalController _controller;
+    private readonly Mock<IWorkingCalendarService> _workingCalendarServiceMock;
 
     public PersonalControllerTest()
     {
@@ -31,7 +33,7 @@ public class PersonalControllerTest
         _auditServiceMock = new Mock<IAuditService>();
         _mediatorMock = new Mock<ISender>();
         _currentUserMock = new Mock<ICurrentUser>();
-        _controller = new PersonalController(_userServiceMock.Object, _auditServiceMock.Object);
+        _controller = new PersonalController(_userServiceMock.Object, _auditServiceMock.Object, _workingCalendarServiceMock.Object);
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("127.0.0.1");
         _controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
@@ -89,7 +91,7 @@ public class PersonalControllerTest
         var result = await _controller.GetProfileAsync(cancellationToken);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedDto = Assert.IsType<UserDetailsDto>(okResult.Value);
         Assert.Equal(userDetailsDto, returnedDto);
     }
@@ -271,12 +273,12 @@ public class PersonalControllerTest
 
         if (expectedMessage == "Success")
         {
-            _userServiceMock.Setup(s => s.ChangePasswordAsync(model, userId))
+            _userServiceMock.Setup(s => s.ChangePasswordAsync(model))
                             .Returns(Task.CompletedTask);
         }
         else
         {
-            _userServiceMock.Setup(s => s.ChangePasswordAsync(model, userId))
+            _userServiceMock.Setup(s => s.ChangePasswordAsync(model))
                 .Returns(Task.FromResult(new UnauthorizedResult()));
         }
 

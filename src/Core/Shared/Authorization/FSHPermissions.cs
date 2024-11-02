@@ -110,7 +110,7 @@ public static class FSHPermissions
         // Contact Information
         new("View Contact Information", FSHAction.View, FSHResource.ContactInformation, new[] { ROOT, PATIENT, STAFF, DENTIST }),
         new("Create Contact Information", FSHAction.Create, FSHResource.ContactInformation, new[] { ROOT }),
-        new("Update Contact Information", FSHAction.Update, FSHResource.ContactInformation, new[] { ROOT }),
+        new("Update Contact Information", FSHAction.Update, FSHResource.ContactInformation, new[] { ROOT, STAFF }),
         new("Delete Contact Information", FSHAction.Delete, FSHResource.ContactInformation, new[] {ROOT }),
 
         // Feedback

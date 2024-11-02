@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241102012445_AddAppointToCalendar")]
-    partial class AddAppointToCalendar
+    [Migration("20241102150122_AddStaffIdToContactInfor")]
+    partial class AddStaffIdToContactInfor
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -126,6 +126,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("StaffId")
+                        .HasColumnType("text");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -136,6 +139,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("StaffId")
+                        .IsUnique();
 
                     b.ToTable("ContactInfor", "CustomerService");
 
@@ -1643,6 +1649,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.ToTable("UserTokens", "Identity");
 
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.ContactInfor", b =>
+                {
+                    b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.CustomerServices.ContactInfor", "StaffId");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.Feedback", b =>

@@ -1,5 +1,6 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;

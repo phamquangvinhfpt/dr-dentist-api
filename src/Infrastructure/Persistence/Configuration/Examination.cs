@@ -313,6 +313,11 @@ public class ContactInforConfig : IEntityTypeConfiguration<ContactInfor>
         builder
               .ToTable("ContactInfor", SchemaNames.CustomerService)
               .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithOne()
+            .HasForeignKey<ContactInfor>("StaffId").IsRequired(false);
     }
 }
 

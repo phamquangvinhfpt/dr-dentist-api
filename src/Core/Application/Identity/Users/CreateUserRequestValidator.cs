@@ -27,6 +27,8 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
             .MinimumLength(6);
 
         RuleFor(u => u.PhoneNumber).Cascade(CascadeMode.Stop)
+            .Matches(@"^(0|84|\\+84)(3|5|7|8|9)[0-9]{8}$")
+            .WithMessage("Invalid phone number format. Please enter a valid Vietnamese phone number.")
             .MustAsync(async (phone, _) => !await userService.ExistsWithPhoneNumberAsync(phone!))
                 .WithMessage((_, phone) => $"Phone number {phone} is already registered.")
                 .Unless(u => string.IsNullOrWhiteSpace(u.PhoneNumber));
