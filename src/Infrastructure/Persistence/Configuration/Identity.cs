@@ -1,4 +1,5 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
+using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -157,5 +158,10 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
             .HasOne<DoctorProfile>()
             .WithMany()
             .HasForeignKey("DoctorId");
+
+        builder
+            .HasOne<Appointment>()
+            .WithOne()
+            .HasForeignKey<WorkingCalendar>("AppointmentId");
     }
 }

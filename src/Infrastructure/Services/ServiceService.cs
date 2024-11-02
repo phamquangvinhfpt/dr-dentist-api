@@ -42,7 +42,7 @@ internal class ServiceService : IServiceService
         var check = await _db.Procedures.Where(p => p.Name == request.Name && p.Price == request.Price && p.Description == request.Description).FirstOrDefaultAsync();
         if (check != null)
         {
-            throw new BadRequestException("Procedure is existing!!!");
+            throw new BadRequestException("Procedure information is existing!!!");
         }
         _db.Procedures.Add(new Procedure
         {
@@ -62,7 +62,7 @@ internal class ServiceService : IServiceService
         var check = await _db.Procedures.Where(p => p.Name == request.Name && p.Price == request.Price && p.Description == request.Description).FirstOrDefaultAsync();
         if (check != null)
         {
-            throw new BadRequestException("Procedure is existing!!!");
+            throw new BadRequestException("Procedure information is existing!!!");
         }
         var sp = await _db.ServiceProcedures.Where(p => p.ProcedureId == request.Id && p.ServiceId == request.ServiceID).FirstOrDefaultAsync()
             ?? throw new BadRequestException($"Service {request.ServiceID} don't have this procedure.");
