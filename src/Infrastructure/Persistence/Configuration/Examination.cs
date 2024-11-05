@@ -364,3 +364,13 @@ public class BasicExaminationConfig : IEntityTypeConfiguration<BasicExamination>
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+
+public class TransactionConfig : IEntityTypeConfiguration<TransactionInfo>
+{
+    public void Configure(EntityTypeBuilder<TransactionInfo> builder)
+    {
+        builder
+            .ToTable("Transactions", SchemaNames.Payment)
+            .IsMultiTenant();
+    }
+}
