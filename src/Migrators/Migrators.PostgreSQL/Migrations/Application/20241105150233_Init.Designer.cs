@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241102150122_AddStaffIdToContactInfor")]
-    partial class AddStaffIdToContactInfor
+    [Migration("20241105150233_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,8 +32,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("AppointmentDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("AppointmentDate")
+                        .HasColumnType("date");
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -47,8 +47,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DentistId")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("DentistId")
+                        .HasColumnType("uuid");
 
                     b.Property<TimeSpan>("Duration")
                         .HasColumnType("interval");
@@ -63,8 +63,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("PatientId")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("PatientId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ServiceId")
                         .HasColumnType("uuid");
@@ -777,8 +777,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<TimeSpan?>("StartTime")
                         .HasColumnType("interval");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TenantId")
                         .IsRequired()

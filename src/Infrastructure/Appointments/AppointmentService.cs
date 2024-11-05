@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.Appointments;
+﻿using Amazon.Runtime.Internal.Util;
+using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Infrastructure.Identity;
@@ -7,6 +8,7 @@ using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -22,18 +24,19 @@ internal class AppointmentService : IAppointmentService
     private readonly ICurrentUser _currentUserService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IJobService _jobService;
-
+    private readonly ILogger<AppointmentService> _logger;
     public AppointmentService(ApplicationDbContext db,
         IStringLocalizer<AppointmentService> t,
         ICurrentUser currentUserService,
         UserManager<ApplicationUser> userManager,
-        IJobService jobService)
+        IJobService jobService, ILogger<AppointmentService> logger)
     {
         _db = db;
         _t = t;
         _currentUserService = currentUserService;
         _userManager = userManager;
         _jobService = jobService;
+        _logger = logger;
     }
 
     public Task<bool> CheckAppointmentDateValid(DateOnly date)
@@ -134,11 +137,17 @@ internal class AppointmentService : IAppointmentService
 
     public async Task DeleteUnpaidBooking(Guid appointmentId, Guid calendarID, CancellationToken cancellationToken)
     {
-        var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
-        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
+        try
+        {
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
+            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
 
-        _db.Appointments.Remove(appointment);
-        _db.WorkingCalendars.Remove(calendar);
-        await _db.SaveChangesAsync(cancellationToken);
+            _db.WorkingCalendars.Remove(calendar);
+            _db.Appointments.Remove(appointment);
+            await _db.SaveChangesAsync(cancellationToken);
+        }catch(Exception ex)
+        {
+            _logger.LogError(ex ,ex.Message, null);
+        }
     }
 }

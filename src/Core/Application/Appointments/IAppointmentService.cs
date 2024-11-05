@@ -11,4 +11,5 @@ public interface IAppointmentService : ITransientService
     Task<bool> CheckAvailableAppointment(string? patientId);
     Task<bool> CheckAppointmentExisting(Guid appointmentId);
     Task<AppointmentDepositRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken);
+    Task VerifyAndFinishBooking(AppointmentDepositRequest request, CancellationToken cancellationToken);
 }
