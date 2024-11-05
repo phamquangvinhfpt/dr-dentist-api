@@ -29,11 +29,12 @@ internal class WorkingCalendarService : IWorkingCalendarService
         _userManager = userManager;
     }
 
-    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, Guid doctorId)
+    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, string doctorId)
     {
+        var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId);
         var calendars = await _db.WorkingCalendars
             .Where(c =>
-                c.DoctorId == doctorId &&
+                c.DoctorId == doctor.Id &&
                 c.Date == date &&
                 (
                     (c.StartTime <= start && start < c.EndTime) ||

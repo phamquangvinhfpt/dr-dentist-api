@@ -50,7 +50,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Notes = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedOn = table.Column<DateOnly>(type: "date", nullable: false),
                     LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

@@ -17,14 +17,22 @@ public class MedicalHistoryController : VersionNeutralApiController
     }
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.MedicalHistory)]
-    [OpenApiOperation("Update Doctor Profile", "")]
-    public Task<string> CreateOrUpdateMedicalHistory(CreateAndUpdateMedicalHistoryRequest request)
+    [OpenApiOperation("Create Medical history", "")]
+    public Task<string> CreateMedicalHistory(CreateAndUpdateMedicalHistoryRequest request)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpPost("update")]
+    [MustHavePermission(FSHAction.Update, FSHResource.MedicalHistory)]
+    [OpenApiOperation("Update Medical History", "")]
+    public Task<string> UpdateMedicalHistory(CreateAndUpdateMedicalHistoryRequest request)
     {
         return Mediator.Send(request);
     }
     [HttpDelete("delete")]
     [MustHavePermission(FSHAction.Delete, FSHResource.MedicalHistory)]
-    [OpenApiOperation("Update Doctor Profile", "")]
+    [OpenApiOperation("Delete Doctor Profile", "")]
     public async Task<string> DeleteMedicalHistory(string patientID, CancellationToken cancellationToken)
     {
         return await _medicalHistoryService.DeleteMedicalHistory(patientID, cancellationToken);

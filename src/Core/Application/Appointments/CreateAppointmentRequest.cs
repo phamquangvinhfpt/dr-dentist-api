@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.DentalServices.Services;
+﻿using FSH.WebApi.Application.DentalServices;
+using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Appointments;
@@ -10,12 +11,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Appointments;
-public class CreateAppointmentRequest : IRequest<string>
+public class CreateAppointmentRequest : IRequest<AppointmentDepositRequest>
 {
     public string? PatientId { get; set; }
     public string? DentistId { get; set; }
     public Guid ServiceId { get; set; }
-    public DateTime AppointmentDate { get; set; }
+    public DateOnly AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
     public AppointmentType Type { get; set; }
@@ -24,7 +25,7 @@ public class CreateAppointmentRequest : IRequest<string>
 
 public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointmentRequest>
 {
-    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService)
+    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService, IWorkingCalendarService workingCalendarService)
     {
         RuleFor(p => p.PatientId)
             .NotNull()
@@ -91,23 +92,33 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
 
         RuleFor(p => p)
             .MustAsync(async (request, cancellation) =>
-                await appointmentService.CheckAvailableTimeSlot(
-                    request.DentistId,
+                await appointmentService.CheckAvailableAppointment(request.PatientId))
+            .WithMessage((request, cancellation) => $"User{request.PatientId} has an appointment that is waiting for deposit");
+
+        RuleFor(p => p)
+            .MustAsync(async (request, cancellation) =>
+                await workingCalendarService.CheckAvailableTimeSlot(
                     request.AppointmentDate,
                     request.StartTime,
-                    request.Duration))
+                    request.StartTime.Add(request.Duration),
+                    request.DentistId))
             .WithMessage("The selected time slot overlaps with an existing appointment");
     }
 }
 
-public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, string>
+public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, AppointmentDepositRequest>
 {
-    public CreateAppointmentRequestHandler()
+    private readonly IAppointmentService appointmentService;
+    private readonly IStringLocalizer<CreateAppointmentRequest> _t;
+
+    public CreateAppointmentRequestHandler(IAppointmentService appointmentService, IStringLocalizer<CreateAppointmentRequest> t)
     {
+        this.appointmentService = appointmentService;
+        _t = t;
     }
 
-    public Task<string> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
+    public Task<AppointmentDepositRequest> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return appointmentService.CreateAppointment(request, cancellationToken);
     }
 }
