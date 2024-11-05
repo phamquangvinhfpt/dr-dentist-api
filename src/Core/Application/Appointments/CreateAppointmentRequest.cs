@@ -20,7 +20,6 @@ public class CreateAppointmentRequest : IRequest<string>
     public TimeSpan Duration { get; set; }
     public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
-    public DepositRequest? DepositRequest { get; set; }
 }
 
 public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointmentRequest>
@@ -85,13 +84,19 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
             .NotEqual(AppointmentType.None)
             .WithMessage("Appointment type must be selected");
 
-        RuleFor(p => p.DepositRequest)
-            .SetValidator(new DepositRequestValidator());
-
         RuleFor(p => p.Notes)
             .MaximumLength(500)
             .When(p => p.Notes != null)
             .WithMessage("Notes cannot exceed 500 characters");
+
+        RuleFor(p => p)
+            .MustAsync(async (request, cancellation) =>
+                await appointmentService.CheckAvailableTimeSlot(
+                    request.DentistId,
+                    request.AppointmentDate,
+                    request.StartTime,
+                    request.Duration))
+            .WithMessage("The selected time slot overlaps with an existing appointment");
     }
 }
 

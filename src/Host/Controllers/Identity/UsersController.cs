@@ -72,7 +72,7 @@ public class UsersController : VersionNeutralApiController
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get All Doctor For Customer.", "")]
-    public Task<List<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
+    public Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
     {
         return _userService.GetAllDoctor(request);
     }

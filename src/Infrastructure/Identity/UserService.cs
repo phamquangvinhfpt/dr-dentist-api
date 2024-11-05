@@ -17,6 +17,7 @@ using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Auth;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
@@ -345,24 +346,21 @@ internal partial class UserService : IUserService
         return profile;
     }
 
-    public async Task<List<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
+    public async Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
     {
         var doctorResponses = new List<GetDoctorResponse>();
-        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+        var spec = new EntitiesByPaginationFilterSpec<DoctorProfile>(request);
 
-        var users = await _userManager.Users
+        var dprofiles = await _db.DoctorProfiles
             .AsNoTracking()
             .WithSpecification(spec)
             .ToListAsync();
 
-        foreach (var user in users)
+        foreach (var doctor in dprofiles)
         {
-            if (user.IsActive && await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))
+            var user = await _userManager.FindByIdAsync(doctor.DoctorId);
+            if (user.IsActive)
             {
-                var doctorProfile = await _db.DoctorProfiles
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
-
                 doctorResponses.Add(new GetDoctorResponse
                 {
                     Id = user.Id,
@@ -373,12 +371,28 @@ internal partial class UserService : IUserService
                     LastName = user.LastName,
                     PhoneNumber = user.PhoneNumber,
                     UserName = user.UserName,
-                    DoctorProfile = doctorProfile
+                    DoctorProfile = doctor,
+                    Rating = await GetDoctorRating(doctor.Id),
                 });
             }
         }
 
-        return doctorResponses;
+        return new PaginationResponse<GetDoctorResponse>(doctorResponses, 0, request.PageNumber, request.PageSize);
+    }
+
+    private async Task<double> GetDoctorRating(Guid doctorProfileID)
+    {
+        var rating = await _db.Feedbacks
+        .Where(f => f.DoctorProfileId == doctorProfileID)
+        .GroupBy(f => f.DoctorProfileId)
+        .Select(group => new
+        {
+            AverageRating = group.Average(f => f.Rating),
+            TotalFeedbacks = group.Count()
+        })
+        .FirstOrDefaultAsync();
+
+        return rating?.AverageRating ?? 0;
     }
 
     public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)
@@ -511,27 +525,70 @@ internal partial class UserService : IUserService
             .ToListAsync();
 
         var doctorResponses = new List<GetDoctorResponse>();
-
-        foreach (var item in topDoctors)
+        if(topDoctors.Any())
         {
-            var doctorProfile = await _db.DoctorProfiles
-                .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
-            var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
-            if (user.IsActive)
+            foreach (var item in topDoctors)
             {
-                doctorResponses.Add(new GetDoctorResponse
+                var doctorProfile = await _db.DoctorProfiles
+                    .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
+                var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
+                if (user.IsActive)
                 {
-                    Id = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    Gender = user.Gender,
-                    ImageUrl = user.ImageUrl,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    UserName = user.UserName,
-                    DoctorProfile = doctorProfile,
-                    Rating = item.AverageRating,
-                });
+                    doctorResponses.Add(new GetDoctorResponse
+                    {
+                        Id = user.Id,
+                        Email = user.Email,
+                        FirstName = user.FirstName,
+                        Gender = user.Gender,
+                        ImageUrl = user.ImageUrl,
+                        LastName = user.LastName,
+                        PhoneNumber = user.PhoneNumber,
+                        UserName = user.UserName,
+                        DoctorProfile = doctorProfile,
+                        Rating = item.AverageRating,
+                    });
+                }
+            }
+        }
+        if(doctorResponses.Count() < 4)
+        {
+            var existingDoctorIds = doctorResponses.Select(d => d.Id).ToList();
+
+            var role = await _db.Roles.FirstOrDefaultAsync(p => p.Name == FSHRoles.Dentist);
+
+            var additionalDoctors = await _db.Users
+                .Join(
+                    _db.UserRoles.Where(ur => ur.RoleId == role.Id),
+                    user => user.Id,
+                    userRole => userRole.UserId,
+                    (user, userRole) => user
+                )
+                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id))
+                .Take(4 - doctorResponses.Count)
+                .ToListAsync();
+
+            foreach (var user in additionalDoctors)
+            {
+                var doctorProfile = await _db.DoctorProfiles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+
+                if (doctorProfile != null)
+                {
+                    doctorResponses.Add(new GetDoctorResponse
+                    {
+                        Id = user.Id,
+                        Email = user.Email,
+                        FirstName = user.FirstName,
+                        Gender = user.Gender,
+                        ImageUrl = user.ImageUrl,
+                        LastName = user.LastName,
+                        PhoneNumber = user.PhoneNumber,
+                        UserName = user.UserName,
+                        DoctorProfile = doctorProfile,
+                        Rating = 0
+                    });
+                }
             }
         }
         return doctorResponses;
