@@ -1,5 +1,6 @@
 using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Events;
@@ -24,6 +25,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
+using System.Numerics;
+using System.Threading;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -342,14 +345,19 @@ internal partial class UserService : IUserService
         return profile;
     }
 
-    public async Task<List<GetDoctorResponse>> GetAllDoctor()
+    public async Task<List<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
     {
-        var users = await _userManager.GetUsersInRoleAsync(FSHRoles.Dentist);
         var doctorResponses = new List<GetDoctorResponse>();
+        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+
+        var users = await _userManager.Users
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .ToListAsync();
 
         foreach (var user in users)
         {
-            if (user.IsActive)
+            if (user.IsActive && await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))
             {
                 var doctorProfile = await _db.DoctorProfiles
                     .AsNoTracking()
@@ -446,7 +454,86 @@ internal partial class UserService : IUserService
 
     public async Task<bool> CheckUserInRoleAsync(string userID, string roleName)
     {
-        var user = await _userManager.FindByIdAsync(userID) ?? throw new BadRequestException("User Not Found");
+        var user = await _userManager.Users.Where(p => p.Id == userID && p.IsActive).FirstOrDefaultAsync()
+            ?? throw new BadRequestException("User Not Found or User was Deactivate.");
         return await _userManager.IsInRoleAsync(user, roleName);
+    }
+
+    public async Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken)
+    {
+        var list_user = new List<ListUserDTO>();
+        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+
+        var users = await _userManager.Users
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .ProjectToType<UserDetailsDto>()
+            .ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            var role = await GetRolesAsync(user.Id.ToString(), cancellationToken);
+            if (role.RoleName == FSHRoles.Patient )
+            {
+                list_user.Add(new ListUserDTO
+                {
+                    Id = user.Id.ToString(),
+                    UserName = user.UserName,
+                    Address = user.Address,
+                    Email = user.Email,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    PhoneNumber = user.PhoneNumber,
+                    IsActive = user.IsActive,
+                    Role = role,
+                });
+            }
+        }
+        int count = await _userManager.Users
+            .CountAsync(cancellationToken);
+
+        return new PaginationResponse<ListUserDTO>(list_user, count, request.PageNumber, request.PageSize);
+    }
+
+    public async Task<List<GetDoctorResponse>> GetTop4Doctors()
+    {
+        var topDoctors = await _db.Feedbacks
+            .Where(f => f.DoctorProfileId != null)
+            .GroupBy(f => f.DoctorProfileId)
+            .Select(group => new
+            {
+                DoctorId = group.Key!.Value,
+                AverageRating = group.Average(f => f.Rating),
+                TotalFeedbacks = group.Count()
+            })
+            .OrderByDescending(x => x.AverageRating)
+            .ThenByDescending(x => x.TotalFeedbacks)
+            .Take(4)
+            .ToListAsync();
+
+        var doctorResponses = new List<GetDoctorResponse>();
+
+        foreach (var item in topDoctors)
+        {
+            var doctorProfile = await _db.DoctorProfiles
+                .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
+            var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
+            if (user.IsActive)
+            {
+                doctorResponses.Add(new GetDoctorResponse
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    UserName = user.UserName,
+                    DoctorProfile = doctorProfile,
+                    Rating = item.AverageRating,
+                });
+            }
+        }
+        return doctorResponses;
     }
 }

@@ -68,14 +68,25 @@ public class UsersController : VersionNeutralApiController
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
     }
     //checked
-    [HttpGet("get-doctors")]
+    [HttpPost("get-doctors")]
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get All Doctor For Customer.", "")]
-    public Task<List<GetDoctorResponse>> GetAllDoctor()
+    public Task<List<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
     {
-        return _userService.GetAllDoctor();
+        return _userService.GetAllDoctor(request);
     }
+
+    //checked
+    [HttpGet("get-top-doctors")]
+    [TenantIdHeader]
+    [AllowAnonymous]
+    [OpenApiOperation("Get TOp 4 Doctor For Customer.", "")]
+    public Task<List<GetDoctorResponse>> GetTop4Doctor()
+    {
+        return _userService.GetTop4Doctors();
+    }
+
     //checked
     [HttpPost("self-register")]
     [TenantIdHeader]
@@ -90,13 +101,7 @@ public class UsersController : VersionNeutralApiController
             var t = validation.Result;
             if (!t.IsValid)
             {
-                var message = "";
-                foreach (var i in t.Errors)
-                {
-                    message += i;
-                    message += " / ";
-                }
-                throw new BadRequestException(message);
+                throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
@@ -165,6 +170,15 @@ public class UsersController : VersionNeutralApiController
     public Task<string> ResetPasswordAsync(ResetPasswordRequest request)
     {
         return _userService.ResetPasswordAsync(request);
+    }
+
+    //checked
+    [HttpPost("get-patients")]
+    [MustHavePermission(FSHAction.View, FSHResource.Users)]
+    [OpenApiOperation("Get list of all patient.", "")]
+    public Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken)
+    {
+        return _userService.GetListPatientAsync(request, cancellationToken);
     }
 
     private string GetOriginFromRequest()

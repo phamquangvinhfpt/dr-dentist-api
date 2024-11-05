@@ -85,8 +85,6 @@ public class UserSeeder : ICustomSeeder
                     _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
                     await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
                 }
-                //List<WorkingCalendar> calendars = CreateWorkingCalendar(user.Id, new TimeSpan(8, 0, 0), new TimeSpan(17, 0, 0));
-                //await _db.WorkingCalendars.AddRangeAsync(calendars);
             }
             await _db.SaveChangesAsync(cancellationToken);
             foreach (var user in staff)
@@ -109,34 +107,4 @@ public class UserSeeder : ICustomSeeder
             _logger.LogInformation("Seeded Users.");
         }
     }
-    //public List<WorkingCalendar> CreateWorkingCalendar(string doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
-    //{
-    //    var result = new List<WorkingCalendar>();
-
-    //    var currentDate = DateOnly.FromDateTime(DateTime.Now);
-
-    //    var lastDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month));
-    //    var lastDate = DateOnly.FromDateTime(lastDayOfMonth);
-
-    //    var date = currentDate;
-    //    while (date <= lastDate)
-    //    {
-    //        var workingCalendar = new WorkingCalendar
-    //        {
-    //            DoctorId = doctorId,
-    //            Date = date,
-    //            StartTime = startTime,
-    //            EndTime = endTime,
-    //            Status = "Available",
-    //            Note = note,
-    //            CreatedOn = DateTime.Now,
-    //            //CreatedBy = doctorId // Giả sử người tạo là chính bác sĩ đó
-    //        };
-
-    //        result.Add(workingCalendar);
-    //        date = date.AddDays(1);
-    //    }
-
-    //    return result;
-    //}
 }

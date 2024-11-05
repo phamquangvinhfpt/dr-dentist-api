@@ -54,7 +54,9 @@ public interface IUserService : ITransientService
     Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken);
     Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
     Task<string> CreateOrUpdatePatientFamily(UpdatePatientFamilyRequest request, CancellationToken cancellationToken);
-    Task<List<GetDoctorResponse>> GetAllDoctor();
+    Task<List<GetDoctorResponse>> GetAllDoctor(PaginationFilter request);
 
     Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken);
+    Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken);
+    Task<List<GetDoctorResponse>> GetTop4Doctors();
 }

@@ -6,8 +6,8 @@ namespace FSH.WebApi.Domain.Appointments;
 
 public class Appointment : AuditableEntity, IAggregateRoot
 {
-    public string? PatientId { get; set; }
-    public string? DentistId { get; set; }
+    public Guid? PatientId { get; set; }
+    public Guid? DentistId { get; set; }
     public Guid? ServiceId { get; set; }
     public DateTime AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
@@ -26,7 +26,7 @@ public class Appointment : AuditableEntity, IAggregateRoot
     {
     }
 
-    public Appointment(string? patientId, string? dentistId, Guid? serviceId, DateTime appointmentDate, TimeSpan startTime, TimeSpan duration, AppointmentStatus status, string? notes)
+    public Appointment(Guid? patientId, Guid? dentistId, Guid? serviceId, DateTime appointmentDate, TimeSpan startTime, TimeSpan duration, AppointmentStatus status, string? notes)
     {
         PatientId = patientId;
         DentistId = dentistId;

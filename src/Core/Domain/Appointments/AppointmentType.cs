@@ -2,6 +2,7 @@
 
 public enum AppointmentType
 {
+    None,
     Appointment,
     FollowUp
 }

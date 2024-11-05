@@ -1,8 +1,10 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
@@ -27,6 +29,23 @@ internal class WorkingCalendarService : IWorkingCalendarService
         _userManager = userManager;
     }
 
+    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, Guid doctorId)
+    {
+        var calendars = await _db.WorkingCalendars
+            .Where(c =>
+                c.DoctorId == doctorId &&
+                c.Date == date &&
+                (
+                    (c.StartTime <= start && start < c.EndTime) ||
+                    (c.StartTime < end && end <= c.EndTime) ||
+                    (start <= c.StartTime && c.EndTime <= end)
+                )
+            )
+            .AnyAsync();
+
+        return !calendars;
+    }
+
     public List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
     {
         var result = new List<WorkingCalendar>();
@@ -45,7 +64,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 Date = date,
                 StartTime = startTime,
                 EndTime = endTime,
-                Status = "Available",
+                Status = CalendarStatus.Waiting,
                 Note = note,
                 CreatedOn = DateTime.Now,
                 CreatedBy = _currentUserService.GetUserId(),

@@ -39,8 +39,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PatientId = table.Column<string>(type: "text", nullable: true),
-                    DentistId = table.Column<string>(type: "text", nullable: true),
+                    PatientId = table.Column<string>(type: "uuid", nullable: true),
+                    DentistId = table.Column<string>(type: "uuid", nullable: true),
                     ServiceId = table.Column<Guid>(type: "uuid", nullable: true),
                     AppointmentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     StartTime = table.Column<TimeSpan>(type: "interval", nullable: false),
@@ -507,7 +507,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Date = table.Column<DateOnly>(type: "date", nullable: true),
                     StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
                     EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: true),
                     Note = table.Column<string>(type: "text", nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
