@@ -3,7 +3,6 @@ using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Persistence.Context;
-using FSH.WebApi.Shared.Multitenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -45,8 +44,9 @@ public class PaymentService : IPaymentService
                 }
 
                 await _context.Transactions.AddAsync(transaction);
-                await _context.SaveChangesAsync();
             }
+
+            await _context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {

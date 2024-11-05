@@ -19,8 +19,9 @@ public class WebHookController : VersionedApiController
 
     [HttpPost]
     [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Webhook api for received transaction from bank!", "")]
-    public IActionResult Post([FromBody] Transaction transactionInfo, CancellationToken cancellationToken)
+    public async Task<IActionResult> Post([FromBody] Transaction transactionInfo, CancellationToken cancellationToken)
     {
         try
         {
@@ -42,7 +43,7 @@ public class WebHookController : VersionedApiController
                 return Unauthorized("Chữ ký không hợp lệ.");
             }
 
-            _paymentService.SaveTransactions(transactionInfo.data, cancellationToken);
+            await _paymentService.SaveTransactions(transactionInfo.data, cancellationToken);
         }
         catch (Exception ex)
         {
