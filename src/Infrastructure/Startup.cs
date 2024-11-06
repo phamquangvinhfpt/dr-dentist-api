@@ -10,6 +10,7 @@ using FSH.WebApi.Infrastructure.Middleware;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Notifications;
 using FSH.WebApi.Infrastructure.OpenApi;
+using FSH.WebApi.Infrastructure.Payments;
 using FSH.WebApi.Infrastructure.Persistence;
 using FSH.WebApi.Infrastructure.Persistence.Initialization;
 using FSH.WebApi.Infrastructure.reCAPTCHAv3;
@@ -36,6 +37,7 @@ public static class Startup
     {
         var applicationAssembly = typeof(FSH.WebApi.Application.Startup).GetTypeInfo().Assembly;
         return services
+            .AddTenantIdMiddleware()
             .AddApiVersioning()
             .AddAuth(config)
             .AddBackgroundJobs(config)
@@ -81,6 +83,7 @@ public static class Startup
 
     public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder builder, IConfiguration config) =>
         builder
+            .UseTenantIdMiddleware()
             .UseRequestLocalization()
             .UseStaticFiles()
             .UseSecurityHeaders(config)
