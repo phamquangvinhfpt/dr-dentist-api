@@ -15,4 +15,5 @@ public interface IAppointmentService : ITransientService
     Task VerifyAndFinishBooking(AppointmentDepositRequest request, CancellationToken cancellationToken);
     Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, CancellationToken cancellationToken);
     Task RescheduleAppointment(RescheduleRequest request, CancellationToken cancellationToken);
+    Task CancelAppointment(CancelAppointmentRequest request, CancellationToken cancellationToken);
 }

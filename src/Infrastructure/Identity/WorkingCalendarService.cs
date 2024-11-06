@@ -1,10 +1,18 @@
-﻿using DocumentFormat.OpenXml.Drawing;
+﻿using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Wordprocessing;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Models;
+using FSH.WebApi.Application.Common.Specification;
+using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Service;
+using FSH.WebApi.Infrastructure.Auth;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -13,7 +21,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Xceed.Words.NET;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -103,22 +113,109 @@ internal class WorkingCalendarService : IWorkingCalendarService
         return result;
     }
 
-    public List<WorkingCalendarResponse> GetWorkingCalendars(CancellationToken cancellation)
+    public async Task<List<AvailableTimeResponse>> GetAvailableTimeSlot(GetAvailableTimeRequest request, CancellationToken cancellationToken)
     {
-        var doctors = _db.DoctorProfiles.ToList();
-        var result = new List<WorkingCalendarResponse>();
-        foreach (var doctor in doctors)
+        var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
+        var timeSlot = await _db.WorkingCalendars.Where(a => a.DoctorId == dprofile.Id && a.Date == request.Date).OrderBy(a => a.StartTime).ToListAsync();
+
+        var startOfDay = new TimeSpan(8, 0, 0);
+        var endOfDay = new TimeSpan(17, 0, 0);
+        //var lunchStart = new TimeSpan(12, 0, 0);
+        //var lunchEnd = new TimeSpan(14, 0, 0);
+
+        var result = new List<AvailableTimeResponse>();
+
+        for (var time = startOfDay; time < endOfDay; time += TimeSpan.FromMinutes(30))
         {
-            var user = _userManager.FindByIdAsync(doctor.DoctorId).Result;
-            var schedules = _db.WorkingCalendars.Where(p => p.DoctorId == doctor.Id).ToList() ?? null;
-            result.Add(new WorkingCalendarResponse
+            //if (time >= lunchStart && time < lunchEnd)
+            //{
+            //    continue;
+            //}
+            result.Add(new AvailableTimeResponse
             {
-                DoctorProfileID = doctor.Id,
-                ImageUrl = user.ImageUrl,
-                UserName = user.UserName,
-                WorkingCalendars = schedules,
+                Time = time,
             });
         }
+        foreach (var t in timeSlot)
+        {
+            result.RemoveAll(slot =>
+                slot.Time >= t.StartTime && slot.Time < t.EndTime);
+        }
         return result;
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendars(PaginationFilter filter, CancellationToken cancellation)
+    {
+        var currentUserRole = _currentUserService.GetRole();
+        var currentUserId = _currentUserService.GetUserId().ToString();
+        ;
+
+        if (currentUserRole == FSHRoles.Dentist)
+        {
+            if (filter.AdvancedSearch == null)
+            {
+                filter.AdvancedSearch = new Search();
+                filter.AdvancedSearch.Fields = new List<string>();
+            }
+            filter.AdvancedSearch.Fields.Add("DoctorId");
+            filter.AdvancedSearch.Keyword = currentUserId;
+        }
+
+        var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+        var calendarsGrouped = await _db.WorkingCalendars.AsNoTracking().WithSpecification(spec).GroupBy(c => c.DoctorId).ToDictionaryAsync(g => g.Key, g => g.ToList());
+        var totalCount = calendarsGrouped.Count();
+
+        var result = new List<WorkingCalendarResponse>();
+
+        foreach (var c in calendarsGrouped)
+        {
+            var dentist = c.Key;
+            var calendars = c.Value;
+
+            var appointment = await _db.Appointments
+                    .FirstOrDefaultAsync(a => a.Id == calendars[0].AppointmentId, cancellation);
+
+            if (appointment != null)
+            {
+                var doc_profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == dentist);
+                var doc_infor = await _userManager.FindByIdAsync(doc_profile.DoctorId);
+                var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == appointment.ServiceId);
+                if (doc_infor.IsActive) {
+                    var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+                    var patientUser = await _userManager.FindByIdAsync(patientProfile.UserId);
+                    if (patientUser.IsActive)
+                    {
+
+                        result.Add(new WorkingCalendarResponse
+                        {
+                            DoctorProfileID = dentist.Value,
+                            ImageUrl = doc_infor.ImageUrl,
+                            UserName = doc_infor.UserName,
+                            WorkingCalendars = calendars.Select(x =>
+                            new WorkingCalendarDetail
+                            {
+                                AppointmentId = x.AppointmentId.Value,
+                                Date = x.Date.Value,
+                                EndTime = x.EndTime.Value,
+                                Note = x.Note,
+                                ServiceID = service.Id,
+                                ServiceName = service.ServiceName,
+                                PatientCode = patientProfile.PatientCode,
+                                PatientName = patientUser.UserName,
+                                PatientProfileID = patientProfile.Id,
+                                StartTime = x.StartTime.Value,
+                                Status = x.Status,
+                            }).ToList(),
+                        });
+                    }
+                }
+            }
+        }
+
+        return new PaginationResponse<WorkingCalendarResponse>(
+            result,
+            totalCount,
+            filter.PageNumber,
+            filter.PageSize);
     }
 }

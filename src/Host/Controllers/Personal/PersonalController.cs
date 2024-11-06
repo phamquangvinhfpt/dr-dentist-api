@@ -123,18 +123,6 @@ public class PersonalController : VersionNeutralApiController
         return Mediator.Send(request);
     }
     //checked
-    [HttpGet("doctor/schedule")]
-    [OpenApiOperation("Get Working Schedule for all Doctor.", "")]
-    public async Task<List<WorkingCalendarResponse>> GetWorkingSchedulesAsync(CancellationToken cancellationToken)
-    {
-        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
-        {
-            throw new UnauthorizedAccessException();
-        }
-        return _workingCalendarService.GetWorkingCalendars(cancellationToken);
-    }
-
-    //checked
     [HttpPost("update-doctor-profile")]
     [MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [OpenApiOperation("Update Doctor Profile", "")]

@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Identity.WorkingCalendars;
 public interface IWorkingCalendarService : ITransientService
 {
-    public List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null);
-    public List<WorkingCalendarResponse> GetWorkingCalendars(CancellationToken cancellation);
+    List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendars(PaginationFilter filter, CancellationToken cancellation);
     Task<bool> CheckAvailableTimeSlot(DateOnly date,TimeSpan start, TimeSpan end, string DoctorID);
     Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime);
+    Task<List<AvailableTimeResponse>> GetAvailableTimeSlot(GetAvailableTimeRequest request, CancellationToken cancellationToken);
 }

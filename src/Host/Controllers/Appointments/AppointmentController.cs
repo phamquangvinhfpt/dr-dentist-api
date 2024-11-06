@@ -21,10 +21,10 @@ public class AppointmentController : VersionNeutralApiController
         return Mediator.Send(request);
     }
 
-    [HttpPost("verify")]
-    [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
-    [OpenApiOperation("Finish Deposit Appointment Payment", "")]
-    public Task<string> VerifyAppointment(AppointmentDepositRequest request)
+    [HttpPost("cancel")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Cancel Appointment", "")]
+    public Task<string> CancelAppointment(CancelAppointmentRequest request)
     {
         return Mediator.Send(request);
     }

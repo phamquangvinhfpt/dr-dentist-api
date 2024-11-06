@@ -42,7 +42,6 @@ public class WebHookController : VersionedApiController
             {
                 return Unauthorized("Chữ ký không hợp lệ.");
             }
-
             await _paymentService.SaveTransactions(transactionInfo.data, cancellationToken);
         }
         catch (Exception ex)

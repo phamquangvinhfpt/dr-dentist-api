@@ -11,6 +11,6 @@ public class WorkingCalendarResponse
     public Guid DoctorProfileID { get; set; }
     public string? ImageUrl { get; set; }
     public string? UserName { get; set; }
-    public List<WorkingCalendar>? WorkingCalendars { get; set; }
+    public List<WorkingCalendarDetail>? WorkingCalendars { get; set; }
 
 }

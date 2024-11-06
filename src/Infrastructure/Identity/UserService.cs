@@ -468,8 +468,11 @@ internal partial class UserService : IUserService
 
     public async Task<bool> CheckUserInRoleAsync(string userID, string roleName)
     {
-        var user = await _userManager.Users.Where(p => p.Id == userID && p.IsActive).FirstOrDefaultAsync()
-            ?? throw new BadRequestException("User Not Found or User was Deactivate.");
+        var user = await _userManager.Users.Where(p => p.Id == userID && p.IsActive).FirstOrDefaultAsync();
+        if(user == null)
+        {
+            return false;
+        }
         return await _userManager.IsInRoleAsync(user, roleName);
     }
 

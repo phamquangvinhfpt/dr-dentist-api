@@ -1,6 +1,7 @@
 ﻿using Amazon.Runtime.Internal.Util;
 using Ardalis.Specification.EntityFrameworkCore;
 using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
@@ -33,7 +34,9 @@ internal class AppointmentService : IAppointmentService
     private readonly IJobService _jobService;
     private readonly ILogger<AppointmentService> _logger;
     private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly ICacheService _cacheService;
     public AppointmentService(ApplicationDbContext db,
+        ICacheService cacheService,
         IStringLocalizer<AppointmentService> t,
         ICurrentUser currentUserService,
         UserManager<ApplicationUser> userManager,
@@ -47,6 +50,7 @@ internal class AppointmentService : IAppointmentService
         _jobService = jobService;
         _logger = logger;
         _workingCalendarService = workingCalendarService;
+        _cacheService = cacheService;
     }
 
     public Task<bool> CheckAppointmentDateValid(DateOnly date)
@@ -91,13 +95,13 @@ internal class AppointmentService : IAppointmentService
             Type = request.Type,
             Notes = request.Notes,
         };
-        if (hasDoctor)
+        if (!hasDoctor)
         {
             app.DentistId = doctor.Id;
         }
         var appointment = _db.Appointments.Add(app).Entity;
         Guid calendarID = Guid.Empty;
-        if (hasDoctor)
+        if (!hasDoctor)
         {
             calendarID = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
             {
@@ -112,15 +116,19 @@ internal class AppointmentService : IAppointmentService
             }).Entity.Id;
         }
         await _db.SaveChangesAsync(cancellationToken);
-
-        return new AppointmentDepositRequest
+        var result = new AppointmentDepositRequest
         {
-            Key = _jobService.Schedule(() => DeleteUnpaidBooking(appointment.Id, calendarID, cancellationToken), TimeSpan.FromMinutes(10)),
+            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(appointment.Id, calendarID, cancellationToken), TimeSpan.FromMinutes(10)),
             AppointmentId = appointment.Id,
             DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
             DepositTime = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
             IsDeposit = isStaffOrAdmin,
         };
+        if (!isStaffOrAdmin)
+        {
+            await _cacheService.SetAsync(patient.PatientCode, result, TimeSpan.FromMinutes(10), cancellationToken);
+        }
+        return result;
     }
 
     public async Task VerifyAndFinishBooking(AppointmentDepositRequest request, CancellationToken cancellationToken)
@@ -278,5 +286,25 @@ internal class AppointmentService : IAppointmentService
             }
         }
         return true;
+    }
+
+    public async Task CancelAppointment(CancelAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        var user_role = _currentUserService.GetRole();
+        if (user_role == FSHRoles.Patient)
+        {
+            if (request.UserID != _currentUserService.GetUserId().ToString())
+            {
+                throw new Exception("Only Patient can cancel their appointment");
+            }
+        }
+        var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+        appoint.Status = AppointmentStatus.Cancelled;
+
+        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
+        if (payment != null) {
+            payment.Status = Domain.Payments.PaymentStatus.Canceled;
+        }
+        await _db.SaveChangesAsync(cancellationToken);
     }
 }

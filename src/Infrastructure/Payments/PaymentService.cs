@@ -1,3 +1,5 @@
+using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Payments;
@@ -14,13 +16,17 @@ public class PaymentService : IPaymentService
     private readonly ApplicationDbContext _context;
     private readonly INotificationService _notificationService;
     private readonly FSHTenantInfo _tenantInfo;
+    private readonly IAppointmentService _appointmentService;
+    private readonly ICacheService _cacheService;
 
-    public PaymentService(ILogger<PaymentService> logger, ApplicationDbContext context, INotificationService notificationService, FSHTenantInfo tenantInfo)
+    public PaymentService(ILogger<PaymentService> logger, ApplicationDbContext context, INotificationService notificationService, FSHTenantInfo tenantInfo, IAppointmentService appointmentService, ICacheService cacheService)
     {
         _logger = logger;
         _context = context;
         _notificationService = notificationService;
         _tenantInfo = tenantInfo;
+        _appointmentService = appointmentService;
+        _cacheService = cacheService;
     }
 
     public async Task SaveTransactions(List<TransactionInfo> data, CancellationToken cancellationToken)
@@ -44,6 +50,16 @@ public class PaymentService : IPaymentService
                 }
 
                 await _context.Transactions.AddAsync(transaction);
+                var check_context = await _context.PatientProfiles.AnyAsync(p => p.PatientCode == transaction.Description);
+                if (check_context)
+                {
+                    var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(transaction.Description, cancellationToken);
+                    if (deposit_info != null)
+                    {
+                        await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                        await _cacheService.RemoveAsync(transaction.Description);
+                    }
+                }
             }
 
             await _context.SaveChangesAsync(cancellationToken);
