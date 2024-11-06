@@ -67,8 +67,30 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
         RuleFor(p => p.StartTime)
             .NotNull()
             .WithMessage("Start time is required")
-            .Must(time => time >= TimeSpan.FromHours(8) && time <= TimeSpan.FromHours(17))
-            .WithMessage("Start time must be between 8:00 AM and 5:00 PM");
+            .Must((request, startTime) =>
+            {
+                var currentTime = DateTime.Now.TimeOfDay;
+                var currentDate = DateOnly.FromDateTime(DateTime.Now);
+
+                if (request.AppointmentDate == currentDate)
+                {
+                    return startTime > currentTime;
+                }
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                {
+                    return false;
+                }
+
+                return true;
+                })
+            .WithMessage((request, startTime) =>
+            {
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                {
+                    return "Start time must be between 8:00 AM and 5:00 PM";
+                }
+                return "Start time must be greater than current time";
+            });
 
         RuleFor(p => p.Duration)
             .NotNull()
@@ -102,6 +124,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                     request.StartTime,
                     request.StartTime.Add(request.Duration),
                     request.DentistId))
+            .When(p => p.DentistId != null)
             .WithMessage("The selected time slot overlaps with an existing appointment");
     }
 }

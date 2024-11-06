@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Domain.Identity;
 public enum CalendarStatus
 {
+    Failed,
     Waiting,
     OnGoing,
 

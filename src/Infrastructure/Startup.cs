@@ -108,9 +108,6 @@ public static class Startup
         endpoints.MapHealthChecks("/api/health");
 
     public static void RecuringJob(this IServiceProvider serviceProvider, IConfiguration configuration) {
-        RecurringJob.AddOrUpdate(
-                    "myrecurringjob",
-                    () => Console.WriteLine("Recurring!"),
-                    Cron.Daily);
+        RecurringJob.AddOrUpdate("myrecurringjob",() => Console.WriteLine("Recurring!"), Cron.Daily);
     }
 }

@@ -2,6 +2,7 @@
 
 public enum PaymentStatus
 {
+    Waiting,
     Incomplete,
     Completed
 }

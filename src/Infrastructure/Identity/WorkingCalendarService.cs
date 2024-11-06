@@ -1,4 +1,6 @@
-﻿using FSH.WebApi.Application.Common.Interfaces;
+﻿using DocumentFormat.OpenXml.Drawing;
+using FSH.WebApi.Application.Common.Exceptions;
+using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
@@ -9,8 +11,10 @@ using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -40,6 +44,27 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     (c.StartTime <= start && start < c.EndTime) ||
                     (c.StartTime < end && end <= c.EndTime) ||
                     (start <= c.StartTime && c.EndTime <= end)
+                )
+            )
+            .AnyAsync();
+
+        return !calendars;
+    }
+
+    public async Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
+    {
+        var existingCalendar = await _db.WorkingCalendars.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");
+        if (existingCalendar.Status != CalendarStatus.OnGoing) {
+            return false;
+        }
+        var calendars = await _db.WorkingCalendars
+            .Where(c =>
+                c.DoctorId == existingCalendar.DoctorId &&
+                c.Date == appointmentDate &&
+                (
+                    (c.StartTime <= startTime && startTime < c.EndTime) ||
+                    (c.StartTime < endTime && endTime <= c.EndTime) ||
+                    (startTime <= c.StartTime && c.EndTime <= endTime)
                 )
             )
             .AnyAsync();
