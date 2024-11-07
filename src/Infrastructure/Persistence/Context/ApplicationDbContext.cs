@@ -43,7 +43,7 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<WorkingCalendar> WorkingCalendars { get; set; }
     public DbSet<MedicalRecord> MedicalRecords { get; set; }
     public DbSet<BasicExamination> BasicExaminations { get; set; }
-    public DbSet<TransactionInfo> Transactions { get; set; }
+    public DbSet<Transaction> Transactions { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

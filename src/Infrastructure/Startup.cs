@@ -50,6 +50,7 @@ public static class Startup
             .AddMailing(config)
             .AddReCaptchav3(config)
             .AddSpeedSMS(config)
+            .AddPayment(config)
             .AddMediatR(Assembly.GetExecutingAssembly())
             .AddMultitenancy()
             .AddNotificationsAndChat(config)
@@ -81,6 +82,12 @@ public static class Startup
             .InitializeDatabasesAsync(cancellationToken);
     }
 
+    public static void InitializeJob(this IServiceProvider services, IConfiguration config)
+    {
+        var settings = config.GetSection(nameof(PaymentSettings)).Get<PaymentSettings>();
+        RecurringJob.AddOrUpdate("root-CheckTransactionJob", () => TransactionsUtils.CallAPIChecking($"{settings.SyncJobURL}/api/v1/payment/check-new-transactions"), settings.CheckTransCron);
+    }
+
     public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder builder, IConfiguration config) =>
         builder
             .UseTenantIdMiddleware()
@@ -109,8 +116,4 @@ public static class Startup
 
     private static IEndpointConventionBuilder MapHealthCheck(this IEndpointRouteBuilder endpoints) =>
         endpoints.MapHealthChecks("/api/health");
-
-    //public static void RecuringJob(this IServiceProvider serviceProvider, IConfiguration configuration) {
-    //    RecurringJob.AddOrUpdate("myrecurringjob",() => Console.WriteLine("Recurring!"), Cron.Daily);
-    //}
 }

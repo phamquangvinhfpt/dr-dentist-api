@@ -39,9 +39,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PatientId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DentistId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ServiceId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PatientId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DentistId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
                     AppointmentDate = table.Column<DateOnly>(type: "date", nullable: false),
                     StartTime = table.Column<TimeSpan>(type: "interval", nullable: false),
                     Duration = table.Column<TimeSpan>(type: "interval", nullable: false),
@@ -174,14 +174,14 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Payment",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Type = table.Column<string>(type: "text", nullable: false),
-                    TransactionId = table.Column<string>(type: "text", nullable: false),
-                    Amount = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TransactionID = table.Column<string>(type: "text", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
-                    Date = table.Column<string>(type: "text", nullable: false),
-                    Bank = table.Column<string>(type: "text", nullable: false),
+                    TransactionDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    IsSuccess = table.Column<bool>(type: "boolean", nullable: false),
+                    ErrorMessage = table.Column<string>(type: "text", nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>

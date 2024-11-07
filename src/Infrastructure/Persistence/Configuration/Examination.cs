@@ -365,9 +365,9 @@ public class BasicExaminationConfig : IEntityTypeConfiguration<BasicExamination>
     }
 }
 
-public class TransactionConfig : IEntityTypeConfiguration<TransactionInfo>
+public class TransactionConfig : IEntityTypeConfiguration<Transaction>
 {
-    public void Configure(EntityTypeBuilder<TransactionInfo> builder)
+    public void Configure(EntityTypeBuilder<Transaction> builder)
     {
         builder
             .ToTable("Transactions", SchemaNames.Payment)
