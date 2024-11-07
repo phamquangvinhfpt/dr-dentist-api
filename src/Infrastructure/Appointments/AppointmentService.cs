@@ -1,5 +1,7 @@
 ﻿using Amazon.Runtime.Internal.Util;
 using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
@@ -7,6 +9,7 @@ using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
@@ -22,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
@@ -35,13 +39,15 @@ internal class AppointmentService : IAppointmentService
     private readonly ILogger<AppointmentService> _logger;
     private readonly IWorkingCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
+    private readonly INotificationService _notificationService;
     public AppointmentService(ApplicationDbContext db,
         ICacheService cacheService,
         IStringLocalizer<AppointmentService> t,
         ICurrentUser currentUserService,
         UserManager<ApplicationUser> userManager,
         IJobService jobService, ILogger<AppointmentService> logger,
-       IWorkingCalendarService workingCalendarService)
+       IWorkingCalendarService workingCalendarService,
+       INotificationService notificationService)
     {
         _db = db;
         _t = t;
@@ -51,6 +57,7 @@ internal class AppointmentService : IAppointmentService
         _logger = logger;
         _workingCalendarService = workingCalendarService;
         _cacheService = cacheService;
+        _notificationService = notificationService;
     }
 
     public Task<bool> CheckAppointmentDateValid(DateOnly date)
@@ -107,7 +114,7 @@ internal class AppointmentService : IAppointmentService
             StartTime = appointment.StartTime,
             EndTime = appointment.StartTime.Add(appointment.Duration),
             Status = isStaffOrAdmin
-            ? Domain.Identity.CalendarStatus.OnGoing
+            ? Domain.Identity.CalendarStatus.Booked
             : Domain.Identity.CalendarStatus.Waiting,
         };
         if (!hasDoctor)
@@ -158,10 +165,14 @@ internal class AppointmentService : IAppointmentService
         var payment = await _db.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentID);
 
         appointment.Status = AppointmentStatus.Confirmed;
-        calendar.Status = Domain.Identity.CalendarStatus.OnGoing;
+        calendar.Status = Domain.Identity.CalendarStatus.Booked;
         payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
         await _db.SaveChangesAsync(cancellationToken);
+        _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
+            appointment.DentistId,
+            appointment.AppointmentDate,
+            TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
     }
 
     public async Task DeleteUnpaidBooking(Guid appointmentId, Guid calendarID, Guid paymentID, CancellationToken cancellationToken)
@@ -252,11 +263,13 @@ internal class AppointmentService : IAppointmentService
     {
         var user_role = _currentUserService.GetRole();
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+        string patient_code = "";
         if (user_role == FSHRoles.Patient) {
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
             if (appointment.PatientId != patientProfile.Id) {
                 throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
             }
+            patient_code = patientProfile.PatientCode;
         }
         if (appointment.DentistId != null)
         {
@@ -274,6 +287,14 @@ internal class AppointmentService : IAppointmentService
         appointment.LastModifiedBy = _currentUserService.GetUserId();
         appointment.LastModifiedOn = DateTime.Now;
         await _db.SaveChangesAsync(cancellationToken);
+
+        if(appointment.DentistId != null)
+        {
+            _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
+            appointment.DentistId,
+            appointment.AppointmentDate,
+            TypeRequest.Reschedule, cancellationToken), TimeSpan.FromSeconds(5));
+        }
     }
 
     public async Task<bool> CheckAppointmentAvailableToReschedule(DefaultIdType appointmentId)
@@ -304,13 +325,19 @@ internal class AppointmentService : IAppointmentService
             }
         }
         var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
         appoint.Status = AppointmentStatus.Cancelled;
-
+        calendar.Status = CalendarStatus.Canceled;
         var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
-        if (payment != null) {
-            payment.Status = Domain.Payments.PaymentStatus.Canceled;
-        }
+        payment.Status = Domain.Payments.PaymentStatus.Canceled;
+
         await _db.SaveChangesAsync(cancellationToken);
+
+        
+        _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
+            appoint.DentistId,
+            appoint.AppointmentDate,
+            TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
     }
 
     public async Task ScheduleAppointment(ScheduleAppointmentRequest request, CancellationToken cancellationToken)
@@ -341,5 +368,49 @@ internal class AppointmentService : IAppointmentService
         appointment.DentistId = dprofile.Id;
         calendar.DoctorId = dprofile.Id;
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SendAppointmentActionNotification(Guid patientID, Guid DoctorID, DateOnly AppointmentDate, TypeRequest type, CancellationToken cancellationToken)
+    {
+        var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == DoctorID);
+        var doctor = await _userManager.FindByIdAsync(dprofile.DoctorId);
+
+        var pprofile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == patientID);
+        var patient = await _userManager.FindByIdAsync(pprofile.UserId);
+
+        switch (type)
+        {
+            case TypeRequest.Verify:
+                await _notificationService.SendNotificationToUser(doctor.Id,
+                    new Shared.Notifications.BasicNotification
+                    {
+                        Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                        Message = $"You has a meet with patient {patient.UserName} in {AppointmentDate}",
+                        Title = "Booking Schedule Notification",
+                        Url = null,
+                    }, DateTime.Now, cancellationToken);
+                break;
+            case TypeRequest.Reschedule:
+                await _notificationService.SendNotificationToUser(doctor.Id,
+                    new Shared.Notifications.BasicNotification
+                    {
+                        Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                        Message = $"Patient {patient.UserName} was reschedule to {AppointmentDate}",
+                        Title = "Reschedule Appointment Notification",
+                        Url = null,
+                    }, DateTime.Now, cancellationToken);
+                break;
+            case TypeRequest.Cancel:
+                await _notificationService.SendNotificationToUser(doctor.Id,
+                    new Shared.Notifications.BasicNotification
+                    {
+                        Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                        Message = $"Patient {patient.UserName} was cancel the meeting in {AppointmentDate}",
+                        Title = "Cancel Appointment Notification",
+                        Url = null,
+                    }, DateTime.Now, cancellationToken);
+                break;
+        }
+
     }
 }

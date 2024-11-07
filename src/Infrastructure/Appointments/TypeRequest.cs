@@ -4,11 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FSH.WebApi.Domain.Identity;
-public enum CalendarStatus
+namespace FSH.WebApi.Infrastructure.Appointments;
+public enum TypeRequest
 {
-    Failed,
-    Waiting,
-    Booked,
-    Canceled
+    Verify,
+    Reschedule,
+    Cancel
 }
