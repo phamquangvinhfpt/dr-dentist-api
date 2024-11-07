@@ -44,4 +44,12 @@ public class AppointmentController : VersionNeutralApiController
     {
         return await _appointmentService.GetAppointments(filter, cancellationToken);
     }
+
+    [HttpPost("schedule")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Schedule Appointment", "")]
+    public Task<string> ScheduleAppointment(ScheduleAppointmentRequest request)
+    {
+        return Mediator.Send(request);
+    }
 }

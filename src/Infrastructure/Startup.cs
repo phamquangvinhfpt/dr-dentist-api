@@ -110,7 +110,7 @@ public static class Startup
     private static IEndpointConventionBuilder MapHealthCheck(this IEndpointRouteBuilder endpoints) =>
         endpoints.MapHealthChecks("/api/health");
 
-    public static void RecuringJob(this IServiceProvider serviceProvider, IConfiguration configuration) {
-        RecurringJob.AddOrUpdate("myrecurringjob",() => Console.WriteLine("Recurring!"), Cron.Daily);
-    }
+    //public static void RecuringJob(this IServiceProvider serviceProvider, IConfiguration configuration) {
+    //    RecurringJob.AddOrUpdate("myrecurringjob",() => Console.WriteLine("Recurring!"), Cron.Daily);
+    //}
 }

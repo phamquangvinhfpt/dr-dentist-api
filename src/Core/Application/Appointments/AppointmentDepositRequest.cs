@@ -9,6 +9,7 @@ namespace FSH.WebApi.Application.Appointments;
 public class AppointmentDepositRequest
 {
     public string? Key { get; set; }
+    public Guid PaymentID { get; set; }
     public Guid AppointmentId { get; set; }
     public double DepositAmount { get; set; }
     public TimeSpan DepositTime { get; set; }

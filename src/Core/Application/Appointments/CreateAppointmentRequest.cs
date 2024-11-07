@@ -50,7 +50,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
             .WithMessage((_, id) => $"Patient {id} is not valid.")
             .MustAsync(async (id, _) => await userService.CheckUserInRoleAsync(id, FSHRoles.Dentist))
             .When(p => p.DentistId != null)
-            .WithMessage((_, id) => $"User {id} is not patient.");
+            .WithMessage((_, id) => $"User {id} is not dentist.");
 
         RuleFor(p => p.ServiceId)
             .NotNull()

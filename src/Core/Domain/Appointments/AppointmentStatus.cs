@@ -2,7 +2,7 @@ namespace FSH.WebApi.Domain.Appointments;
 
 public enum AppointmentStatus
 {
-    Fail,
+    Failed,
     Pending,
     Confirmed,
     Success,

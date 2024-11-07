@@ -100,26 +100,40 @@ internal class AppointmentService : IAppointmentService
             app.DentistId = doctor.Id;
         }
         var appointment = _db.Appointments.Add(app).Entity;
-        Guid calendarID = Guid.Empty;
-        if (!hasDoctor)
+        var cal = new Domain.Identity.WorkingCalendar
         {
-            calendarID = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
-            {
-                DoctorId = doctor.Id,
-                AppointmentId = appointment.Id,
-                Date = appointment.AppointmentDate,
-                StartTime = appointment.StartTime,
-                EndTime = appointment.StartTime.Add(appointment.Duration),
-                Status = isStaffOrAdmin
+            AppointmentId = appointment.Id,
+            Date = appointment.AppointmentDate,
+            StartTime = appointment.StartTime,
+            EndTime = appointment.StartTime.Add(appointment.Duration),
+            Status = isStaffOrAdmin
             ? Domain.Identity.CalendarStatus.OnGoing
             : Domain.Identity.CalendarStatus.Waiting,
-            }).Entity.Id;
+        };
+        if (!hasDoctor)
+        {
+            cal.DoctorId = doctor.Id;
         }
+        var calendar = _db.WorkingCalendars.Add(cal).Entity;
+        var pay = _db.Payments.Add(new Domain.Payments.Payment
+        {
+            CreatedBy = _currentUserService.GetUserId(),
+            CreatedOn = DateTime.Now,
+            PatientProfileId = appointment.PatientId,
+            ServiceId = service.Id,
+            AppointmentId = appointment.Id,
+            DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
+            DepositDate = isStaffOrAdmin ? null : DateOnly.FromDateTime(DateTime.Now),
+            RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - service.TotalPrice * 0.3,
+            Amount = service.TotalPrice,
+            Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
+        }).Entity;
         await _db.SaveChangesAsync(cancellationToken);
         var result = new AppointmentDepositRequest
         {
-            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(appointment.Id, calendarID, cancellationToken), TimeSpan.FromMinutes(10)),
+            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
             AppointmentId = appointment.Id,
+            PaymentID = pay.Id,
             DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
             DepositTime = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
             IsDeposit = isStaffOrAdmin,
@@ -141,41 +155,32 @@ internal class AppointmentService : IAppointmentService
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentId);
         var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == appointment.ServiceId);
         var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+        var payment = await _db.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentID);
 
         appointment.Status = AppointmentStatus.Confirmed;
         calendar.Status = Domain.Identity.CalendarStatus.OnGoing;
+        payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
-        _db.Payments.Add(new Domain.Payments.Payment
-        {
-            CreatedBy = _currentUserService.GetUserId(),
-            CreatedOn = DateTime.Now,
-            PatientProfileId = appointment.PatientId,
-            ServiceId = service.Id,
-            AppointmentId = appointment.Id,
-            DepositAmount = request.DepositAmount,
-            DepositDate = DateOnly.FromDateTime(DateTime.Now),
-            RemainingAmount = service.TotalPrice - request.DepositAmount,
-            Amount = service.TotalPrice,
-            Status = Domain.Payments.PaymentStatus.Incomplete,
-        });
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteUnpaidBooking(Guid appointmentId, Guid calendarID, CancellationToken cancellationToken)
+    public async Task DeleteUnpaidBooking(Guid appointmentId, Guid calendarID, Guid paymentID, CancellationToken cancellationToken)
     {
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
+            var pay = await _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentID);
+            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
             if (appointment.Status.Equals(AppointmentStatus.Confirmed)) {
                 return;
             }
-            if (calendarID != Guid.Empty) {
-                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
-                calendar.Status = Domain.Identity.CalendarStatus.Failed;
-                _db.WorkingCalendars.Remove(calendar);
-            }
-            appointment.Status = AppointmentStatus.Fail;
+
+            calendar.Status = Domain.Identity.CalendarStatus.Failed;
+            _db.WorkingCalendars.Remove(calendar);
+            pay.Status = Domain.Payments.PaymentStatus.Failed;
+            appointment.Status = AppointmentStatus.Failed;
             _db.Appointments.Remove(appointment);
+            _db.Payments.Remove(pay);
             await _db.SaveChangesAsync(cancellationToken);
         }catch(Exception ex)
         {
@@ -305,6 +310,36 @@ internal class AppointmentService : IAppointmentService
         if (payment != null) {
             payment.Status = Domain.Payments.PaymentStatus.Canceled;
         }
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ScheduleAppointment(ScheduleAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        var currentUserRole = _currentUserService.GetRole();
+        var isStaffOrAdmin = currentUserRole == FSHRoles.Admin || currentUserRole == FSHRoles.Staff;
+        if (!isStaffOrAdmin) {
+            throw new UnauthorizedAccessException("Only Staff or Admin can access this function.");
+        }
+        var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID, cancellationToken);
+
+        if (appointment.Status != AppointmentStatus.Confirmed) {
+            throw new Exception("Appointment is not in status to schedule.");
+        }
+
+        var check = _workingCalendarService.CheckAvailableTimeSlot(
+            appointment.AppointmentDate,
+            appointment.StartTime,
+            appointment.StartTime.Add(appointment.Duration),
+            request.DoctorID).Result;
+
+        if (!check)
+        {
+            throw new InvalidDataException("The selected time slot overlaps with an existing appointment");
+        }
+        var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
+        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
+        appointment.DentistId = dprofile.Id;
+        calendar.DoctorId = dprofile.Id;
         await _db.SaveChangesAsync(cancellationToken);
     }
 }

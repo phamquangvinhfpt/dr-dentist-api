@@ -5,5 +5,6 @@ public enum PaymentStatus
     Waiting,
     Incomplete,
     Completed,
-    Canceled
+    Canceled,
+    Failed
 }
