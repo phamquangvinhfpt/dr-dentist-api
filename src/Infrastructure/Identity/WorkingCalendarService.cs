@@ -64,7 +64,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
     public async Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
     {
         var existingCalendar = await _db.WorkingCalendars.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");
-        if (existingCalendar.Status != CalendarStatus.OnGoing) {
+        if (existingCalendar.Status != CalendarStatus.Booked) {
             return false;
         }
         var calendars = await _db.WorkingCalendars
