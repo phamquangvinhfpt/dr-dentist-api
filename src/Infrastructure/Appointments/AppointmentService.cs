@@ -40,14 +40,16 @@ internal class AppointmentService : IAppointmentService
     private readonly IWorkingCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
-    public AppointmentService(ApplicationDbContext db,
+    public AppointmentService(
+        ApplicationDbContext db,
         ICacheService cacheService,
         IStringLocalizer<AppointmentService> t,
         ICurrentUser currentUserService,
         UserManager<ApplicationUser> userManager,
-        IJobService jobService, ILogger<AppointmentService> logger,
-       IWorkingCalendarService workingCalendarService,
-       INotificationService notificationService)
+        IJobService jobService,
+        ILogger<AppointmentService> logger,
+        IWorkingCalendarService workingCalendarService,
+        INotificationService notificationService)
     {
         _db = db;
         _t = t;
@@ -328,7 +330,7 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async Task<bool> CheckAppointmentAvailableToReschedule(DefaultIdType appointmentId)
+    public async Task<bool> CheckAppointmentAvailableToReschedule(Guid appointmentId)
     {
         if (!CheckAppointmentExisting(appointmentId).Result)
         {

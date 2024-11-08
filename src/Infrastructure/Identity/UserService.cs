@@ -514,7 +514,7 @@ internal partial class UserService : IUserService
     public async Task<List<GetDoctorResponse>> GetTop4Doctors()
     {
         var topDoctors = await _db.Feedbacks
-            .Where(f => f.DoctorProfileId != null)
+            //.Where(f => f.DoctorProfileId != null)
             .GroupBy(f => f.DoctorProfileId)
             .Select(group => new
             {
@@ -595,5 +595,22 @@ internal partial class UserService : IUserService
             }
         }
         return doctorResponses;
+    }
+
+    public async Task GetDoctorDetail(string doctorId, CancellationToken cancellationToken)
+    {
+        var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId);
+        var feedbackByRating = await _db.Feedbacks
+            .Where(p => p.DoctorProfileId == dProfile.Id)
+            .GroupBy(f => f.Rating)
+            .Select(group => new
+            {
+                Rating = group.Key,
+                TotalFeedbacks = group.Count(),
+                ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList()
+            })
+            .OrderByDescending(x => x.Rating)
+            .ToListAsync();
+        var user = await _userManager.FindByIdAsync(doctorId);
     }
 }
