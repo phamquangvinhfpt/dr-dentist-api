@@ -66,6 +66,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<Guid>("ServiceId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("SpamCount")
+                        .HasColumnType("integer");
+
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("interval");
 

@@ -6,6 +6,7 @@ using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Infrastructure.Persistence.Initialization;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
 
@@ -85,6 +86,8 @@ public class UserSeeder : ICustomSeeder
                     _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
                     await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
                 }
+                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
             }
             await _db.SaveChangesAsync(cancellationToken);
             foreach (var user in staff)
@@ -103,7 +106,17 @@ public class UserSeeder : ICustomSeeder
                     await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
                 }
             }
-
+            foreach (var user in doctor)
+            {
+                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            foreach (var user in patient)
+            {
+                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            await _db.SaveChangesAsync(cancellationToken);
             _logger.LogInformation("Seeded Users.");
         }
     }

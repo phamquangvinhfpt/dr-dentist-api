@@ -76,7 +76,7 @@ internal class AppointmentService : IAppointmentService
         var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == patientId);
         var appointment = await _db.Appointments
             .Where(p => p.PatientId == patient.Id &&
-            p.Status == Domain.Appointments.AppointmentStatus.Pending
+            (p.Status == Domain.Appointments.AppointmentStatus.Pending || p.Status == AppointmentStatus.Confirmed)
             ).AnyAsync();
         return !appointment;
     }
@@ -138,7 +138,7 @@ internal class AppointmentService : IAppointmentService
         await _db.SaveChangesAsync(cancellationToken);
         var result = new AppointmentDepositRequest
         {
-            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
+            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(request.PatientId, appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
             AppointmentId = appointment.Id,
             PaymentID = pay.Id,
             DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
@@ -175,10 +175,19 @@ internal class AppointmentService : IAppointmentService
             TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
     }
 
-    public async Task DeleteUnpaidBooking(Guid appointmentId, Guid calendarID, Guid paymentID, CancellationToken cancellationToken)
+    public async Task DeleteUnpaidBooking(string userID, Guid appointmentId, Guid calendarID, Guid paymentID, CancellationToken cancellationToken)
     {
         try
         {
+            var user = await _db.Users.FirstOrDefaultAsync(p => p.Id == _currentUserService.GetUserId().ToString());
+            if (user.AccessFailedCount == 3) {
+                await _userManager.SetLockoutEnabledAsync(user, true);
+                await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+            }
+            else
+            {
+                user.AccessFailedCount += 1;
+            }
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
             var pay = await _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentID);
             var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
@@ -213,6 +222,17 @@ internal class AppointmentService : IAppointmentService
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
             filter.AdvancedSearch.Keyword = patientProfile.Id.ToString();
         }
+        else if (currentUser.Equals(FSHRoles.Dentist))
+        {
+            if (filter.AdvancedSearch == null)
+            {
+                filter.AdvancedSearch = new Search();
+                filter.AdvancedSearch.Fields = new List<string>();
+            }
+            filter.AdvancedSearch.Fields.Add("DentistId");
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
+            filter.AdvancedSearch.Keyword = dProfile.Id.ToString();
+        }
         var result = new List<AppointmentResponse>();
         var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
         var appointmentsQuery = _db.Appointments
@@ -228,8 +248,8 @@ internal class AppointmentService : IAppointmentService
                 Appointment = appointment,
                 Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
                 Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
-                Service = _db.Services.FirstOrDefault(s => s.Id == appointment.ServiceId),
-                Payment = _db.Payments.FirstOrDefault(p => p.AppointmentId == appointment.Id),
+                Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
+                Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
             })
             .ToListAsync(cancellationToken);
 
@@ -263,13 +283,24 @@ internal class AppointmentService : IAppointmentService
     {
         var user_role = _currentUserService.GetRole();
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-        string patient_code = "";
+        if (user_role == FSHRoles.Patient)
+        {
+            if (appointment.SpamCount < 3)
+            {
+                appointment.SpamCount += 1;
+            }
+            else
+            {
+                var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
+                await _userManager.SetLockoutEnabledAsync(user, true);
+                await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+            }
+        }
         if (user_role == FSHRoles.Patient) {
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
             if (appointment.PatientId != patientProfile.Id) {
                 throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
             }
-            patient_code = patientProfile.PatientCode;
         }
         if (appointment.DentistId != null)
         {

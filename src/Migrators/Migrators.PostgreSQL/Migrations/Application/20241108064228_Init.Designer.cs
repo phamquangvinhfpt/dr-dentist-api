@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241107090939_Add_Transaction_Table")]
-    partial class Add_Transaction_Table
+    [Migration("20241108064228_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -68,6 +68,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<Guid>("ServiceId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("SpamCount")
+                        .HasColumnType("integer");
 
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("interval");

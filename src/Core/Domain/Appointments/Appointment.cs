@@ -15,6 +15,7 @@ public class Appointment : AuditableEntity, IAggregateRoot
     public AppointmentStatus Status { get; set; }
     public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
+    public int SpamCount { get; set; } = 0;
 
     // navigation
     [JsonIgnore]
