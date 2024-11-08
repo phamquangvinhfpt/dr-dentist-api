@@ -57,58 +57,79 @@ internal class ServiceService : IServiceService
 
     public async Task ModifyProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
     {
-        var pro = await _db.Procedures.Where(p => p.Id == request.Id).FirstOrDefaultAsync()
-            ?? throw new BadRequestException($"Procedure don't exist.");
-        var check = await _db.Procedures.Where(p => p.Name == request.Name && p.Price == request.Price && p.Description == request.Description).FirstOrDefaultAsync();
-        if (check != null)
+        var existingProcedure = await _db.Procedures
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken)
+            ?? throw new NotFoundException($"Procedure with ID {request.Id} not found.");
+
+        var isDuplicate = await _db.Procedures
+            .AnyAsync(p => p.Id != request.Id &&
+                          p.Name == request.Name &&
+                          p.Price == request.Price &&
+                          p.Description == request.Description,
+                     cancellationToken);
+
+        if (isDuplicate)
         {
-            throw new BadRequestException("Procedure information is existing!!!");
+            throw new ConflictException("A procedure with the same information already exists.");
         }
-        var sp = await _db.ServiceProcedures.Where(p => p.ProcedureId == request.Id && p.ServiceId == request.ServiceID).FirstOrDefaultAsync()
-            ?? throw new BadRequestException($"Service {request.ServiceID} don't have this procedure.");
-        var entry = _db.Procedures.Add(new Procedure
+
+        var hasServiceProcedures = await _db.ServiceProcedures
+            .AnyAsync(p => p.ProcedureId == request.Id, cancellationToken);
+
+        if (hasServiceProcedures)
         {
-            CreatedBy = _currentUserService.GetUserId(),
-            CreatedOn = DateTime.Now,
-            Name = request.Name,
-            Price = request.Price,
-            Description = request.Description,
-        }).Entity;
-        sp.ProcedureId = entry.Id;
-        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-        service.TotalPrice = service.TotalPrice - pro.Price + entry.Price;
-        //if (request.hasService)
-        //{
-            
-        //}
-        //else
-        //{
-        //    if (!flash)
-        //    {
-        //        var sps = await _db.ServiceProcedures.Where(p => p.ProcedureId == request.Id).ToListAsync();
-        //        if (sps.Any())
-        //        {
-        //            foreach(var sp in sps)
-        //            {
-        //                var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == sp.ServiceId);
-        //                service.TotalPrice = service.TotalPrice - pro.Price + request.Price;
-        //            }
-        //            await _db.SaveChangesAsync();
-        //        }
-        //    }
-        //    pro.Name = request.Name ?? pro.Name;
-        //    pro.Price = request.Price;
-        //    pro.Description = request.Description;
-        //    pro.LastModifiedBy = _currentUserService.GetUserId();
-        //    pro.LastModifiedOn = DateTime.Now;
-        //}
+            // Create new procedure instead of modifying existing one
+            var newProcedure = new Procedure
+            {
+                Name = request.Name,
+                Price = request.Price,
+                Description = request.Description,
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.UtcNow
+            };
+
+            _db.Procedures.Add(newProcedure);
+
+            if (request.hasService)
+            {
+                await UpdateServiceProcedure(
+                    request.ServiceID,
+                    existingProcedure.Id,
+                    newProcedure.Id,
+                    cancellationToken);
+            }
+            else
+            {
+                var affectedServices = await _db.ServiceProcedures
+                    .Where(sp => sp.ProcedureId == existingProcedure.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var serviceProcedure in affectedServices)
+                {
+                    await UpdateServiceProcedure(
+                        serviceProcedure.ServiceId!.Value,
+                        existingProcedure.Id,
+                        newProcedure.Id,
+                        cancellationToken);
+                }
+            }
+        }
+        else
+        {
+            existingProcedure.Name = request.Name;
+            existingProcedure.Price = request.Price;
+            existingProcedure.Description = request.Description;
+            existingProcedure.LastModifiedBy = _currentUserService.GetUserId();
+            existingProcedure.LastModifiedOn = DateTime.UtcNow;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task CreateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
     {
-        var check = await _db.Services.Where(p => p.ServiceName == request.Name && p.IsActive).FirstOrDefaultAsync();
-        if (check != null) {
+        var check = await _db.Services.AnyAsync(p => p.ServiceName == request.Name && p.IsActive);
+        if (check) {
             throw new BadRequestException("Service Name is existing!!!");
         }
         _db.Services.Add(new Domain.Service.Service
@@ -142,6 +163,8 @@ internal class ServiceService : IServiceService
         else
         {
             existing.IsActive = false;
+            existing.DeletedOn = DateTime.Now;
+            existing.DeletedBy = _currentUserService.GetUserId();
 
             var ser_pro = await _db.ServiceProcedures.Where(p => p.ServiceId == existing.Id).ToListAsync();
 
@@ -153,6 +176,8 @@ internal class ServiceService : IServiceService
                 IsActive = false,
                 CreatedBy = _currentUserService.GetUserId(),
                 CreatedOn = DateTime.Now,
+                LastModifiedBy = _currentUserService.GetUserId(),
+                LastModifiedOn = DateTime.UtcNow
             }).Entity;
             foreach (var sp in ser_pro)
             {
@@ -201,7 +226,7 @@ internal class ServiceService : IServiceService
             throw new Exception($"{nameof(Procedure)} is not empty");
         }
         var result = new ProcedureDTOs();
-        var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == procedureID, cancellationToken: cancellationToken) ?? throw new NotFoundException("Procedure Not Found.");
+        var procedure = await _db.Procedures.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == procedureID, cancellationToken: cancellationToken) ?? throw new NotFoundException("Procedure Not Found.");
         var ser_pro = await _db.ServiceProcedures.Where(p => p.ProcedureId == procedureID).ToListAsync();
         var user = await _userManager.FindByIdAsync(procedure.CreatedBy.ToString());
         result.CreateDate = procedure.CreatedOn;
@@ -261,11 +286,11 @@ internal class ServiceService : IServiceService
         result.CreateBy = user.UserName;
         result.TotalPrice = existing.TotalPrice;
         result.Description = existing.ServiceDescription;
-        var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == serviceID).ToListAsync(cancellationToken);
+        var service_procedure = await _db.ServiceProcedures.IgnoreQueryFilters().Where(p => p.ServiceId == serviceID).ToListAsync(cancellationToken);
         if (service_procedure != null) {
             result.Procedures = new List<ProcedureDTO>();
             foreach (var item in service_procedure) {
-                var pro = await _db.Procedures.Where(p => p.Id == item.ProcedureId).FirstOrDefaultAsync(cancellationToken);
+                var pro = await _db.Procedures.IgnoreQueryFilters().Where(p => p.Id == item.ProcedureId).FirstOrDefaultAsync(cancellationToken);
                 var u = await _userManager.FindByIdAsync(pro.CreatedBy.ToString());
                 result.Procedures.Add(new ProcedureDTO
                 {
@@ -283,19 +308,7 @@ internal class ServiceService : IServiceService
 
     public async Task<List<Service>> GetServicesAsync()
     {
-        //List<ServiceDTO> result = new List<ServiceDTO>();
         return await _db.Services.Where(p => p.IsActive).ToListAsync();
-        //foreach (var service in services) {
-        //    result.Add(new ServiceDTO
-        //    {
-        //        ServiceID = service.Id,
-        //        IsActive = service.IsActive,
-        //        Description = service.ServiceDescription,
-        //        Name = service.ServiceName,
-        //        TotalPrice = service.TotalPrice,
-        //    });
-        //}
-        //return result;
 
     }
 
@@ -318,6 +331,8 @@ internal class ServiceService : IServiceService
         service.IsActive = false;
         service.DeletedBy = _currentUserService.GetUserId();
         service.DeletedOn = DateTime.Now;
+        var sp = await _db.ServiceProcedures.Where(p => p.ServiceId == id).ToListAsync();
+        _db.ServiceProcedures.RemoveRange(sp);
         await _db.SaveChangesAsync(cancellationToken);
         return _t["Service Deleted"];
     }
@@ -344,6 +359,18 @@ internal class ServiceService : IServiceService
         service.DeletedOn = null;
         service.LastModifiedBy = _currentUserService.GetUserId();
         service.LastModifiedOn = DateTime.Now;
+        var sp = await _db.ServiceProcedures.IgnoreQueryFilters().Where(p => p.ServiceId == id).ToListAsync();
+        foreach (var p in sp) {
+            p.DeletedOn = null;
+            p.DeletedBy = null;
+            p.LastModifiedBy = _currentUserService.GetUserId();
+            p.LastModifiedOn= DateTime.Now;
+            var pro = await _db.Procedures.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == p.ProcedureId && a.DeletedBy != null);
+            if (pro != null) {
+                pro.DeletedOn = null;
+                pro.DeletedBy = null;
+            }
+        }
         await _db.SaveChangesAsync(cancellationToken);
         return _t["Restored Service"];
     }
@@ -362,33 +389,96 @@ internal class ServiceService : IServiceService
 
     public async Task AddOrDeleteProcedureToService(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
-        if (!request.IsRemove)
+        var currentServiceProcedures = await _db.ServiceProcedures
+            .Where(sp => sp.ServiceId == request.ServiceID)
+            .OrderBy(sp => sp.StepOrder)
+            .ToListAsync(cancellationToken);
+        if (request.IsRemove)
+        {
+            var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID)
+                ?? throw new BadRequestException("This Procedure is not in this Service");
+
+            var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+            var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
+
+            var entry = _db.Services.Add(new Service
+            {
+                ServiceName = current_service.ServiceName,
+                ServiceDescription = current_service.ServiceDescription,
+                TotalPrice = current_service.TotalPrice - current_procedure.Price,
+                IsActive = true,
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.Now,
+            }).Entity;
+            int step = 1;
+            foreach(var item in currentServiceProcedures)
+            {
+                if(item.ProcedureId != request.ProcedureID)
+                {
+                    _db.ServiceProcedures.Add(new ServiceProcedures
+                    {
+                        ServiceId = entry.Id,
+                        ProcedureId = item.ProcedureId,
+                        StepOrder = step++,
+                        CreatedBy = _currentUserService.GetUserId(),
+                        CreatedOn = DateTime.UtcNow,
+                        LastModifiedBy = _currentUserService.GetUserId(),
+                        LastModifiedOn = DateTime.UtcNow
+                    });
+                }
+                item.DeletedOn = DateTime.UtcNow;
+                item.DeletedBy = _currentUserService.GetUserId();
+            }
+            _db.Services.Remove(current_service);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        else
         {
             var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID);
             if (ser_pro is not null)
             {
                 throw new BadRequestException("The Procedure is in this Service");
             }
-            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-            var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
-            await _db.ServiceProcedures.AddAsync(new ServiceProcedures
+            var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+            var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
+
+            var entry = _db.Services.Add(new Service
             {
-                ServiceId = request.ServiceID,
-                ProcedureId = request.ProcedureID,
+                ServiceName = current_service.ServiceName,
+                ServiceDescription = current_service.ServiceDescription,
+                TotalPrice = current_service.TotalPrice + current_procedure.Price,
+                IsActive = true,
                 CreatedBy = _currentUserService.GetUserId(),
                 CreatedOn = DateTime.Now,
+            }).Entity;
+            int step = 1;
+            foreach (var item in currentServiceProcedures)
+            {
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = entry.Id,
+                    ProcedureId = item.ProcedureId,
+                    StepOrder = step++,
+                    CreatedBy = _currentUserService.GetUserId(),
+                    CreatedOn = DateTime.UtcNow,
+                    LastModifiedBy = _currentUserService.GetUserId(),
+                    LastModifiedOn = DateTime.UtcNow
+                });
+
+                item.DeletedOn = DateTime.UtcNow;
+                item.DeletedBy = _currentUserService.GetUserId();
+            }
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = entry.Id,
+                ProcedureId = current_procedure.Id,
+                StepOrder = step++,
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.UtcNow,
+                LastModifiedBy = _currentUserService.GetUserId(),
+                LastModifiedOn = DateTime.UtcNow
             });
-            service.TotalPrice += procedure.Price;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        else
-        {
-            var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID)
-                ?? throw new BadRequestException("This Procedure is not in this Service");
-            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-            var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
-            service.TotalPrice -= procedure.Price;
-            _db.ServiceProcedures.Remove(ser_pro);
+            _db.Services.Remove(current_service);
             await _db.SaveChangesAsync(cancellationToken);
         }
     }
@@ -435,5 +525,55 @@ internal class ServiceService : IServiceService
         procedure.LastModifiedOn = DateTime.Now;
         await _db.SaveChangesAsync(cancellationToken);
         return _t["Restored"];
+    }
+
+    private async Task UpdateServiceProcedure(Guid serviceId, Guid oldProcedureId, Guid newProcedureId, CancellationToken cancellationToken)
+    {
+        var service = await _db.Services
+            .Include(s => s.ServiceProcedures)
+            .FirstOrDefaultAsync(s => s.Id == serviceId, cancellationToken)
+            ?? throw new NotFoundException($"Service with ID {serviceId} not found.");
+
+        var oldProcedure = await _db.Procedures
+            .FirstAsync(p => p.Id == oldProcedureId, cancellationToken);
+        var newProcedure = await _db.Procedures
+            .FirstAsync(p => p.Id == newProcedureId, cancellationToken);
+
+        var priceDifference = newProcedure.Price - oldProcedure.Price;
+
+        var entry = _db.Services.Add(new Service
+        {
+            ServiceName = service.ServiceName,
+            ServiceDescription = service.ServiceDescription,
+            IsActive = true,
+            TotalPrice = service.TotalPrice + priceDifference,
+            CreatedBy = service.CreatedBy,
+            CreatedOn = service.CreatedOn,
+            LastModifiedBy = _currentUserService.GetUserId(),
+            LastModifiedOn = DateTime.UtcNow
+        }).Entity;
+
+        var serviceProcedure = await _db.ServiceProcedures
+            .Where(sp => sp.ServiceId == serviceId).ToListAsync();
+
+        foreach(var item in serviceProcedure)
+        {
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = entry.Id,
+                ProcedureId = (item.ProcedureId == newProcedureId) ? newProcedureId : item.ProcedureId,
+                StepOrder = item.StepOrder,
+                CreatedBy = _currentUserService.GetUserId(),
+                CreatedOn = DateTime.UtcNow,
+                LastModifiedBy = _currentUserService.GetUserId(),
+                LastModifiedOn = DateTime.UtcNow
+            });
+        }
+        service.IsActive = false;
+        service.DeletedOn = DateTime.UtcNow;
+        service.DeletedBy = _currentUserService.GetUserId();
+        oldProcedure.DeletedBy = _currentUserService.GetUserId();
+        oldProcedure.DeletedOn = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
     }
 }

@@ -55,8 +55,11 @@ public class PaymentService : IPaymentService
                 var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(transaction.Description, cancellationToken);
                 if (deposit_info != null)
                 {
-                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
-                    await _cacheService.RemoveAsync(transaction.Description);
+                    if(deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                    {
+                        await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                        await _cacheService.RemoveAsync(transaction.Description);
+                    }
                 }
             }
 

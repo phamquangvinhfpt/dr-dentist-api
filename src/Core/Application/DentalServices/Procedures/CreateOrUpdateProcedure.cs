@@ -17,23 +17,29 @@ public class CreateOrUpdateProcedure : IRequest<string>
     public string Description { get; set; }
     public double Price { get; set; }
     public bool isModify { get; set; } = false;
-    //public bool hasService { get; set; } = false;
+    public bool hasService { get; set; } = false;
     public Guid ServiceID { get; set; }
 }
 
 public class CreateOrUpdateProcedureValidator : CustomValidator<CreateOrUpdateProcedure>
 {
-    public CreateOrUpdateProcedureValidator()
+    public CreateOrUpdateProcedureValidator(IServiceService serviceService)
     {
         RuleFor(p => p.Id)
             .NotEmpty()
             .When(p => p.isModify)
-            .WithMessage("Update what procedure ?.");
+            .WithMessage("Update what procedure ?.")
+            .MustAsync(async (id, _) => await serviceService.CheckExistingProcedure(id))
+            .When(p => p.isModify)
+            .WithMessage("Service is not found.");
 
         RuleFor(p => p.ServiceID)
             .NotEmpty()
-            .When(p => p.isModify)
-            .WithMessage("Update for what service ?.");
+            .When(p => p.isModify && p.hasService)
+            .WithMessage("Update for what service ?.")
+            .MustAsync(async (id, _) => await serviceService.CheckExistingService(id))
+            .When(p => p.isModify && p.hasService)
+            .WithMessage("Service is not found.");
 
         RuleFor(p => p.Name)
             .NotEmpty()
