@@ -82,12 +82,6 @@ public static class Startup
             .InitializeDatabasesAsync(cancellationToken);
     }
 
-    public static void InitializeJob(this IServiceProvider services, IConfiguration config)
-    {
-        var settings = config.GetSection(nameof(PaymentSettings)).Get<PaymentSettings>();
-        RecurringJob.AddOrUpdate("root-CheckTransactionJob", () => TransactionsUtils.CallAPIChecking($"{settings.SyncJobURL}/api/v1/payment/check-new-transactions"), settings.CheckTransCron);
-    }
-
     public static IApplicationBuilder UseInfrastructure(this IApplicationBuilder builder, IConfiguration config) =>
         builder
             .UseTenantIdMiddleware()

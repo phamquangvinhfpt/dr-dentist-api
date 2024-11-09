@@ -1,8 +1,6 @@
 {
   "PaymentSettings": {
     "TransactionsURL": "https://api.web2m.com/historyapimbnotiv3/Anhvinh123!/0942705605/FA4B4EE2-19C0-142F-6459-459E3C7CD8DD",
-    "SyncJobURL": "https://api.drdentist.me",
-    "CheckTransCron": "* * * * *",
-    "DisableSubCron": "0 0 * * *"
+    "SyncJobURL": "https://localhost:5001"
   }
 }

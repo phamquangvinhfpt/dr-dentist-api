@@ -27,7 +27,6 @@ try
 
     app.UseInfrastructure(builder.Configuration);
     //if (!app.Environment.IsDevelopment())
-    app.Services.InitializeJob(builder.Configuration);
     app.MapEndpoints();
     app.Run();
 }
