@@ -116,13 +116,10 @@ internal partial class UserService
             LastName = request.LastName,
             UserName = request.UserName,
             PhoneNumber = request.PhoneNumber,
-            Address = request.Address,
+            Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
+            Job = request.Role.Equals(FSHRoles.Patient) ? request.Job : null,
             IsActive = true
         };
-        if (request.Role.Equals(FSHRoles.Patient))
-        {
-            user.Job = request.Job;
-        }
 
         var result = await _userManager.CreateAsync(user, request.Password);
 
@@ -195,60 +192,6 @@ internal partial class UserService
 
         return string.Join(Environment.NewLine, messages);
     }
-    public async Task<string> CreateOrUpdatePatientFamily(UpdatePatientFamilyRequest request, CancellationToken cancellationToken)
-    {
-        // var n = await _db.PatientFamilys.Where(p => p.PatientId == request.PatientId).FirstOrDefaultAsync(cancellationToken);
-        // if (n != null)
-        // {
-        //     n.Name = request.Name ?? n.Name;
-        //     n.Email = request.Email ?? n.Email;
-        //     n.Phone = request.Phone ?? n.Phone;
-        //     n.Relationship = request.Relationship;
-        //     n.LastModifiedBy = _currentUserService.GetUserId();
-        //     n.LastModifiedOn = DateTime.Now;
-        //     await _db.SaveChangesAsync(cancellationToken);
-        // }
-        // else {
-        //     _db.PatientFamilys.Add(new PatientFamily {
-        //         PatientId = request.PatientId,
-        //         Name = request.Name,
-        //         Email = request.Email,
-        //         Phone = request.Phone,
-        //         Relationship = request.Relationship,
-        //         CreatedBy = _currentUserService.GetUserId(),
-        //         CreatedOn = DateTime.Now,
-        //     });
-        //     await _db.SaveChangesAsync(cancellationToken);
-        // }
-        // return _t["Success"];
-        return "";
-    }
-
-    //public async Task<string> UpdatePatientRecordAsync(CreatePatientRecord request)
-    //{
-    //    var user = _userManager.FindByIdAsync(request.PatientId).Result;
-
-    //    user.PhoneNumber = request.PhoneNumber;
-    //    user.LastName = request.LastName;
-    //    user.FirstName = request.FirstName;
-    //    user.Address = request.Address;
-    //    user.BirthDate = request.BirthDay;
-    //    user.Gender = request.IsMale;
-    //    user.Job = request.Job;
-
-    //    var result = await _userManager.UpdateAsync(user);
-
-    //    if (!result.Succeeded)
-    //    {
-    //        throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
-    //    }
-
-
-    //    await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
-
-    //    return _t["Update Record Successfully"];
-    //}
-
     public async Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
     {
         var user = await _userManager.FindByIdAsync(request.UserId!) ?? throw new NotFoundException(_t["User Not Found."]);
@@ -262,18 +205,7 @@ internal partial class UserService
         if (role.RoleName == FSHRoles.Patient)
         {
             user.Job = request.Job ?? user.Job;
-            //if (request.PatientFamily != null) {
-            //    await CreateOrUpdatePatientFamily(request.PatientFamily, cancellationToken);
-            //}
-            //if (request.MedicalHistory != null)
-            //{
-            //    await _medicalHistoryService.CreateAndUpdateMedicalHistory(request.MedicalHistory, cancellationToken);
-            //}
         }
-        //else if(role.RoleName == FSHRoles.Dentist)
-        //{
-        //    await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
-        //}
 
         var result = await _userManager.UpdateAsync(user);
 

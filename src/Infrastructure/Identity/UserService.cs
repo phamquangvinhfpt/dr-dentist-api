@@ -102,11 +102,10 @@ internal partial class UserService : IUserService
         var users = await _userManager.Users
             .AsNoTracking()
             .WithSpecification(spec)
-            .ProjectToType<UserDetailsDto>()
             .ToListAsync(cancellationToken);
         foreach (var user in users)
         {
-            var role = await GetRolesAsync(user.Id.ToString(), cancellationToken);
+            var role = await GetRolesAsync(user.Id, cancellationToken);
             if(role.RoleName != FSHRoles.Admin)
             {
                 list_user.Add(new ListUserDTO
@@ -120,6 +119,7 @@ internal partial class UserService : IUserService
                     PhoneNumber = user.PhoneNumber,
                     IsActive = user.IsActive,
                     Role = role,
+                    isBanned = await _userManager.IsLockedOutAsync(user)
                 });
             }
         }
@@ -275,6 +275,10 @@ internal partial class UserService : IUserService
     }
     public async Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken)
     {
+        if(request.DoctorID == null)
+        {
+            throw new BadRequestException("Doctor Information should be include");
+        }
         var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
         if (profile != null)
         {
@@ -354,7 +358,7 @@ internal partial class UserService : IUserService
         foreach (var doctor in dprofiles)
         {
             var user = await _userManager.FindByIdAsync(doctor.DoctorId);
-            if (user.IsActive)
+            if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
             {
                 doctorResponses.Add(new GetDoctorResponse
                 {
@@ -396,7 +400,7 @@ internal partial class UserService : IUserService
     {
         if (request.IsUpdateProfile)
         {
-            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId && p.UserId == request.Profile.UserId) ?? throw new BadRequestException("Profile is not found.");
             profile.IDCardNumber = request.Profile.IDCardNumber ?? profile.IDCardNumber;
             profile.Occupation = request.Profile.Occupation ?? profile.Occupation;
             profile.LastModifiedBy = _currentUserService.GetUserId();
@@ -481,12 +485,10 @@ internal partial class UserService : IUserService
         var users = await _userManager.Users
             .AsNoTracking()
             .WithSpecification(spec)
-            .ProjectToType<UserDetailsDto>()
             .ToListAsync(cancellationToken);
         foreach (var user in users)
         {
-            var role = await GetRolesAsync(user.Id.ToString(), cancellationToken);
-            if (role.RoleName == FSHRoles.Patient )
+            if (user.IsActive && await CheckUserInRoleAsync(user.Id.ToString(), FSHRoles.Patient) && !_userManager.IsLockedOutAsync(user).Result)
             {
                 list_user.Add(new ListUserDTO
                 {
@@ -498,7 +500,8 @@ internal partial class UserService : IUserService
                     ImageUrl = user.ImageUrl,
                     PhoneNumber = user.PhoneNumber,
                     IsActive = user.IsActive,
-                    Role = role,
+                    //Role = _userManager,
+                    isBanned = false,
                 });
             }
         }
@@ -532,7 +535,7 @@ internal partial class UserService : IUserService
                 var doctorProfile = await _db.DoctorProfiles
                     .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
                 var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
-                if (user.IsActive)
+                if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
                 {
                     doctorResponses.Add(new GetDoctorResponse
                     {
@@ -563,7 +566,7 @@ internal partial class UserService : IUserService
                     userRole => userRole.UserId,
                     (user, userRole) => user
                 )
-                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id))
+                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id) && (u.LockoutEnabled && u.LockoutEnd <= DateTime.Now) )
                 .Take(4 - doctorResponses.Count)
                 .ToListAsync();
 

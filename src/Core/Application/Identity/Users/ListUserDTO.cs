@@ -16,6 +16,7 @@ namespace FSH.WebApi.Application.Identity.Users
         public bool IsActive { get; set; } = true;
         public string? PhoneNumber { get; set; }
         public string? Address { get; set; }
+        public bool isBanned { get; set; }
         public UserRoleDto? Role { get; set; }
     }
 }

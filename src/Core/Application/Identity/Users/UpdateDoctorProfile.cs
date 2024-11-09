@@ -56,11 +56,6 @@ public class UpdateDoctorProfileVaidator : CustomValidator<UpdateDoctorProfile>
                     ErrorCode = "Unauthorized"
                 });
             });
-        RuleFor(p => p.DoctorID)
-            .NotEmpty()
-            .WithMessage("Doctor Information should be include")
-            .MustAsync(async (id, _) => await userService.CheckUserInRoleAsync(id, FSHRoles.Dentist))
-            .WithMessage((_, id) => $"User {id} is not a Doctor");
 
         RuleFor(p => p.Education)
                 .NotEmpty().WithMessage("Education is required for Doctor.");
