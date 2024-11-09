@@ -260,7 +260,7 @@ internal partial class UserService : IUserService
     }
     public async Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = _userManager.Users
+        var user = await _userManager.Users
            .AsNoTracking()
            .Where(u => u.Id.Trim().Equals(userId))
            .FirstOrDefaultAsync(cancellationToken);
@@ -272,11 +272,6 @@ internal partial class UserService : IUserService
     {
         var user = await GetAsync(userId.ToString(), CancellationToken.None);
         return string.Join(" ", user.FirstName, user.LastName);
-    }
-
-    public Task GetUserByIdAsync(DefaultIdType? userId, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
     }
     public async Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken)
     {
@@ -377,7 +372,9 @@ internal partial class UserService : IUserService
             }
         }
 
-        return new PaginationResponse<GetDoctorResponse>(doctorResponses, 0, request.PageNumber, request.PageSize);
+        int count = await _db.DoctorProfiles.CountAsync();
+
+        return new PaginationResponse<GetDoctorResponse>(doctorResponses, count, request.PageNumber, request.PageSize);
     }
 
     private async Task<double> GetDoctorRating(Guid doctorProfileID)
@@ -399,7 +396,7 @@ internal partial class UserService : IUserService
     {
         if (request.IsUpdateProfile)
         {
-            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.Profile.UserId) ?? throw new BadRequestException("Profile is not found.");
+            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
             profile.IDCardNumber = request.Profile.IDCardNumber ?? profile.IDCardNumber;
             profile.Occupation = request.Profile.Occupation ?? profile.Occupation;
             profile.LastModifiedBy = _currentUserService.GetUserId();
@@ -597,20 +594,98 @@ internal partial class UserService : IUserService
         return doctorResponses;
     }
 
-    public async Task GetDoctorDetail(string doctorId, CancellationToken cancellationToken)
+    public async Task<DoctorDetailResponse> GetDoctorDetail(string doctorId)
     {
-        var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId);
-        var feedbackByRating = await _db.Feedbacks
-            .Where(p => p.DoctorProfileId == dProfile.Id)
-            .GroupBy(f => f.Rating)
+        var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId) ?? throw new NotFoundException("Doctor profile not found");
+
+        var totalRating = await _db.Feedbacks
+            .Where(f => f.DoctorProfileId == dProfile.Id)
+            .GroupBy(f => f.DoctorProfileId)
             .Select(group => new
             {
-                Rating = group.Key,
-                TotalFeedbacks = group.Count(),
-                ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList()
+                AverageRating = group.Average(f => f.Rating),
+                TotalFeedbacks = group.Count()
             })
-            .OrderByDescending(x => x.Rating)
-            .ToListAsync();
+            .FirstOrDefaultAsync();
+
+        var feedbackByRating = await _db.Feedbacks
+        .Where(p => p.DoctorProfileId == dProfile.Id)
+        .GroupBy(f => f.Rating)
+        .Select(group => new
+        {
+            Rating = group.Key,
+            TotalFeedbacks = group.Count(),
+            ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
+            Doctor = dProfile,
+            Feedbacks = group.Select(f => new
+            {
+                f.Id,
+                f.PatientProfileId,
+                f.DoctorProfileId,
+                f.ServiceId,
+                f.Message,
+                f.Rating,
+                f.CreatedOn,
+            }).ToList()
+        })
+        .OrderByDescending(x => x.Rating)
+        .ToListAsync();
+
         var user = await _userManager.FindByIdAsync(doctorId);
+        if (user == null)
+            throw new NotFoundException("User not found");
+
+        // Create response
+        var result = new DoctorDetailResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            PhoneNumber = user.PhoneNumber,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            Gender = user.Gender,
+            ImageUrl = user.ImageUrl,
+            Rating = totalRating?.AverageRating,
+            TotalFeedback = totalRating?.TotalFeedbacks,
+            DoctorProfile = dProfile,
+            DoctorFeedback = new List<FeedBackDoctorResponse>()
+        };
+
+        // Process feedback groups
+        foreach (var ratingGroup in feedbackByRating)
+        {
+            var feedbackDoctorResponse = new FeedBackDoctorResponse
+            {
+                RatingType = ratingGroup.Rating,
+                Feedbacks = new List<FeedBackResponse>()
+            };
+
+            foreach (var feedback in ratingGroup.Feedbacks)
+            {
+                var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
+
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
+                var patientUser = patientProfile != null ?
+                    await _userManager.FindByIdAsync(patientProfile.UserId) : null;
+
+                var feedbackResponse = new FeedBackResponse
+                {
+                    ServiceID = feedback.ServiceId,
+                    ServiceName = service?.ServiceName,
+                    PatientID = patientUser.Id,
+                    PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
+                    CreateDate = feedback.CreatedOn,
+                    Ratings = feedback.Rating,
+                    Message = feedback.Message
+                };
+
+                feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);
+            }
+
+            result.DoctorFeedback.Add(feedbackDoctorResponse);
+        }
+
+        return result;
     }
 }

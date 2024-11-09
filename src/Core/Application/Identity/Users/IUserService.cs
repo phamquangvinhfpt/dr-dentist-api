@@ -49,7 +49,6 @@ public interface IUserService : ITransientService
     Task<UserDetailsDto> GetUserDetailByEmailAsync(string email, CancellationToken cancellationToken);
     Task<UserDetailsDto> GetUserDetailByPhoneAsync(string phoneNumber, CancellationToken cancellationToken);
     Task GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
-
     Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
     Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken);
     Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
@@ -59,5 +58,5 @@ public interface IUserService : ITransientService
     Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken);
     Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken);
     Task<List<GetDoctorResponse>> GetTop4Doctors();
-    Task GetDoctorDetail(string  doctorId, CancellationToken cancellationToken);
+    Task<DoctorDetailResponse> GetDoctorDetail(string doctorId);
 }

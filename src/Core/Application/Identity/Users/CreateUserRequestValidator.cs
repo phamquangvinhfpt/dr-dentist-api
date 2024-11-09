@@ -49,25 +49,11 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
         //    .When(p => p.Role == FSHRoles.Patient)
         //    .WithMessage("Address is required for patients.");
 
-        RuleFor(p => p.DoctorProfile.Education).Cascade(CascadeMode.Stop)
+        RuleFor(p => p.DoctorProfile).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .When(p => p.Role == FSHRoles.Dentist)
-            .WithMessage("Education is required for Doctor.");
-
-        RuleFor(p => p.DoctorProfile.Certification).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .When(p => p.Role == FSHRoles.Dentist)
-            .WithMessage("Certification is required for Doctor.");
-
-        RuleFor(p => p.DoctorProfile.YearOfExp).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .When(p => p.Role == FSHRoles.Dentist)
-            .WithMessage("YearOfExp is required for Doctor.");
-
-        RuleFor(p => p.DoctorProfile.SeftDescription).Cascade(CascadeMode.Stop)
-            .NotEmpty()
-            .When(p => p.Role == FSHRoles.Dentist)
-            .WithMessage("Seft-Description is required for Doctor.");
+            .SetValidator(new UpdateDoctorProfileVaidator(userService, currentUser))
+            .When(p => p.Role == FSHRoles.Dentist);
 
         RuleFor(p => p.Role).Cascade(CascadeMode.Stop)
             .MustAsync(async (_, role, context) =>

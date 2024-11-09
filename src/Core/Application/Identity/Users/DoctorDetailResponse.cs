@@ -17,6 +17,7 @@ public class DoctorDetailResponse
     public string? PhoneNumber { get; set; }
     public string? ImageUrl { get; set; }
     public double? Rating { get; set; }
+    public int? TotalFeedback { get; set; }
     public DoctorProfile? DoctorProfile { get; set; }
-    //List feedback about the doctor here
+    public List<FeedBackDoctorResponse>? DoctorFeedback { get; set; }
 }

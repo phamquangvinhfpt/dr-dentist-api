@@ -181,13 +181,14 @@ public class UsersController : VersionNeutralApiController
         return _userService.GetListPatientAsync(request, cancellationToken);
     }
 
-    //[HttpPost("get-doctor/{id}")]
-    //[MustHavePermission(FSHAction.View, FSHResource.Users)]
-    //[OpenApiOperation("Get list of all patient.", "")]
-    //public Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken)
-    //{
-    //    return _userService.GetListPatientAsync(request, cancellationToken);
-    //}
+    [HttpPost("customer/get-doctor/{id}")]
+    [TenantIdHeader]
+    [AllowAnonymous]
+    [OpenApiOperation("Get Doctor Detail For Customer.", "")]
+    public async Task<DoctorDetailResponse> GetDoctorDetailAsync(string id)
+    {
+        return await _userService.GetDoctorDetail(id);
+    }
 
     private string GetOriginFromRequest()
     {
