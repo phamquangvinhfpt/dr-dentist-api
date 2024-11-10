@@ -181,6 +181,11 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
+            if (appointment.Status.Equals(AppointmentStatus.Confirmed))
+            {
+                return;
+            }
             var user = await _db.Users.FirstOrDefaultAsync(p => p.Id == _currentUserService.GetUserId().ToString());
             if (user.AccessFailedCount == 3) {
                 await _userManager.SetLockoutEnabledAsync(user, true);
@@ -190,12 +195,9 @@ internal class AppointmentService : IAppointmentService
             {
                 user.AccessFailedCount += 1;
             }
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentId);
+
             var pay = await _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentID);
             var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == calendarID);
-            if (appointment.Status.Equals(AppointmentStatus.Confirmed)) {
-                return;
-            }
 
             calendar.Status = Domain.Identity.CalendarStatus.Failed;
             _db.WorkingCalendars.Remove(calendar);

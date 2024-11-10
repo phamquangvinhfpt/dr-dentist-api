@@ -566,7 +566,8 @@ internal partial class UserService : IUserService
                     userRole => userRole.UserId,
                     (user, userRole) => user
                 )
-                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id) && (u.LockoutEnabled && u.LockoutEnd <= DateTime.Now) )
+                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id) &&
+                    (!u.LockoutEnabled || (u.LockoutEnabled && (!u.LockoutEnd.HasValue || u.LockoutEnd <= DateTime.Now))))
                 .Take(4 - doctorResponses.Count)
                 .ToListAsync();
 
