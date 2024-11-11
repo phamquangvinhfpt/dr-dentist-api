@@ -101,7 +101,6 @@ internal class AppointmentService : IAppointmentService
             StartTime = request.StartTime,
             Duration = request.Duration,
             Status = isStaffOrAdmin ? AppointmentStatus.Confirmed : AppointmentStatus.Pending,
-            Type = request.Type,
             Notes = request.Notes,
         };
         if (!hasDoctor)
@@ -118,6 +117,7 @@ internal class AppointmentService : IAppointmentService
             Status = isStaffOrAdmin
             ? Domain.Identity.CalendarStatus.Booked
             : Domain.Identity.CalendarStatus.Waiting,
+            Type = AppointmentType.Appointment,
         };
         if (!hasDoctor)
         {
@@ -133,16 +133,17 @@ internal class AppointmentService : IAppointmentService
             AppointmentId = appointment.Id,
             DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
             DepositDate = isStaffOrAdmin ? null : DateOnly.FromDateTime(DateTime.Now),
-            RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - service.TotalPrice * 0.3,
+            RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - (service.TotalPrice * 0.3),
             Amount = service.TotalPrice,
             Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
         }).Entity;
         await _db.SaveChangesAsync(cancellationToken);
         var result = new AppointmentDepositRequest
         {
-            Key = isStaffOrAdmin ? "" : _jobService.Schedule(() => DeleteUnpaidBooking(request.PatientId, appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
+            Key = isStaffOrAdmin ? null : _jobService.Schedule(() => DeleteUnpaidBooking(request.PatientId!, appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
             AppointmentId = appointment.Id,
             PaymentID = pay.Id,
+            PatientCode = patient.PatientCode,
             DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
             DepositTime = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
             IsDeposit = isStaffOrAdmin,
@@ -156,7 +157,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task VerifyAndFinishBooking(AppointmentDepositRequest request, CancellationToken cancellationToken)
     {
-        var check = _jobService.Delete(request.Key);
+        var check = _jobService.Delete(request.Key!);
         if (!check)
         {
             throw new KeyNotFoundException("Key job not found");
@@ -269,7 +270,6 @@ internal class AppointmentService : IAppointmentService
                 StartTime = a.Appointment.StartTime,
                 Duration = a.Appointment.Duration,
                 Status = a.Appointment.Status,
-                Type = a.Appointment.Type,
                 Notes = a.Appointment.Notes,
 
                 PatientCode = a.Patient?.PatientCode,
@@ -298,6 +298,13 @@ internal class AppointmentService : IAppointmentService
                 var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+                appointment.Status = AppointmentStatus.Failed;
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+                calendar.Status = CalendarStatus.Failed;
+                var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+                pay.Status = Domain.Payments.PaymentStatus.Canceled;
+                await _db.SaveChangesAsync(cancellationToken);
+                return;
             }
         }
         if (user_role == FSHRoles.Patient) {

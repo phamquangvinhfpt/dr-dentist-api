@@ -11,6 +11,7 @@ public class AppointmentDepositRequest
     public string? Key { get; set; }
     public Guid PaymentID { get; set; }
     public Guid AppointmentId { get; set; }
+    public string? PatientCode { get; set; }
     public double DepositAmount { get; set; }
     public TimeSpan DepositTime { get; set; }
     public bool IsDeposit { get; set; } = false;

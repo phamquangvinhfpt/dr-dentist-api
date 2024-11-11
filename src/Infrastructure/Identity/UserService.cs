@@ -693,4 +693,38 @@ internal partial class UserService : IUserService
 
         return result;
     }
+
+    public async Task<UserProfileResponse> GetUserDetailByID(string userId, CancellationToken cancellationToken)
+    {
+        var user = await _userManager.FindByIdAsync(userId) ?? throw new BadRequestException("User is not found.");
+        var user_role = GetRolesAsync(user.Id, cancellationToken).Result;
+        var profile = new UserProfileResponse
+        {
+            Id = user.Id,
+            UserName = user.UserName,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Gender = user.Gender,
+            BirthDate = user.BirthDate,
+            Email = user.Email,
+            IsActive = user.IsActive,
+            EmailConfirmed = user.EmailConfirmed,
+            PhoneNumber = user.PhoneNumber,
+            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+            Job = user.Job,
+            ImageUrl = user.ImageUrl,
+            Address = user.Address,
+        };
+        if (user_role.RoleName.Equals(FSHRoles.Dentist))
+        {
+            profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
+        }
+        else if (user_role.RoleName.Equals(FSHRoles.Patient))
+        {
+            profile.PatientProfile = await _db.PatientProfiles.Where(p => p.UserId == user.Id).FirstOrDefaultAsync(cancellationToken);
+            profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+            profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+        }
+        return profile;
+    }
 }

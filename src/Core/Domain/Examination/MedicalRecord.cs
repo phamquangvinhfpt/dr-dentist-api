@@ -27,6 +27,4 @@ public class MedicalRecord : AuditableEntity, IAggregateRoot
     public BasicExamination? BasicExamination { get; set; }
     [JsonIgnore]
     public Prescription? Prescription { get; set; }
-    [JsonIgnore]
-    public ICollection<TreatmentPlanProcedures> TreatmentPlanProcedures { get; set; } = new List<TreatmentPlanProcedures>();
 }

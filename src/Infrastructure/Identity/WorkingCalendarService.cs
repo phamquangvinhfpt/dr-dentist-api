@@ -162,7 +162,12 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
 
         var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
-        var calendarsGrouped = await _db.WorkingCalendars.AsNoTracking().WithSpecification(spec).GroupBy(c => c.DoctorId).ToDictionaryAsync(g => g.Key, g => g.ToList());
+        var calendarsGrouped = await _db.WorkingCalendars
+            .Where(p => p.Status != CalendarStatus.Failed)
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .GroupBy(c => c.DoctorId)
+            .ToDictionaryAsync(g => g.Key, g => g.ToList());
         var totalCount = calendarsGrouped.Count();
 
         var result = new List<WorkingCalendarResponse>();

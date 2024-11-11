@@ -19,7 +19,6 @@ public class CreateAppointmentRequest : IRequest<AppointmentDepositRequest>
     public DateOnly AppointmentDate { get; set; }
     public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
-    public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -101,11 +100,11 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                 (request.StartTime + duration) <= TimeSpan.FromHours(17))
             .WithMessage("Appointment must end before 5:00 PM");
 
-        RuleFor(p => p.Type)
-            .IsInEnum()
-            .WithMessage("Invalid appointment type")
-            .NotEqual(AppointmentType.None)
-            .WithMessage("Appointment type must be selected");
+        //RuleFor(p => p.Type)
+        //    .IsInEnum()
+        //    .WithMessage("Invalid appointment type")
+        //    .NotEqual(AppointmentType.None)
+        //    .WithMessage("Appointment type must be selected");
 
         RuleFor(p => p.Notes)
             .MaximumLength(500)

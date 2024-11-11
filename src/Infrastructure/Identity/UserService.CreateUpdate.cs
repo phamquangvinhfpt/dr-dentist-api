@@ -117,10 +117,9 @@ internal partial class UserService
             UserName = request.UserName,
             PhoneNumber = request.PhoneNumber,
             Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
-            Job = request.Role.Equals(FSHRoles.Patient) ? request.Job : null,
+            Job = request.Job,
             IsActive = true
         };
-
         var result = await _userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)

@@ -1,3 +1,5 @@
+using FSH.WebApi.Domain.Appointments;
+
 namespace FSH.WebApi.Domain.Identity;
 
 public class WorkingCalendar : AuditableEntity, IAggregateRoot
@@ -10,4 +12,5 @@ public class WorkingCalendar : AuditableEntity, IAggregateRoot
     public TimeSpan? EndTime { get; set; }
     public CalendarStatus Status { get; set; }
     public string? Note { get; set; }
+    public AppointmentType Type { get; set; }
 }

@@ -127,15 +127,9 @@ public class TreatmentPlanProceduresConfig : IEntityTypeConfiguration<TreatmentP
               .IsMultiTenant();
 
         builder
-            .HasOne<ApplicationUser>()
-            .WithMany()
-            .HasForeignKey(b => b.RescheduledBy)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        builder
-            .HasOne(b => b.MedicalRecord)
+            .HasOne(b => b.Appointment)
             .WithMany(b => b.TreatmentPlanProcedures)
-            .HasForeignKey(b => b.RecordId)
+            .HasForeignKey(b => b.AppointmentID)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder

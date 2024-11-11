@@ -576,4 +576,34 @@ internal class ServiceService : IServiceService
         oldProcedure.DeletedOn = DateTime.UtcNow;
         await _db.SaveChangesAsync();
     }
+
+    public async Task<List<ProcedurePlanResponse>> GetProceduresByServiceID(Guid serviceID, CancellationToken cancellationToken)
+    {
+        if (!await CheckExistingService(serviceID)) {
+            throw new NotFoundException("Service Not Found");
+        }
+
+        var groupService = await _db.ServiceProcedures
+            .Where(p => p.ServiceId == serviceID)
+            .GroupBy(p => p.ServiceId)
+            .Select(group => new
+            {
+                Procedures = group.Select(p => p.ProcedureId).Distinct().ToList(),
+            }).FirstOrDefaultAsync(cancellationToken);
+
+        List<ProcedurePlanResponse> result = new List<ProcedurePlanResponse>();
+
+        foreach (var item in groupService.Procedures) {
+            var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
+            result.Add(new ProcedurePlanResponse
+            {
+                DiscountAmount = 0.3,
+                Price = pro.Price,
+                ProcedureID = pro.Id,
+                ProcedureName = pro.Name,
+                PlanCost = pro.Price - (pro.Price * 0.3),
+            });
+        }
+        return result;
+    }
 }

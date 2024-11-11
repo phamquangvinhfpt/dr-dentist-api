@@ -65,6 +65,14 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
+        if(request.Role == FSHRoles.Dentist)
+        {
+            request.Job = FSHRoles.Dentist;
+        }
+        else
+        {
+            request.Job = FSHRoles.Staff;
+        }
         return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
     }
     //checked
@@ -188,6 +196,15 @@ public class UsersController : VersionNeutralApiController
     public async Task<DoctorDetailResponse> GetDoctorDetailAsync(string id)
     {
         return await _userService.GetDoctorDetail(id);
+    }
+
+    //checked
+    [HttpGet("get-user/{id}")]
+    [MustHavePermission(FSHAction.View, FSHResource.Users)]
+    [OpenApiOperation("Get User Detail by ID for Admin.", "")]
+    public Task<UserProfileResponse> GetUserDetailByIDAsync(string id, CancellationToken cancellationToken)
+    {
+        return _userService.GetUserDetailByID(id, cancellationToken);
     }
 
     private string GetOriginFromRequest()

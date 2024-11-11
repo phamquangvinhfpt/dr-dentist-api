@@ -14,7 +14,6 @@ public class Appointment : AuditableEntity, IAggregateRoot
     public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
     public AppointmentStatus Status { get; set; }
-    public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
     public int SpamCount { get; set; } = 0;
 
@@ -24,6 +23,8 @@ public class Appointment : AuditableEntity, IAggregateRoot
     [JsonIgnore]
     public Payment? Payment { get; set; }
 
+    [JsonIgnore]
+    public ICollection<TreatmentPlanProcedures> TreatmentPlanProcedures { get; set; } = new List<TreatmentPlanProcedures>();
     public Appointment()
     {
     }
