@@ -15,7 +15,7 @@ public class CustomerContactController : VersionNeutralApiController
     {
         _customerInformationService = customerInformationService;
     }
-    [HttpPost("/get-all")]
+    [HttpPost("get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.ContactInformation)]
     [OpenApiOperation("Get all Contact request with pagination.", "")]
     public async Task<PaginationResponse<ContactResponse>> GetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)

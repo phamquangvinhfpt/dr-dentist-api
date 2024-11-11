@@ -774,6 +774,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("PlanID")
+                        .HasColumnType("uuid");
+
                     b.Property<TimeSpan?>("StartTime")
                         .HasColumnType("interval");
 
@@ -791,6 +794,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsUnique();
 
                     b.HasIndex("DoctorId");
+
+                    b.HasIndex("PlanID")
+                        .IsUnique();
 
                     b.ToTable("WorkingCalendar", "Identity");
 
@@ -1304,17 +1310,17 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateOnly?>("EndDate")
-                        .HasColumnType("date");
+                    b.Property<Guid?>("DoctorID")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan?>("EndDate")
+                        .HasColumnType("interval");
 
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Reason")
                         .HasColumnType("text");
@@ -1340,6 +1346,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DoctorID")
+                        .IsUnique();
 
                     b.HasIndex("RecordId");
 
@@ -1843,6 +1852,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()
                         .HasForeignKey("DoctorId");
+
+                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.Identity.WorkingCalendar", "PlanID");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Payment", b =>
@@ -1929,6 +1942,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", b =>
                 {
+                    b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "DoctorID");
+
                     b.HasOne("FSH.WebApi.Domain.Examination.MedicalRecord", "MedicalRecord")
                         .WithMany("TreatmentPlanProcedures")
                         .HasForeignKey("RecordId")

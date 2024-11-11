@@ -1,6 +1,8 @@
 ﻿using Finbuckle.MultiTenant.EntityFrameworkCore;
+using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Domain.Treatment;
@@ -141,6 +143,11 @@ public class TreatmentPlanProceduresConfig : IEntityTypeConfiguration<TreatmentP
             .WithMany(b => b.TreatmentPlanProcedures)
             .HasForeignKey(b => b.ServiceProcedureId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne<DoctorProfile>()
+            .WithOne()
+            .HasForeignKey<TreatmentPlanProcedures>("DoctorID").IsRequired(false);
     }
 }
 

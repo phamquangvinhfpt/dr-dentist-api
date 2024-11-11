@@ -1,5 +1,6 @@
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Payments;
+using FSH.WebApi.Domain.Treatment;
 using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Appointments;

@@ -15,7 +15,7 @@ public class CalendarController : VersionNeutralApiController
     }
 
     //checked
-    [HttpPost("/get-schedules")]
+    [HttpPost("get-schedules")]
     [OpenApiOperation("Get Working Schedule for all Doctor.", "")]
     public Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingSchedulesAsync(PaginationFilter filter, CancellationToken cancellationToken)
     {
@@ -26,7 +26,7 @@ public class CalendarController : VersionNeutralApiController
         return _workingCalendarService.GetWorkingCalendars(filter, cancellationToken);
     }
 
-    [HttpPost("/available-time")]
+    [HttpPost("available-time")]
     [OpenApiOperation("Get Available Time Slot.", "")]
     public Task<List<AvailableTimeResponse>> GetAvailableTimeSlotAsync(GetAvailableTimeRequest request, CancellationToken cancellationToken)
     {

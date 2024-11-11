@@ -50,6 +50,7 @@
       <Content Remove="Email Templates\reset-password.cshtml" />
     </ItemGroup>
     <ItemGroup>
+      <Folder Include="Controllers\TreatmentPlans\" />
       <Folder Include="Databases\Host\" />
       <Folder Include="Files\" />
     </ItemGroup>

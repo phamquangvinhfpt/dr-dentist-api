@@ -1,6 +1,6 @@
 ﻿using FSH.WebApi.Domain.CustomerServices;
 
-namespace FSH.WebApi.Application.Identity.Users;
+namespace FSH.WebApi.Application.CustomerServices.Feedbacks;
 
 public class FeedBackDoctorResponse
 {

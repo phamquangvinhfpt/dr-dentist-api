@@ -2,6 +2,7 @@
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Treatment;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -164,5 +165,10 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
             .HasOne<Appointment>()
             .WithOne()
             .HasForeignKey<WorkingCalendar>("AppointmentId");
+
+        builder
+            .HasOne<TreatmentPlanProcedures>()
+            .WithOne()
+            .HasForeignKey<WorkingCalendar>("PlanID").IsRequired(false);
     }
 }

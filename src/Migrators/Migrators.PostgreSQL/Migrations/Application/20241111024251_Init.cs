@@ -518,44 +518,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 });
 
             migrationBuilder.CreateTable(
-                name: "WorkingCalendar",
-                schema: "Identity",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Date = table.Column<DateOnly>(type: "date", nullable: true),
-                    StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    Note = table.Column<string>(type: "text", nullable: true),
-                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WorkingCalendar_Appointment_AppointmentId",
-                        column: x => x.AppointmentId,
-                        principalSchema: "Treatment",
-                        principalTable: "Appointment",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
-                        column: x => x.DoctorId,
-                        principalSchema: "Identity",
-                        principalTable: "DoctorProfile",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Feedback",
                 schema: "CustomerService",
                 columns: table => new
@@ -882,10 +844,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     ServiceProcedureId = table.Column<Guid>(type: "uuid", nullable: true),
                     RecordId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Quantity = table.Column<int>(type: "integer", nullable: false),
+                    DoctorID = table.Column<Guid>(type: "uuid", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     StartDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    EndDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    EndDate = table.Column<TimeSpan>(type: "interval", nullable: true),
                     Reason = table.Column<string>(type: "text", nullable: true),
                     RescheduledBy = table.Column<string>(type: "text", nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
@@ -899,6 +861,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TreatmentPlanProcedures", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TreatmentPlanProcedures_DoctorProfile_DoctorID",
+                        column: x => x.DoctorID,
+                        principalSchema: "Identity",
+                        principalTable: "DoctorProfile",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_TreatmentPlanProcedures_MedicalRecord_RecordId",
                         column: x => x.RecordId,
@@ -1025,6 +993,51 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalTable: "TreatmentPlanProcedures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkingCalendar",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PlanID = table.Column<Guid>(type: "uuid", nullable: true),
+                    Date = table.Column<DateOnly>(type: "date", nullable: true),
+                    StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_Appointment_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalSchema: "Treatment",
+                        principalTable: "Appointment",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
+                        column: x => x.DoctorId,
+                        principalSchema: "Identity",
+                        principalTable: "DoctorProfile",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_TreatmentPlanProcedures_PlanID",
+                        column: x => x.PlanID,
+                        principalSchema: "Treatment",
+                        principalTable: "TreatmentPlanProcedures",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -1221,6 +1234,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "ServiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TreatmentPlanProcedures_DoctorID",
+                schema: "Treatment",
+                table: "TreatmentPlanProcedures",
+                column: "DoctorID",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TreatmentPlanProcedures_RecordId",
                 schema: "Treatment",
                 table: "TreatmentPlanProcedures",
@@ -1288,6 +1308,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity",
                 table: "WorkingCalendar",
                 column: "DoctorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkingCalendar_PlanID",
+                schema: "Identity",
+                table: "WorkingCalendar",
+                column: "PlanID",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -1378,10 +1405,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Payment");
 
             migrationBuilder.DropTable(
-                name: "TreatmentPlanProcedures",
-                schema: "Treatment");
-
-            migrationBuilder.DropTable(
                 name: "Prescription",
                 schema: "Treatment");
 
@@ -1390,19 +1413,15 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity");
 
             migrationBuilder.DropTable(
-                name: "ServiceProcedures",
-                schema: "Service");
+                name: "TreatmentPlanProcedures",
+                schema: "Treatment");
 
             migrationBuilder.DropTable(
                 name: "MedicalRecord",
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "Procedure",
-                schema: "Service");
-
-            migrationBuilder.DropTable(
-                name: "Service",
+                name: "ServiceProcedures",
                 schema: "Service");
 
             migrationBuilder.DropTable(
@@ -1416,6 +1435,14 @@ namespace Migrators.PostgreSQL.Migrations.Application
             migrationBuilder.DropTable(
                 name: "PatientProfile",
                 schema: "Identity");
+
+            migrationBuilder.DropTable(
+                name: "Procedure",
+                schema: "Service");
+
+            migrationBuilder.DropTable(
+                name: "Service",
+                schema: "Service");
 
             migrationBuilder.DropTable(
                 name: "Users",

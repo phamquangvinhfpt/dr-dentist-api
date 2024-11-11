@@ -32,7 +32,7 @@ public class ServiceController : VersionNeutralApiController
         return await _serviceService.GetServiceByID(id, cancellationToken);
     }
     //checked
-    [HttpPost("/toggle")]
+    [HttpPost("toggle")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Toggle Service Status.", "")]
     public async Task<string> DeleteServiceAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
@@ -124,7 +124,7 @@ public class ServiceController : VersionNeutralApiController
     }
 
     //checked
-    [HttpGet("/customer-get-all")]
+    [HttpGet("customer-get-all")]
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get all service for customer.", "")]
@@ -133,7 +133,7 @@ public class ServiceController : VersionNeutralApiController
         return await _serviceService.GetServicesAsync();
     }
 
-    [HttpPost("/add-delete-procedure")]
+    [HttpPost("add-delete-procedure")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Add or Delete Procedure throw Service.", "")]
     public Task<string> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
