@@ -7,11 +7,13 @@ using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
+using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -138,19 +140,25 @@ internal class AppointmentService : IAppointmentService
             Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
         }).Entity;
         await _db.SaveChangesAsync(cancellationToken);
+        if (isStaffOrAdmin)
+        {
+            _jobService.Schedule(() => CreateTreatmentPlanAndPaymentDetail(appointment.ServiceId, pay.Id, appointment.Id, cancellationToken), TimeSpan.FromSeconds(5));
+        }
+
         var result = new AppointmentDepositRequest
         {
-            Key = isStaffOrAdmin ? null : _jobService.Schedule(() => DeleteUnpaidBooking(request.PatientId!, appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(10)),
+            Key = isStaffOrAdmin ? null : _jobService.Schedule(() => DeleteUnpaidBooking(request.PatientId!, appointment.Id, calendar.Id, pay.Id, cancellationToken), TimeSpan.FromMinutes(11)),
             AppointmentId = appointment.Id,
             PaymentID = pay.Id,
             PatientCode = patient.PatientCode,
-            DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
+            //DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
+            DepositAmount = 10000,
             DepositTime = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
             IsDeposit = isStaffOrAdmin,
         };
         if (!isStaffOrAdmin)
         {
-            await _cacheService.SetAsync(patient.PatientCode, result, TimeSpan.FromMinutes(10), cancellationToken);
+            await _cacheService.SetAsync(patient.PatientCode!, result, TimeSpan.FromMinutes(11), cancellationToken);
         }
         return result;
     }
@@ -163,13 +171,14 @@ internal class AppointmentService : IAppointmentService
             throw new KeyNotFoundException("Key job not found");
         }
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentId);
-        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == appointment.ServiceId);
         var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
         var payment = await _db.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentID);
 
         appointment.Status = AppointmentStatus.Confirmed;
         calendar.Status = Domain.Identity.CalendarStatus.Booked;
         payment.Status = Domain.Payments.PaymentStatus.Incomplete;
+
+        await CreateTreatmentPlanAndPaymentDetail(appointment.ServiceId, payment.Id, appointment.Id, cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
         _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
@@ -454,5 +463,48 @@ internal class AppointmentService : IAppointmentService
                 break;
         }
 
+    }
+
+    public async Task CreateTreatmentPlanAndPaymentDetail(Guid serviceID, Guid paymentID, Guid appointmentID, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentID);
+            var groupService = await _db.ServiceProcedures
+            .Where(p => p.ServiceId == serviceID)
+            .GroupBy(p => p.ServiceId)
+            .Select(group => new
+            {
+                Procedures = group.Select(p => p.ProcedureId).Distinct().ToList(),
+            }).FirstOrDefaultAsync(cancellationToken);
+
+            foreach (var item in groupService.Procedures)
+            {
+                var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
+                _db.PaymentDetails.Add(new Domain.Payments.PaymentDetail
+                {
+                    ProcedureID = item!.Value,
+                    PaymentID = paymentID,
+                    PaymentDay = DateOnly.FromDateTime(DateTime.Now),
+                    PaymentAmount = pro.Price - (pro.Price * 0.3),
+                    PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
+                });
+                var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == serviceID && p.ProcedureId == item);
+                _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
+                {
+                    ServiceProcedureId = sp.Id,
+                    AppointmentID = appointmentID,
+                    DoctorID = appointment.DentistId,
+                    Status = Domain.Treatment.TreatmentPlanStatus.Active,
+                    Price = pro.Price,
+                    DiscountAmount = 0.3,
+                    TotalCost = pro.Price - (pro.Price * 0.3),
+                });
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+        }
     }
 }

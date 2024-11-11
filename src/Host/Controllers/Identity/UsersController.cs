@@ -207,6 +207,15 @@ public class UsersController : VersionNeutralApiController
         return _userService.GetUserDetailByID(id, cancellationToken);
     }
 
+    //checked
+    [HttpPost("get-staffs")]
+    [MustHavePermission(FSHAction.View, FSHResource.Users)]
+    [OpenApiOperation("Get All Staff For Admin.", "")]
+    public Task<PaginationResponse<ListUserDTO>> GetAllStaff(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return _userService.GetAllStaff(request, cancellationToken);
+    }
+
     private string GetOriginFromRequest()
     {
         if (Request.Headers.TryGetValue("x-from-host", out var values))

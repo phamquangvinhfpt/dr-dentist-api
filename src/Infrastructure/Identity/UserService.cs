@@ -1,5 +1,6 @@
 using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
@@ -726,5 +727,39 @@ internal partial class UserService : IUserService
             profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
         }
         return profile;
+    }
+
+    public async Task<PaginationResponse<ListUserDTO>> GetAllStaff(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        var list_user = new List<ListUserDTO>();
+        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+
+        var users = await _userManager.Users
+            .AsNoTracking()
+            .WithSpecification(spec)
+            .ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            if (await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
+            {
+                list_user.Add(new ListUserDTO
+                {
+                    Id = user.Id.ToString(),
+                    UserName = user.UserName,
+                    Address = user.Address,
+                    Email = user.Email,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    PhoneNumber = user.PhoneNumber,
+                    IsActive = user.IsActive,
+                    Role = GetRolesAsync(user.Id, cancellationToken).Result,
+                    isBanned = await _userManager.IsLockedOutAsync(user)
+                });
+            }
+        }
+        int count = await _userManager.Users
+        .CountAsync(cancellationToken);
+
+        return new PaginationResponse<ListUserDTO>(list_user, count, request.PageNumber, request.PageSize);
     }
 }

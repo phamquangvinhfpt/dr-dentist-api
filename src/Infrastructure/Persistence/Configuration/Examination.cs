@@ -235,11 +235,6 @@ public class PaymentDetailConfig : IEntityTypeConfiguration<PaymentDetail>
             .WithMany(b => b.PaymentDetails)
             .HasForeignKey(b => b.PaymentID)
             .OnDelete(DeleteBehavior.Cascade);
-        builder
-            .HasOne(b => b.PlanProcedures)
-            .WithOne(b => b.PaymentDetail)
-            .HasForeignKey<PaymentDetail>(b => b.TreatmentID)
-            .OnDelete(DeleteBehavior.Cascade);
 
         builder
             .HasOne(b => b.Procedure)

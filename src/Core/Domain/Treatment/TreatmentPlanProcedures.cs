@@ -13,7 +13,7 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     public Guid? DoctorID { get; set; }
     public TreatmentPlanStatus Status { get; set; }
     public DateOnly? StartDate { get; set; }
-    public TimeSpan? EndDate { get; set; }
+    public TimeSpan? StartTime { get; set; }
     public double Price { get; set; }
     public double DiscountAmount { get; set; }
     public double TotalCost { get; set; }
@@ -32,14 +32,14 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     {
     }
 
-    public TreatmentPlanProcedures(DefaultIdType? serviceProcedureId, DefaultIdType? appointmentID, DefaultIdType? doctorID, TreatmentPlanStatus status, DateOnly? startDate, TimeSpan? endDate, double price, double discountAmount, double totalCost, string? note, int rescheduleTime)
+    public TreatmentPlanProcedures(DefaultIdType? serviceProcedureId, DefaultIdType? appointmentID, DefaultIdType? doctorID, TreatmentPlanStatus status, DateOnly? startDate, TimeSpan? startTime, double price, double discountAmount, double totalCost, string? note, int rescheduleTime)
     {
         ServiceProcedureId = serviceProcedureId;
         AppointmentID = appointmentID;
         DoctorID = doctorID;
         Status = status;
         StartDate = startDate;
-        EndDate = endDate;
+        StartTime = startTime;
         Price = price;
         DiscountAmount = discountAmount;
         TotalCost = totalCost;

@@ -33,6 +33,7 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<PrescriptionItem> PrescriptionItems { get; set; }
     public DbSet<PatientImage> PatientImages { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<PaymentDetail> PaymentDetails { get; set; }
     public DbSet<PatientMessages> PatientMessages { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
     public DbSet<ContactInfor> ContactInfor { get; set; }

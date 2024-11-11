@@ -59,4 +59,5 @@ public interface IUserService : ITransientService
     Task<List<GetDoctorResponse>> GetTop4Doctors();
     Task<DoctorDetailResponse> GetDoctorDetail(string doctorId);
     Task<UserProfileResponse> GetUserDetailByID(string userId, CancellationToken cancellationToken);
+    Task<PaginationResponse<ListUserDTO>> GetAllStaff(PaginationFilter request, CancellationToken cancellationToken);
 }

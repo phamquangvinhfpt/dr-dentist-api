@@ -517,56 +517,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 });
 
             migrationBuilder.CreateTable(
-                name: "TreatmentPlanProcedures",
-                schema: "Treatment",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ServiceProcedureId = table.Column<Guid>(type: "uuid", nullable: true),
-                    AppointmentID = table.Column<Guid>(type: "uuid", nullable: true),
-                    DoctorID = table.Column<Guid>(type: "uuid", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    StartDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    EndDate = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    Price = table.Column<double>(type: "double precision", nullable: false),
-                    DiscountAmount = table.Column<double>(type: "double precision", nullable: false),
-                    TotalCost = table.Column<double>(type: "double precision", nullable: false),
-                    Note = table.Column<string>(type: "text", nullable: true),
-                    RescheduleTime = table.Column<int>(type: "integer", nullable: false),
-                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TreatmentPlanProcedures", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TreatmentPlanProcedures_Appointment_AppointmentID",
-                        column: x => x.AppointmentID,
-                        principalSchema: "Treatment",
-                        principalTable: "Appointment",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_TreatmentPlanProcedures_DoctorProfile_DoctorID",
-                        column: x => x.DoctorID,
-                        principalSchema: "Identity",
-                        principalTable: "DoctorProfile",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_TreatmentPlanProcedures_ServiceProcedures_ServiceProcedureId",
-                        column: x => x.ServiceProcedureId,
-                        principalSchema: "Service",
-                        principalTable: "ServiceProcedures",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Feedback",
                 schema: "CustomerService",
                 columns: table => new
@@ -772,52 +722,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 });
 
             migrationBuilder.CreateTable(
-                name: "WorkingCalendar",
-                schema: "Identity",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PlanID = table.Column<Guid>(type: "uuid", nullable: true),
-                    Date = table.Column<DateOnly>(type: "date", nullable: true),
-                    StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    Note = table.Column<string>(type: "text", nullable: true),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
-                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WorkingCalendar_Appointment_AppointmentId",
-                        column: x => x.AppointmentId,
-                        principalSchema: "Treatment",
-                        principalTable: "Appointment",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
-                        column: x => x.DoctorId,
-                        principalSchema: "Identity",
-                        principalTable: "DoctorProfile",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WorkingCalendar_TreatmentPlanProcedures_PlanID",
-                        column: x => x.PlanID,
-                        principalSchema: "Treatment",
-                        principalTable: "TreatmentPlanProcedures",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "BasicExamination",
                 schema: "Treatment",
                 columns: table => new
@@ -937,7 +841,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TreatmentID = table.Column<Guid>(type: "uuid", nullable: false),
                     PaymentID = table.Column<Guid>(type: "uuid", nullable: false),
                     ProcedureID = table.Column<Guid>(type: "uuid", nullable: false),
                     PaymentDay = table.Column<DateOnly>(type: "date", nullable: false),
@@ -966,13 +869,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         column: x => x.ProcedureID,
                         principalSchema: "Service",
                         principalTable: "Procedure",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_PaymentDetail_TreatmentPlanProcedures_TreatmentID",
-                        column: x => x.TreatmentID,
-                        principalSchema: "Treatment",
-                        principalTable: "TreatmentPlanProcedures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1034,6 +930,109 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalTable: "Prescription",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TreatmentPlanProcedures",
+                schema: "Treatment",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ServiceProcedureId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AppointmentID = table.Column<Guid>(type: "uuid", nullable: true),
+                    DoctorID = table.Column<Guid>(type: "uuid", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    StartDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    Price = table.Column<double>(type: "double precision", nullable: false),
+                    DiscountAmount = table.Column<double>(type: "double precision", nullable: false),
+                    TotalCost = table.Column<double>(type: "double precision", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
+                    RescheduleTime = table.Column<int>(type: "integer", nullable: false),
+                    PaymentDetailId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TreatmentPlanProcedures", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TreatmentPlanProcedures_Appointment_AppointmentID",
+                        column: x => x.AppointmentID,
+                        principalSchema: "Treatment",
+                        principalTable: "Appointment",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TreatmentPlanProcedures_DoctorProfile_DoctorID",
+                        column: x => x.DoctorID,
+                        principalSchema: "Identity",
+                        principalTable: "DoctorProfile",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_TreatmentPlanProcedures_PaymentDetail_PaymentDetailId",
+                        column: x => x.PaymentDetailId,
+                        principalSchema: "Payment",
+                        principalTable: "PaymentDetail",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_TreatmentPlanProcedures_ServiceProcedures_ServiceProcedureId",
+                        column: x => x.ServiceProcedureId,
+                        principalSchema: "Service",
+                        principalTable: "ServiceProcedures",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkingCalendar",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PlanID = table.Column<Guid>(type: "uuid", nullable: true),
+                    Date = table.Column<DateOnly>(type: "date", nullable: true),
+                    StartTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    EndTime = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkingCalendar", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_Appointment_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalSchema: "Treatment",
+                        principalTable: "Appointment",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_DoctorProfile_DoctorId",
+                        column: x => x.DoctorId,
+                        principalSchema: "Identity",
+                        principalTable: "DoctorProfile",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_TreatmentPlanProcedures_PlanID",
+                        column: x => x.PlanID,
+                        principalSchema: "Treatment",
+                        principalTable: "TreatmentPlanProcedures",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -1185,13 +1184,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "ProcedureID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PaymentDetail_TreatmentID",
-                schema: "Payment",
-                table: "PaymentDetail",
-                column: "TreatmentID",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Prescription_RecordId",
                 schema: "Treatment",
                 table: "Prescription",
@@ -1241,6 +1233,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 table: "TreatmentPlanProcedures",
                 column: "DoctorID",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TreatmentPlanProcedures_PaymentDetailId",
+                schema: "Treatment",
+                table: "TreatmentPlanProcedures",
+                column: "PaymentDetailId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TreatmentPlanProcedures_ServiceProcedureId",
@@ -1351,10 +1349,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "CustomerService");
 
             migrationBuilder.DropTable(
-                name: "PaymentDetail",
-                schema: "Payment");
-
-            migrationBuilder.DropTable(
                 name: "PrescriptionItem",
                 schema: "Treatment");
 
@@ -1391,10 +1385,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "Payment",
-                schema: "Payment");
-
-            migrationBuilder.DropTable(
                 name: "Prescription",
                 schema: "Treatment");
 
@@ -1411,7 +1401,23 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
+                name: "PaymentDetail",
+                schema: "Payment");
+
+            migrationBuilder.DropTable(
                 name: "ServiceProcedures",
+                schema: "Service");
+
+            migrationBuilder.DropTable(
+                name: "DoctorProfile",
+                schema: "Identity");
+
+            migrationBuilder.DropTable(
+                name: "Payment",
+                schema: "Payment");
+
+            migrationBuilder.DropTable(
+                name: "Procedure",
                 schema: "Service");
 
             migrationBuilder.DropTable(
@@ -1419,16 +1425,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "DoctorProfile",
-                schema: "Identity");
-
-            migrationBuilder.DropTable(
                 name: "PatientProfile",
                 schema: "Identity");
-
-            migrationBuilder.DropTable(
-                name: "Procedure",
-                schema: "Service");
 
             migrationBuilder.DropTable(
                 name: "Service",

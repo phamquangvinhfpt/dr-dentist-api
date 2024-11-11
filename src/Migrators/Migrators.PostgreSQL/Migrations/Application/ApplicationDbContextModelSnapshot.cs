@@ -985,17 +985,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<Guid>("TreatmentID")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentID");
 
                     b.HasIndex("ProcedureID");
-
-                    b.HasIndex("TreatmentID")
-                        .IsUnique();
 
                     b.ToTable("PaymentDetail", "Payment");
 
@@ -1319,9 +1313,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<Guid?>("DoctorID")
                         .HasColumnType("uuid");
 
-                    b.Property<TimeSpan?>("EndDate")
-                        .HasColumnType("interval");
-
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -1330,6 +1321,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<string>("Note")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("PaymentDetailId")
+                        .HasColumnType("uuid");
 
                     b.Property<double>("Price")
                         .HasColumnType("double precision");
@@ -1342,6 +1336,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
+
+                    b.Property<TimeSpan?>("StartTime")
+                        .HasColumnType("interval");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1360,6 +1357,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasIndex("DoctorID")
                         .IsUnique();
+
+                    b.HasIndex("PaymentDetailId");
 
                     b.HasIndex("ServiceProcedureId");
 
@@ -1903,15 +1902,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "PlanProcedures")
-                        .WithOne("PaymentDetail")
-                        .HasForeignKey("FSH.WebApi.Domain.Payments.PaymentDetail", "TreatmentID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Payment");
-
-                    b.Navigation("PlanProcedures");
 
                     b.Navigation("Procedure");
                 });
@@ -1958,12 +1949,18 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .WithOne()
                         .HasForeignKey("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "DoctorID");
 
+                    b.HasOne("FSH.WebApi.Domain.Payments.PaymentDetail", "PaymentDetail")
+                        .WithMany()
+                        .HasForeignKey("PaymentDetailId");
+
                     b.HasOne("FSH.WebApi.Domain.Service.ServiceProcedures", "ServiceProcedure")
                         .WithMany("TreatmentPlanProcedures")
                         .HasForeignKey("ServiceProcedureId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Appointment");
+
+                    b.Navigation("PaymentDetail");
 
                     b.Navigation("ServiceProcedure");
                 });
@@ -2089,11 +2086,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
                     b.Navigation("Items");
-                });
-
-            modelBuilder.Entity("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", b =>
-                {
-                    b.Navigation("PaymentDetail");
                 });
 #pragma warning restore 612, 618
         }
