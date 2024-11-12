@@ -61,6 +61,24 @@ internal class WorkingCalendarService : IWorkingCalendarService
         return !calendars;
     }
 
+    public async Task<bool> CheckAvailableTimeSlotToAddFollowUp(Guid doctorID, DateOnly treatmentDate, TimeSpan treatmentTime)
+    {
+        var endTime = treatmentTime.Add(TimeSpan.FromMinutes(30));
+        var calendars = await _db.WorkingCalendars
+            .Where(c =>
+                c.DoctorId == doctorID &&
+                c.Date == treatmentDate &&
+                (
+                    (c.StartTime <= treatmentTime && treatmentTime < c.EndTime) ||
+                    (c.StartTime < endTime && endTime <= c.EndTime) ||
+                    (treatmentTime <= c.StartTime && c.EndTime <= endTime)
+                )
+            )
+            .AnyAsync();
+
+        return !calendars;
+    }
+
     public async Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
     {
         var existingCalendar = await _db.WorkingCalendars.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");

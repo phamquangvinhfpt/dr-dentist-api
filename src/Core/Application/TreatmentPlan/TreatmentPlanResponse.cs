@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FSH.WebApi.Domain.Treatment;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,4 +17,6 @@ public class TreatmentPlanResponse
     public double DiscountAmount { get; set; }
     public double PlanCost { get; set; }
     public string? PlanDescription { get; set; }
+    public int Step { get; set; }
+    public TreatmentPlanStatus Status { get; set; }
 }

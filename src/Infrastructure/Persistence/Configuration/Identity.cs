@@ -163,8 +163,8 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
 
         builder
             .HasOne<Appointment>()
-            .WithOne()
-            .HasForeignKey<WorkingCalendar>("AppointmentId");
+            .WithMany()
+            .HasForeignKey("AppointmentId").IsRequired(false);
 
         builder
             .HasOne<TreatmentPlanProcedures>()

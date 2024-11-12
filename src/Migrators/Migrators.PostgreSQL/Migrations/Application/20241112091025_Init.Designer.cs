@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241112031243_Init")]
+    [Migration("20241112091025_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -793,8 +793,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppointmentId")
-                        .IsUnique();
+                    b.HasIndex("AppointmentId");
 
                     b.HasIndex("DoctorId");
 
@@ -1854,8 +1853,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
                 {
                     b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.Identity.WorkingCalendar", "AppointmentId");
+                        .WithMany()
+                        .HasForeignKey("AppointmentId");
 
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()

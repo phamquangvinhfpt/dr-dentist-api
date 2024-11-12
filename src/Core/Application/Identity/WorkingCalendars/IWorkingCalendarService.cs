@@ -13,4 +13,5 @@ public interface IWorkingCalendarService : ITransientService
     Task<bool> CheckAvailableTimeSlot(DateOnly date,TimeSpan start, TimeSpan end, string DoctorID);
     Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime);
     Task<List<AvailableTimeResponse>> GetAvailableTimeSlot(GetAvailableTimeRequest request, CancellationToken cancellationToken);
+    Task<bool> CheckAvailableTimeSlotToAddFollowUp(Guid doctorID, DateOnly treatmentDate, TimeSpan treatmentTime);
 }

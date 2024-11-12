@@ -1288,8 +1288,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 name: "IX_WorkingCalendar_AppointmentId",
                 schema: "Identity",
                 table: "WorkingCalendar",
-                column: "AppointmentId",
-                unique: true);
+                column: "AppointmentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkingCalendar_DoctorId",

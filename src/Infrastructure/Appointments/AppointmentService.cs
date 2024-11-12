@@ -521,6 +521,8 @@ internal class AppointmentService : IAppointmentService
 
                 var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
 
+                appointment.Status = AppointmentStatus.Success;
+
                 foreach (var item in groupService.Procedures)
                 {
                     var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
@@ -538,11 +540,19 @@ internal class AppointmentService : IAppointmentService
                         ServiceProcedureId = sp.Id,
                         AppointmentID = id,
                         DoctorID = appointment.DentistId,
-                        Status = Domain.Treatment.TreatmentPlanStatus.Active,
+                        Status = Domain.Treatment.TreatmentPlanStatus.Pending,
                         Price = pro.Price,
                         DiscountAmount = 0.3,
                         TotalCost = pro.Price - (pro.Price * 0.3),
                     }).Entity;
+                    if(sp.StepOrder == 1)
+                    {
+                        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == id);
+                        calendar.PlanID = entry.Id;
+                        entry.Status = Domain.Treatment.TreatmentPlanStatus.Active;
+                        entry.StartDate = appointment.AppointmentDate;
+                        entry.StartTime = appointment.StartTime;
+                    }
                     result.Add(new TreatmentPlanResponse
                     {
                         TreatmentPlanID = entry.Id,
@@ -554,6 +564,8 @@ internal class AppointmentService : IAppointmentService
                         DiscountAmount = 0.3,
                         PlanCost = entry.TotalCost,
                         PlanDescription = null,
+                        Step = sp.StepOrder,
+                        Status = entry.Status,
                     });
                 }
                 await _db.SaveChangesAsync(cancellationToken);

@@ -790,8 +790,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AppointmentId")
-                        .IsUnique();
+                    b.HasIndex("AppointmentId");
 
                     b.HasIndex("DoctorId");
 
@@ -1851,8 +1850,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
                 {
                     b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.Identity.WorkingCalendar", "AppointmentId");
+                        .WithMany()
+                        .HasForeignKey("AppointmentId");
 
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()
