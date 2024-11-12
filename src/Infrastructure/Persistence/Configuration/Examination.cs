@@ -140,8 +140,10 @@ public class TreatmentPlanProceduresConfig : IEntityTypeConfiguration<TreatmentP
 
         builder
             .HasOne<DoctorProfile>()
-            .WithOne()
-            .HasForeignKey<TreatmentPlanProcedures>("DoctorID").IsRequired(false);
+            .WithMany(b => b.TreatmentPlanProcedures)
+            .HasForeignKey(b => b.DoctorID)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 

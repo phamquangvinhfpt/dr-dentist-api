@@ -1355,8 +1355,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasIndex("AppointmentID");
 
-                    b.HasIndex("DoctorID")
-                        .IsUnique();
+                    b.HasIndex("DoctorID");
 
                     b.HasIndex("PaymentDetailId");
 
@@ -1946,8 +1945,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "DoctorID");
+                        .WithMany("TreatmentPlanProcedures")
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FSH.WebApi.Domain.Payments.PaymentDetail", "PaymentDetail")
                         .WithMany()
@@ -2046,6 +2046,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("Feedbacks");
 
                     b.Navigation("MedicalRecords");
+
+                    b.Navigation("TreatmentPlanProcedures");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.PatientProfile", b =>

@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Identity.MedicalHistories;
+using FSH.WebApi.Application.TreatmentPlan;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,5 +52,20 @@ public class AppointmentController : VersionNeutralApiController
     public Task<string> ScheduleAppointment(ScheduleAppointmentRequest request)
     {
         return Mediator.Send(request);
+    }
+    [HttpGet("get/{id}")]
+    [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
+    [OpenApiOperation("Get Appointment by ID", "")]
+    public Task<AppointmentResponse> ScheduleAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        return _appointmentService.GetAppointmentByID(id, cancellationToken);
+    }
+
+    [HttpGet("examination/{id}")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Toggle Appointment Status, Use for Doctor Click and verify patient who came to clinic", "")]
+    public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 }

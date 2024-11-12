@@ -973,7 +973,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         column: x => x.DoctorID,
                         principalSchema: "Identity",
                         principalTable: "DoctorProfile",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_TreatmentPlanProcedures_PaymentDetail_PaymentDetailId",
                         column: x => x.PaymentDetailId,
@@ -1231,8 +1232,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 name: "IX_TreatmentPlanProcedures_DoctorID",
                 schema: "Treatment",
                 table: "TreatmentPlanProcedures",
-                column: "DoctorID",
-                unique: true);
+                column: "DoctorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TreatmentPlanProcedures_PaymentDetailId",

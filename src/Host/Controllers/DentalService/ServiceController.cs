@@ -164,12 +164,12 @@ public class ServiceController : VersionNeutralApiController
         return await _serviceService.RestoreProcedureAsync(id, cancellationToken);
     }
 
-    //checked
-    [HttpGet("{id}/get-by-service")]
-    [MustHavePermission(FSHAction.View, FSHResource.Procedure)]
-    [OpenApiOperation("Get Procedure By Service ID, Use For Create Treatment Plan", "")]
-    public async Task<List<ProcedurePlanResponse>> GetProceduresByServiceIDAsync(Guid id, CancellationToken cancellationToken)
-    {
-        return await _serviceService.GetProceduresByServiceID(id, cancellationToken);
-    }
+    ////checked
+    //[HttpGet("{id}/get-by-service")]
+    //[MustHavePermission(FSHAction.View, FSHResource.Procedure)]
+    //[OpenApiOperation("Get Procedure By Service ID, Use For Create Treatment Plan", "")]
+    //public async Task<List<ProcedurePlanResponse>> GetProceduresByServiceIDAsync(Guid id, CancellationToken cancellationToken)
+    //{
+    //    return await _serviceService.GetProceduresByServiceID(id, cancellationToken);
+    //}
 }

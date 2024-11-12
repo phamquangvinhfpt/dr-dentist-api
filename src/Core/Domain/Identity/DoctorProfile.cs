@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Treatment;
 
 namespace FSH.WebApi.Domain.Identity;
 public class DoctorProfile : AuditableEntity, IAggregateRoot
@@ -22,4 +23,6 @@ public class DoctorProfile : AuditableEntity, IAggregateRoot
     public ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
     [JsonIgnore]
     public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
+    [JsonIgnore]
+    public ICollection<TreatmentPlanProcedures>? TreatmentPlanProcedures { get; set; }
 }

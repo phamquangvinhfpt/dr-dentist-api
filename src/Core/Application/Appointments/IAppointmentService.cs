@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FSH.WebApi.Application.TreatmentPlan;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,4 +18,6 @@ public interface IAppointmentService : ITransientService
     Task RescheduleAppointment(RescheduleRequest request, CancellationToken cancellationToken);
     Task CancelAppointment(CancelAppointmentRequest request, CancellationToken cancellationToken);
     Task ScheduleAppointment(ScheduleAppointmentRequest request, CancellationToken cancellationToken);
+    Task<AppointmentResponse> GetAppointmentByID(Guid id, CancellationToken cancellationToken);
+    Task<List<TreatmentPlanResponse>> ToggleAppointment(Guid id, CancellationToken cancellationToken);
 }

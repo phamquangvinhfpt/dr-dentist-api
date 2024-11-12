@@ -11,6 +11,7 @@ using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Notifications;
+using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
@@ -140,10 +141,6 @@ internal class AppointmentService : IAppointmentService
             Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
         }).Entity;
         await _db.SaveChangesAsync(cancellationToken);
-        if (isStaffOrAdmin)
-        {
-            _jobService.Schedule(() => CreateTreatmentPlanAndPaymentDetail(appointment.ServiceId, pay.Id, appointment.Id, cancellationToken), TimeSpan.FromSeconds(5));
-        }
 
         var result = new AppointmentDepositRequest
         {
@@ -177,8 +174,6 @@ internal class AppointmentService : IAppointmentService
         appointment.Status = AppointmentStatus.Confirmed;
         calendar.Status = Domain.Identity.CalendarStatus.Booked;
         payment.Status = Domain.Payments.PaymentStatus.Incomplete;
-
-        await CreateTreatmentPlanAndPaymentDetail(appointment.ServiceId, payment.Id, appointment.Id, cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
         _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
@@ -465,46 +460,112 @@ internal class AppointmentService : IAppointmentService
 
     }
 
-    public async Task CreateTreatmentPlanAndPaymentDetail(Guid serviceID, Guid paymentID, Guid appointmentID, CancellationToken cancellationToken)
+    public async Task<AppointmentResponse> GetAppointmentByID(Guid id, CancellationToken cancellationToken)
     {
+        var appointments = await _db.Appointments
+            .Where(p => p.Id == id)
+            .Select(appointment => new
+            {
+                Appointment = appointment,
+                Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
+                Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
+                Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new AppointmentResponse
+        {
+            AppointmentId = appointments.Appointment.Id,
+            PatientId = appointments.Appointment.PatientId,
+            DentistId = appointments.Appointment.DentistId,
+            ServiceId = appointments.Appointment.ServiceId,
+            AppointmentDate = appointments.Appointment.AppointmentDate,
+            StartTime = appointments.Appointment.StartTime,
+            Duration = appointments.Appointment.Duration,
+            Status = appointments.Appointment.Status,
+            Notes = appointments.Appointment.Notes,
+
+            PatientCode = appointments.Patient?.PatientCode,
+            PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == appointments.Patient.UserId).Result.UserName,
+            DentistName = _db.Users.FirstOrDefaultAsync(p => p.Id == appointments.Doctor.DoctorId).Result.UserName,
+            ServiceName = appointments.Service?.ServiceName,
+            ServicePrice = appointments.Service?.TotalPrice ?? 0,
+            PaymentStatus = appointments.Payment is not null ? appointments.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+        };
+    }
+
+    public async Task<List<TreatmentPlanResponse>> ToggleAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        var result = new List<TreatmentPlanResponse>();
         try
         {
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == appointmentID);
-            var groupService = await _db.ServiceProcedures
-            .Where(p => p.ServiceId == serviceID)
-            .GroupBy(p => p.ServiceId)
-            .Select(group => new
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == id) ?? throw new KeyNotFoundException("Appointment Not Found.");
+            if (appointment.AppointmentDate != DateOnly.FromDateTime(DateTime.Now))
             {
-                Procedures = group.Select(p => p.ProcedureId).Distinct().ToList(),
-            }).FirstOrDefaultAsync(cancellationToken);
-
-            foreach (var item in groupService.Procedures)
-            {
-                var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
-                _db.PaymentDetails.Add(new Domain.Payments.PaymentDetail
-                {
-                    ProcedureID = item!.Value,
-                    PaymentID = paymentID,
-                    PaymentDay = DateOnly.FromDateTime(DateTime.Now),
-                    PaymentAmount = pro.Price - (pro.Price * 0.3),
-                    PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
-                });
-                var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == serviceID && p.ProcedureId == item);
-                _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
-                {
-                    ServiceProcedureId = sp.Id,
-                    AppointmentID = appointmentID,
-                    DoctorID = appointment.DentistId,
-                    Status = Domain.Treatment.TreatmentPlanStatus.Active,
-                    Price = pro.Price,
-                    DiscountAmount = 0.3,
-                    TotalCost = pro.Price - (pro.Price * 0.3),
-                });
+                throw new Exception("The date is not the date.");
             }
-            await _db.SaveChangesAsync(cancellationToken);
+            if (appointment.Status == AppointmentStatus.Confirmed)
+            {
+                var groupService = await _db.ServiceProcedures
+                .Where(p => p.ServiceId == appointment.ServiceId)
+                .GroupBy(p => p.ServiceId)
+                .Select(group => new
+                {
+                    Procedures = group.Select(p => p.ProcedureId).Distinct().ToList(),
+                }).FirstOrDefaultAsync(cancellationToken);
+
+                var payment = _db.Payments.FirstOrDefault(p => p.AppointmentId == id);
+
+                var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == appointment.DentistId);
+
+                var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
+
+                foreach (var item in groupService.Procedures)
+                {
+                    var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
+                    _db.PaymentDetails.Add(new Domain.Payments.PaymentDetail
+                    {
+                        ProcedureID = item!.Value,
+                        PaymentID = payment.Id,
+                        PaymentDay = DateOnly.FromDateTime(DateTime.Now),
+                        PaymentAmount = pro.Price - (pro.Price * 0.3),
+                        PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
+                    });
+                    var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == appointment.ServiceId && p.ProcedureId == item);
+                    var entry = _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
+                    {
+                        ServiceProcedureId = sp.Id,
+                        AppointmentID = id,
+                        DoctorID = appointment.DentistId,
+                        Status = Domain.Treatment.TreatmentPlanStatus.Active,
+                        Price = pro.Price,
+                        DiscountAmount = 0.3,
+                        TotalCost = pro.Price - (pro.Price * 0.3),
+                    }).Entity;
+                    result.Add(new TreatmentPlanResponse
+                    {
+                        TreatmentPlanID = entry.Id,
+                        ProcedureID = item.Value,
+                        ProcedureName = pro.Name,
+                        Price = pro.Price,
+                        DoctorID = doctor.Id,
+                        DoctorName = doctor.UserName,
+                        DiscountAmount = 0.3,
+                        PlanCost = entry.TotalCost,
+                        PlanDescription = null,
+                    });
+                }
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                throw new Exception("Can not verify appointment.");
+            }
         }
         catch (Exception ex) {
             _logger.LogError(ex.Message);
         }
+        return result;
     }
 }
