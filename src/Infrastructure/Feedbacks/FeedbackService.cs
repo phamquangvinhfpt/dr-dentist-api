@@ -5,6 +5,7 @@ using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,14 +19,14 @@ internal class FeedbackService : IFeedbackService
     private readonly IStringLocalizer<FeedbackService> _t;
     private readonly ICurrentUser _currentUserService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<FeedbackService> _logger;
 
-    public FeedbackService(ApplicationDbContext db, IStringLocalizer<FeedbackService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager)
+    public FeedbackService(ApplicationDbContext db, IStringLocalizer<FeedbackService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<FeedbackService> logger)
     {
         _db = db;
         _t = t;
         _currentUserService = currentUserService;
         _userManager = userManager;
+        _logger = logger;
     }
-
-
 }

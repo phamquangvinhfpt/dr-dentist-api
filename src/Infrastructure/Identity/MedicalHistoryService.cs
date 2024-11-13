@@ -6,6 +6,7 @@ using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -16,45 +17,49 @@ internal class MedicalHistoryService : IMedicalHistoryService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly ICurrentUser _currentUser;
+    private readonly ILogger<MedicalHistoryService> _logger;
 
-    public MedicalHistoryService(
-        ApplicationDbContext db,
-        IStringLocalizer<MedicalHistoryService> t,
-        UserManager<ApplicationUser> userManager,
-        RoleManager<ApplicationRole> roleManager,
-        ICurrentUser currentUser)
+    public MedicalHistoryService(ApplicationDbContext db, IStringLocalizer t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalHistoryService> logger)
     {
         _db = db;
         _t = t;
         _userManager = userManager;
         _roleManager = roleManager;
         _currentUser = currentUser;
+        _logger = logger;
     }
 
     public async Task CreateAndUpdateMedicalHistory(CreateAndUpdateMedicalHistoryRequest request, CancellationToken cancellationToken)
     {
-        var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.PatientId) ?? throw new BadRequestException("Profile not found.");
-        var mdch = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.Id).FirstOrDefaultAsync();
-        if (mdch != null)
+        try
         {
-            mdch.MedicalName = request.MedicalName ?? mdch.MedicalName;
-            mdch.Note = request.Note ?? mdch.Note;
-            mdch.LastModifiedBy = _currentUser.GetUserId();
-            mdch.LastModifiedOn = DateTime.Now;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        else
-        {
-            var n = new MedicalHistory
+            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.PatientId) ?? throw new BadRequestException("Profile not found.");
+            var mdch = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.Id).FirstOrDefaultAsync();
+            if (mdch != null)
             {
-                PatientProfileId = profile.Id,
-                CreatedBy = _currentUser.GetUserId(),
-                CreatedOn = DateTime.Now,
-                MedicalName = request.MedicalName,
-                Note = request.Note
-            };
-            _db.MedicalHistorys.Add(n);
-            await _db.SaveChangesAsync(cancellationToken);
+                mdch.MedicalName = request.MedicalName ?? mdch.MedicalName;
+                mdch.Note = request.Note ?? mdch.Note;
+                mdch.LastModifiedBy = _currentUser.GetUserId();
+                mdch.LastModifiedOn = DateTime.Now;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                var n = new MedicalHistory
+                {
+                    PatientProfileId = profile.Id,
+                    CreatedBy = _currentUser.GetUserId(),
+                    CreatedOn = DateTime.Now,
+                    MedicalName = request.MedicalName,
+                    Note = request.Note
+                };
+                _db.MedicalHistorys.Add(n);
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
         }
     }
 

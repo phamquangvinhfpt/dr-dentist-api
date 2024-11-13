@@ -47,44 +47,52 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
     {
-        var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-        if (appointment.Status != AppointmentStatus.Success)
+        try
         {
-            throw new Exception("Appointment in status that can not do this action");
-        }
-
-        var plan = await _db.TreatmentPlanProcedures
-            .Where(p => p.Id == request.TreatmentId)
-            .Select(b => new
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+            if (appointment.Status != AppointmentStatus.Success)
             {
-                Plan = b,
-                SP = _db.ServiceProcedures.FirstOrDefault(p => p.Id == b.ServiceProcedureId)
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+                throw new Exception("Appointment in status that can not do this action");
+            }
 
-        if (plan.SP.StepOrder == 1)
-        {
-            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
-            calendar.Date = request.TreatmentDate;
-            calendar.StartTime = request.TreatmentTime;
-            calendar.EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30));
-        }
-        else
-        {
-            _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+            var plan = await _db.TreatmentPlanProcedures
+                .Where(p => p.Id == request.TreatmentId)
+                .Select(b => new
+                {
+                    Plan = b,
+                    SP = _db.ServiceProcedures.FirstOrDefault(p => p.Id == b.ServiceProcedureId)
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (plan.SP.StepOrder == 1)
             {
-                DoctorId = appointment.DentistId,
-                AppointmentId = request.AppointmentID,
-                PlanID = plan.Plan.Id,
-                Date = request.TreatmentDate,
-                StartTime = request.TreatmentTime,
-                EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30)),
-                Status = Domain.Identity.CalendarStatus.Booked,
-                Note = request.Note,
-                Type = AppointmentType.FollowUp,
-            });
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
+                calendar.Date = request.TreatmentDate;
+                calendar.StartTime = request.TreatmentTime;
+                calendar.EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30));
+            }
+            else
+            {
+                _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                {
+                    DoctorId = appointment.DentistId,
+                    AppointmentId = request.AppointmentID,
+                    PlanID = plan.Plan.Id,
+                    Date = request.TreatmentDate,
+                    StartTime = request.TreatmentTime,
+                    EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30)),
+                    Status = Domain.Identity.CalendarStatus.Booked,
+                    Note = request.Note,
+                    Type = AppointmentType.FollowUp,
+                });
+            }
+            await _db.SaveChangesAsync(cancellationToken);
         }
-        await _db.SaveChangesAsync(cancellationToken);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
+        }
     }
 
     public Task<bool> CheckDateValid(DateOnly date)
@@ -105,7 +113,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
     public async Task<bool> CheckPlanExisting(Guid id)
     {
         var result = await _db.TreatmentPlanProcedures.AnyAsync(p => p.Id == id);
-        return !result;
+        return result;
     }
 
     public async Task<List<TreatmentPlanResponse>> GetTreamentPlanByAppointment(Guid appointmentId, CancellationToken cancellationToken)

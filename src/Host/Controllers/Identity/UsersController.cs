@@ -80,7 +80,7 @@ public class UsersController : VersionNeutralApiController
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get All Doctor For Customer.", "")]
-    public Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
+    public Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request)
     {
         return _userService.GetAllDoctor(request);
     }
@@ -211,7 +211,7 @@ public class UsersController : VersionNeutralApiController
     [HttpPost("get-staffs")]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
     [OpenApiOperation("Get All Staff For Admin.", "")]
-    public Task<PaginationResponse<ListUserDTO>> GetAllStaff(PaginationFilter request, CancellationToken cancellationToken)
+    public Task<PaginationResponse<ListUserDTO>> GetAllStaff(UserListFilter request, CancellationToken cancellationToken)
     {
         return _userService.GetAllStaff(request, cancellationToken);
     }

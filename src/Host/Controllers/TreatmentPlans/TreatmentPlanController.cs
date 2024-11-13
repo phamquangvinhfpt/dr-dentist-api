@@ -24,7 +24,7 @@ public class TreatmentPlanController : VersionNeutralApiController
     [HttpPost("add-detail")]
     //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Add treatment date and note for next follow up appointment", "")]
-    public Task<string> GetTreatmentPlan(AddTreatmentDetail request)
+    public Task<string> AddTreatmentPlanDetail(AddTreatmentDetail request)
     {
         return Mediator.Send(request);
     }

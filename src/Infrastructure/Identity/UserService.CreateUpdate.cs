@@ -9,6 +9,7 @@ using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Web;
 using System.Security.Claims;
 
@@ -106,115 +107,131 @@ internal partial class UserService
     //checked
     public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
     {
-        var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
-        var user = new ApplicationUser
+        try
         {
-            Email = request.Email,
-            Gender = request.IsMale,
-            BirthDate = request.BirthDay,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            UserName = request.UserName,
-            PhoneNumber = request.PhoneNumber,
-            Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
-            Job = request.Job,
-            IsActive = true
-        };
-        var result = await _userManager.CreateAsync(user, request.Password);
-
-        if (!result.Succeeded)
-        {
-            throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
-        }
-
-        await _userManager.AddToRoleAsync(user, role.Name);
-        if (request.Role.Equals(FSHRoles.Dentist))
-        {
-            request.DoctorProfile.DoctorID = user.Id;
-            await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
-        }
-        else if (request.Role.Equals(FSHRoles.Patient)) {
-            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
-            string code = "BN";
-            if (amountP.Count() < 10)
+            var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
+            var user = new ApplicationUser
             {
-                code += $"00{amountP.Count()}";
-            }
-            else if (amountP.Count() < 100)
-            {
-                code += $"0{amountP.Count()}";
-            }
-            else
-            {
-                code += $"{amountP.Count()}";
-            }
-            await _db.PatientProfiles.AddAsync(new PatientProfile
-            {
-                UserId = user.Id,
-                PatientCode = code
-            });
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-
-        var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
-
-        if (_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.Email))
-        {
-            // send verification email
-            string emailVerificationUri = await GetEmailVerificationUriAsync(user, origin);
-            RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
-            {
-                Email = user.Email,
-                UserName = user.UserName,
-                Url = emailVerificationUri
+                Email = request.Email,
+                Gender = request.IsMale,
+                BirthDate = request.BirthDay,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                UserName = request.UserName,
+                PhoneNumber = request.PhoneNumber,
+                Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
+                Job = request.Job,
+                IsActive = true
             };
-            if (local.Equals("en"))
+            var result = await _userManager.CreateAsync(user, request.Password);
+
+            if (!result.Succeeded)
             {
-                var mailRequest = new MailRequest(
-                new List<string> { user.Email },
-                _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
-                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
             }
-            else
+
+            await _userManager.AddToRoleAsync(user, role.Name);
+            if (request.Role.Equals(FSHRoles.Dentist))
             {
-                var mailRequest = new MailRequest(
-                new List<string> { user.Email },
-                _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
-                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                request.DoctorProfile.DoctorID = user.Id;
+                await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
             }
-            messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
+            else if (request.Role.Equals(FSHRoles.Patient))
+            {
+                var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+                string code = "BN";
+                if (amountP.Count() < 10)
+                {
+                    code += $"00{amountP.Count()}";
+                }
+                else if (amountP.Count() < 100)
+                {
+                    code += $"0{amountP.Count()}";
+                }
+                else
+                {
+                    code += $"{amountP.Count()}";
+                }
+                await _db.PatientProfiles.AddAsync(new PatientProfile
+                {
+                    UserId = user.Id,
+                    PatientCode = code
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
+
+            if (_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.Email))
+            {
+                // send verification email
+                string emailVerificationUri = await GetEmailVerificationUriAsync(user, origin);
+                RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                {
+                    Email = user.Email,
+                    UserName = user.UserName,
+                    Url = emailVerificationUri
+                };
+                if (local.Equals("en"))
+                {
+                    var mailRequest = new MailRequest(
+                    new List<string> { user.Email },
+                    _t["Confirm Registration"],
+                    _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
+                    _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                }
+                else
+                {
+                    var mailRequest = new MailRequest(
+                    new List<string> { user.Email },
+                    _t["Confirm Registration"],
+                    _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
+                    _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                }
+                messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
+            }
+
+            await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
+
+            return string.Join(Environment.NewLine, messages);
         }
-
-        await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
-
-        return string.Join(Environment.NewLine, messages);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
     }
     public async Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId!) ?? throw new NotFoundException(_t["User Not Found."]);
-        var role = await GetRolesAsync(user.Id, cancellationToken);
-
-        user.FirstName = request.FirstName ?? user.FirstName;
-        user.LastName = request.LastName ?? user.LastName;
-        user.Gender = request.Gender ?? user.Gender;
-        user.BirthDate = request.BirthDate ?? user.BirthDate;
-        user.Address = request.Address ?? user.Address;
-        if (role.RoleName == FSHRoles.Patient)
+        try
         {
-            user.Job = request.Job ?? user.Job;
+            var user = await _userManager.FindByIdAsync(request.UserId!) ?? throw new NotFoundException(_t["User Not Found."]);
+            var role = await GetRolesAsync(user.Id, cancellationToken);
+
+            user.FirstName = request.FirstName ?? user.FirstName;
+            user.LastName = request.LastName ?? user.LastName;
+            user.Gender = request.Gender ?? user.Gender;
+            user.BirthDate = request.BirthDate ?? user.BirthDate;
+            user.Address = request.Address ?? user.Address;
+            if (role.RoleName == FSHRoles.Patient)
+            {
+                user.Job = request.Job ?? user.Job;
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+
+            await _signInManager.RefreshSignInAsync(user);
+
+            await _events.PublishAsync(new ApplicationUserUpdatedEvent(user.Id));
+
+            if (!result.Succeeded)
+            {
+                throw new InternalServerException(_t["Update profile failed"], result.GetErrors(_t));
+            }
         }
-
-        var result = await _userManager.UpdateAsync(user);
-
-        await _signInManager.RefreshSignInAsync(user);
-
-        await _events.PublishAsync(new ApplicationUserUpdatedEvent(user.Id));
-
-        if (!result.Succeeded)
+        catch (Exception ex)
         {
-            throw new InternalServerException(_t["Update profile failed"], result.GetErrors(_t));
+            _logger.LogError(ex.Message, ex);
         }
     }
 
