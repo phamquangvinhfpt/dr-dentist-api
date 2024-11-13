@@ -1,35 +1,22 @@
-﻿using Amazon.Runtime.Internal.Util;
-using Ardalis.Specification.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Spreadsheet;
+﻿using Ardalis.Specification.EntityFrameworkCore;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
-using FSH.WebApi.Application.DentalServices;
-using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
-using FSH.WebApi.Domain.Payments;
-using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
+using FSH.WebApi.Shared.Notifications;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 internal class AppointmentService : IAppointmentService
@@ -170,16 +157,26 @@ internal class AppointmentService : IAppointmentService
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentId);
         var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
         var payment = await _db.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentID);
+        var patientId = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
 
         appointment.Status = AppointmentStatus.Confirmed;
         calendar.Status = Domain.Identity.CalendarStatus.Booked;
         payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
         await _db.SaveChangesAsync(cancellationToken);
-        _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
+        _jobService.Schedule(
+            () => SendAppointmentActionNotification(appointment.PatientId,
             appointment.DentistId,
             appointment.AppointmentDate,
             TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
+        var notification = new BasicNotification
+        {
+            Message = "Your appointment has been confirmed!",
+            Label = BasicNotification.LabelType.Success,
+            Title = "Booking Successfully!",
+            Url = "/appointment",
+        };
+        await _notificationService.SendPaymentNotificationToUser(patientId.UserId, notification, null, cancellationToken);
     }
 
     public async Task DeleteUnpaidBooking(string userID, Guid appointmentId, Guid calendarID, Guid paymentID, CancellationToken cancellationToken)
@@ -192,7 +189,8 @@ internal class AppointmentService : IAppointmentService
                 return;
             }
             var user = await _db.Users.FirstOrDefaultAsync(p => p.Id == _currentUserService.GetUserId().ToString());
-            if (user.AccessFailedCount == 3) {
+            if (user.AccessFailedCount == 3)
+            {
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
             }
@@ -211,9 +209,10 @@ internal class AppointmentService : IAppointmentService
             _db.Appointments.Remove(appointment);
             _db.Payments.Remove(pay);
             await _db.SaveChangesAsync(cancellationToken);
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
-            _logger.LogError(ex ,ex.Message, null);
+            _logger.LogError(ex, ex.Message, null);
         }
     }
 
@@ -222,7 +221,7 @@ internal class AppointmentService : IAppointmentService
         var currentUser = _currentUserService.GetRole();
         if (currentUser.Equals(FSHRoles.Patient))
         {
-            if(filter.AdvancedSearch == null)
+            if (filter.AdvancedSearch == null)
             {
                 filter.AdvancedSearch = new Search();
                 filter.AdvancedSearch.Fields = new List<string>();
@@ -311,9 +310,11 @@ internal class AppointmentService : IAppointmentService
                 return;
             }
         }
-        if (user_role == FSHRoles.Patient) {
+        if (user_role == FSHRoles.Patient)
+        {
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-            if (appointment.PatientId != patientProfile.Id) {
+            if (appointment.PatientId != patientProfile.Id)
+            {
                 throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
             }
         }
@@ -323,7 +324,8 @@ internal class AppointmentService : IAppointmentService
                 request.AppointmentDate,
                 request.StartTime,
                 request.StartTime.Add(request.Duration)).Result;
-            if (!check) {
+            if (!check)
+            {
                 throw new Exception("The selected time slot overlaps with an existing appointment");
             }
         }
@@ -334,7 +336,7 @@ internal class AppointmentService : IAppointmentService
         appointment.LastModifiedOn = DateTime.Now;
         await _db.SaveChangesAsync(cancellationToken);
 
-        if(appointment.DentistId != null)
+        if (appointment.DentistId != null)
         {
             _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
             appointment.DentistId,
@@ -379,7 +381,6 @@ internal class AppointmentService : IAppointmentService
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        
         _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
             appoint.DentistId,
             appoint.AppointmentDate,
@@ -390,12 +391,14 @@ internal class AppointmentService : IAppointmentService
     {
         var currentUserRole = _currentUserService.GetRole();
         var isStaffOrAdmin = currentUserRole == FSHRoles.Admin || currentUserRole == FSHRoles.Staff;
-        if (!isStaffOrAdmin) {
+        if (!isStaffOrAdmin)
+        {
             throw new UnauthorizedAccessException("Only Staff or Admin can access this function.");
         }
         var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID, cancellationToken);
 
-        if (appointment.Status != AppointmentStatus.Confirmed) {
+        if (appointment.Status != AppointmentStatus.Confirmed)
+        {
             throw new Exception("Appointment is not in status to schedule.");
         }
 
@@ -420,21 +423,20 @@ internal class AppointmentService : IAppointmentService
     {
         var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == DoctorID);
         var doctor = await _userManager.FindByIdAsync(dprofile.DoctorId);
-
         var pprofile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == patientID);
         var patient = await _userManager.FindByIdAsync(pprofile.UserId);
 
         switch (type)
         {
             case TypeRequest.Verify:
-                await _notificationService.SendNotificationToUser(doctor.Id,
+                await _notificationService.SendNotificationToUser(dprofile.DoctorId,
                     new Shared.Notifications.BasicNotification
                     {
                         Label = Shared.Notifications.BasicNotification.LabelType.Success,
                         Message = $"You has a meet with patient {patient.UserName} in {AppointmentDate}",
                         Title = "Booking Schedule Notification",
                         Url = null,
-                    }, DateTime.Now, cancellationToken);
+                    }, null, cancellationToken);
                 break;
             case TypeRequest.Reschedule:
                 await _notificationService.SendNotificationToUser(doctor.Id,
@@ -444,7 +446,7 @@ internal class AppointmentService : IAppointmentService
                         Message = $"Patient {patient.UserName} was reschedule to {AppointmentDate}",
                         Title = "Reschedule Appointment Notification",
                         Url = null,
-                    }, DateTime.Now, cancellationToken);
+                    }, null, cancellationToken);
                 break;
             case TypeRequest.Cancel:
                 await _notificationService.SendNotificationToUser(doctor.Id,
@@ -454,10 +456,9 @@ internal class AppointmentService : IAppointmentService
                         Message = $"Patient {patient.UserName} was cancel the meeting in {AppointmentDate}",
                         Title = "Cancel Appointment Notification",
                         Url = null,
-                    }, DateTime.Now, cancellationToken);
+                    }, null, cancellationToken);
                 break;
         }
-
     }
 
     public async Task<AppointmentResponse> GetAppointmentByID(Guid id, CancellationToken cancellationToken)
@@ -575,7 +576,8 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception("Can not verify appointment.");
             }
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
         }
         return result;

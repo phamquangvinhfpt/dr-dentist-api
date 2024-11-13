@@ -1,5 +1,4 @@
 ﻿using FSH.WebApi.Application.Payments;
-using MediatR;
 
 namespace FSH.WebApi.Host.Controllers.Payment;
 public class PaymentController : VersionedApiController
@@ -18,4 +17,12 @@ public class PaymentController : VersionedApiController
     {
         return _paymentService.CheckNewTransactions(cancellationToken);
     }
+
+    // [HttpGet("check-transactions")]
+    // [TenantIdHeader]
+    // [OpenApiOperation("Check patient transactions is successful or not.", "")]
+    // public async Task CheckTransactionsAsync(CancellationToken cancellationToken)
+    // {
+    //     await _paymentService.CheckTransactionsAsync(cancellationToken);
+    // }
 }

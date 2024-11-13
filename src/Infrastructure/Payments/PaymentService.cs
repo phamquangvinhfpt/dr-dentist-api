@@ -6,8 +6,7 @@ using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Payments;
 using FSH.WebApi.Infrastructure.Persistence.Context;
-using FSH.WebApi.Shared.Notifications;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,19 +18,14 @@ public class PaymentService : IPaymentService
 {
     private readonly ILogger<PaymentService> _logger;
     private readonly ApplicationDbContext _context;
-    private readonly INotificationService _notificationService;
-    private readonly FSHTenantInfo _tenantInfo;
     private readonly IAppointmentService _appointmentService;
     private readonly ICacheService _cacheService;
     private readonly IOptions<PaymentSettings> _settings;
 
-    public PaymentService(ILogger<PaymentService> logger, ApplicationDbContext context, INotificationService notificationService,
-        FSHTenantInfo tenantInfo, IAppointmentService appointmentService, ICacheService cacheService, IOptions<PaymentSettings> settings)
+    public PaymentService(ILogger<PaymentService> logger, ApplicationDbContext context, IAppointmentService appointmentService, ICacheService cacheService, IOptions<PaymentSettings> settings)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _notificationService = notificationService;
-        _tenantInfo = tenantInfo;
         _appointmentService = appointmentService;
         _cacheService = cacheService;
         _settings = settings;
@@ -49,25 +43,46 @@ public class PaymentService : IPaymentService
 
         foreach (var transaction in newTransactions)
         {
-            var check_context = await _context.PatientProfiles.AnyAsync(p => p.PatientCode == transaction.Description);
-            if (check_context)
-            {
-                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(transaction.Description, cancellationToken);
-                if (deposit_info != null)
-                {
-                    if(deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
-                    {
-                        await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
-                        await _cacheService.RemoveAsync(transaction.Description);
-                    }
-                }
-            }
-
             await _context.AddAsync(transaction);
             await _context.SaveChangesAsync();
+            var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
+            if (check_context != null)
+            {
+                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
+                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                {
+                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                    await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
+                }
+            }
         }
 
         _logger.LogInformation("Added {count} new transactions.", newTransactions.Count);
+    }
+
+    public async Task CheckTransactionsAsync(CancellationToken cancellationToken)
+    {
+        List<Transaction> transactions = await _context.Transactions.ToListAsync(cancellationToken);
+        if (transactions.Count == 0)
+        {
+            _logger.LogInformation("No transactions.");
+        }
+
+        foreach (var transaction in transactions)
+        {
+            var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
+            if (check_context != null)
+            {
+                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
+                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                {
+                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                    await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
+                }
+            }
+        }
+
+        _logger.LogInformation("Checked {count} transactions.", transactions.Count);
     }
 
     private async Task<List<Transaction>> SyncTransactions()

@@ -12,4 +12,5 @@ public interface INotificationSender : ITransientService
     Task SendToGroupsAsync(INotificationMessage notification, IEnumerable<string> groupNames, CancellationToken cancellationToken);
     Task SendToUserAsync(INotificationMessage notification, string userId, CancellationToken cancellationToken);
     Task SendToUsersAsync(INotificationMessage notification, IEnumerable<string> userIds, CancellationToken cancellationToken);
+    Task SendPaymentNotificationToUserAsync(INotificationMessage notification, string userId, CancellationToken cancellationToken);
 }

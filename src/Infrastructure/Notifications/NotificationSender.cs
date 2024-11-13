@@ -49,4 +49,8 @@ public class NotificationSender : INotificationSender
     public Task SendToUsersAsync(INotificationMessage notification, IEnumerable<string> userIds, CancellationToken cancellationToken) =>
         _notificationHubContext.Clients.Users(userIds)
             .SendAsync(NotificationFromServer, notification.GetType().FullName, notification, cancellationToken);
+
+    public Task SendPaymentNotificationToUserAsync(INotificationMessage notification, string userId, CancellationToken cancellationToken) =>
+        _notificationHubContext.Clients.User(userId)
+            .SendAsync(NotificationFromServer, "Payment", notification, cancellationToken);
 }

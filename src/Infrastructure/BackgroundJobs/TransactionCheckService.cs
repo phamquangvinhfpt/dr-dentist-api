@@ -44,8 +44,7 @@ public class TransactionCheckService : BackgroundService
                 _logger.LogError(ex, "An error occurred while checking transactions.");
             }
 
-            // Đợi một khoảng thời gian trước khi lặp lại
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // Thay đổi theo nhu cầu
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 }
