@@ -5,6 +5,11 @@
         <AssemblyName>FSH.WebApi.Application</AssemblyName>
     </PropertyGroup>
     <ItemGroup>
+      <Compile Remove="DentalServices\ServiceProcedures\**" />
+      <EmbeddedResource Remove="DentalServices\ServiceProcedures\**" />
+      <None Remove="DentalServices\ServiceProcedures\**" />
+    </ItemGroup>
+    <ItemGroup>
         <PackageReference Include="Ardalis.Specification" Version="6.1.0" />
         <PackageReference Include="DocX" Version="3.0.0" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.5.2" />

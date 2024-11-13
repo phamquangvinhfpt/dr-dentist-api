@@ -2,6 +2,7 @@ namespace FSH.WebApi.Application.Identity.Users.Password;
 
 public class ChangePasswordRequest
 {
+    public string UserID { get; set; }
     public string Password { get; set; } = default!;
     public string NewPassword { get; set; } = default!;
     public string ConfirmNewPassword { get; set; } = default!;
@@ -11,6 +12,9 @@ public class ChangePasswordRequestValidator : CustomValidator<ChangePasswordRequ
 {
     public ChangePasswordRequestValidator(IStringLocalizer<ChangePasswordRequestValidator> T)
     {
+        RuleFor(p => p.UserID)
+            .NotEmpty();
+
         RuleFor(p => p.Password)
             .NotEmpty();
 

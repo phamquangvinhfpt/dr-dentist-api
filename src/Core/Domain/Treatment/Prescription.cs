@@ -1,27 +1,26 @@
-﻿using FSH.WebApi.Domain.Appointments;
+﻿using FSH.WebApi.Domain.Examination;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Treatment;
 
 public class Prescription : AuditableEntity, IAggregateRoot
 {
-    public string? PatientId { get; set; }
-    public string? DentistId { get; set; }
-    public Guid? AppointmentId { get; set; }
+    public Guid? RecordId { get; set; }
     public string? Notes { get; set; }
 
     // navigation property
+    [JsonIgnore]
     public ICollection<PrescriptionItem> Items { get; set; } = new List<PrescriptionItem>();
-    public Appointment? Appointment { get; set; }
+    [JsonIgnore]
+    public MedicalRecord? MedicalRecord { get; set; }
 
     public Prescription()
     {
     }
 
-    public Prescription(string? patientId, string? dentistId, Guid? appointmentId, string notes)
+    public Prescription(Guid? recordId, string notes)
     {
-        PatientId = patientId;
-        DentistId = dentistId;
-        AppointmentId = appointmentId;
+        RecordId = recordId;
         Notes = notes;
     }
 }

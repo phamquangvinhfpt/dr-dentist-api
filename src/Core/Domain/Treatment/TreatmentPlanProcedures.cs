@@ -1,31 +1,49 @@
-﻿using FSH.WebApi.Domain.Service;
+﻿using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Payments;
+using FSH.WebApi.Domain.Service;
+using System.Text.Json.Serialization;
 
 namespace FSH.WebApi.Domain.Treatment;
 
 public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
 {
-    public Guid TreatmentPlanId { get; set; }
-    public Guid ProcedureId { get; set; }
-    public int Quantity { get; set; }
+    public Guid? ServiceProcedureId { get; set; }
+    public Guid? AppointmentID { get; set; }
+    public Guid? DoctorID { get; set; }
     public TreatmentPlanStatus Status { get; set; }
     public DateOnly? StartDate { get; set; }
-    public DateOnly? EndDate { get; set; }
-    public string? Reason { get; set; }
-    public string? RescheduledBy { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public double Price { get; set; }
+    public double DiscountAmount { get; set; }
+    public double TotalCost { get; set; }
+    public string? Note { get; set; }
+    public int RescheduleTime { get; set; } = 0;
 
+
+    // navigation properties
+    [JsonIgnore]
+    public Appointment? Appointment { get; set; }
+    [JsonIgnore]
+    public ServiceProcedures? ServiceProcedure { get; set; }
+    [JsonIgnore]
+    public PaymentDetail? PaymentDetail { get; set; }
     public TreatmentPlanProcedures()
     {
     }
 
-    public TreatmentPlanProcedures(Guid treatmentPlanId, Guid procedureId, int quantity, TreatmentPlanStatus status, DateOnly? startDate, DateOnly? endDate, string? reason, string? rescheduledBy)
+    public TreatmentPlanProcedures(DefaultIdType? serviceProcedureId, DefaultIdType? appointmentID, DefaultIdType? doctorID, TreatmentPlanStatus status, DateOnly? startDate, TimeSpan? startTime, double price, double discountAmount, double totalCost, string? note, int rescheduleTime)
     {
-        TreatmentPlanId = treatmentPlanId;
-        ProcedureId = procedureId;
-        Quantity = quantity;
+        ServiceProcedureId = serviceProcedureId;
+        AppointmentID = appointmentID;
+        DoctorID = doctorID;
         Status = status;
         StartDate = startDate;
-        EndDate = endDate;
-        Reason = reason;
-        RescheduledBy = rescheduledBy;
+        StartTime = startTime;
+        Price = price;
+        DiscountAmount = discountAmount;
+        TotalCost = totalCost;
+        Note = note;
+        RescheduleTime = rescheduleTime;
     }
 }

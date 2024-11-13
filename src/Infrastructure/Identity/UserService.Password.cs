@@ -9,7 +9,7 @@ namespace FSH.WebApi.Infrastructure.Identity;
 
 internal partial class UserService
 {
-    public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request, string origin)
+    public async Task<string> ForgotPasswordAsync(ForgotPasswordRequest request, string local, string origin)
     {
         EnsureValidTenant();
 
@@ -33,12 +33,22 @@ internal partial class UserService
             UserName = user.UserName,
             Url = passwordResetUrl
         };
-        var mailRequest = new MailRequest(
+        if (local.Equals("en"))
+        {
+            var mailRequest = new MailRequest(
             new List<string> { request.Email },
             _t["Reset Password"],
-            _templateService.GenerateEmailTemplate("reset-password", eMailModel));
-        _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
-
+            _templateService.GenerateEmailTemplate("reset-password-en", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
+        else
+        {
+            var mailRequest = new MailRequest(
+            new List<string> { request.Email },
+            _t["Reset Password"],
+            _templateService.GenerateEmailTemplate("reset-password-vie", eMailModel));
+            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+        }
         return _t["Password Reset Mail has been sent to your authorized Email."];
     }
 
@@ -69,11 +79,13 @@ internal partial class UserService
             : throw new InternalServerException(_t["An Error has occurred!"]);
     }
 
-    public async Task ChangePasswordAsync(ChangePasswordRequest model, string userId)
+    public async Task ChangePasswordAsync(ChangePasswordRequest model)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
+        if (!_currentUserService.GetUserId().ToString().Equals(model.UserID))
+        {
+            throw new BadRequestException("User ID is not available.");
+        }
+        var user = await _userManager.FindByIdAsync(model.UserID) ?? throw new NotFoundException(_t["User Not Found."]);
 
         var result = await _userManager.ChangePasswordAsync(user, model.Password, model.NewPassword);
 

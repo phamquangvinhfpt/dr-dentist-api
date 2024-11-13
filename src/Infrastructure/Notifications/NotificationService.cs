@@ -100,4 +100,29 @@ public class NotificationService : INotificationService
         await _notificationRepository.AddRangeAsync(addNotis, cancellationToken);
         await _notificationSender.SendToUsersAsync(notification, userIds, cancellationToken);
     }
+
+    public async Task SendPaymentNotificationToUser(string userId, BasicNotification notification, DateTime? sendTime, CancellationToken cancellationToken)
+    {
+        if (sendTime != null && sendTime > DateTime.Now)
+        {
+            TimeSpan timeSpan = sendTime.Value - DateTime.Now;
+            _jobService.Schedule(() => ExcuteSendPaymentNotificationToUser(userId, notification, cancellationToken), timeSpan);
+        }
+        else
+        {
+            _jobService.Enqueue(() => ExcuteSendPaymentNotificationToUser(userId, notification, cancellationToken));
+        }
+    }
+
+    public async Task ExcuteSendPaymentNotificationToUser(string userId, BasicNotification notification, CancellationToken cancellationToken)
+    {
+        Notification addNoti = new Notification(
+             Guid.Parse(userId),
+             notification.Title,
+             notification.Label,
+             notification.Message,
+             notification.Url);
+        await _notificationRepository.AddAsync(addNoti, cancellationToken);
+        await _notificationSender.SendPaymentNotificationToUserAsync(notification, userId, cancellationToken);
+    }
 }

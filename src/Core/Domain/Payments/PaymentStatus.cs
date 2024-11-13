@@ -2,6 +2,9 @@
 
 public enum PaymentStatus
 {
-    Paid,
-    Unpaid
+    Waiting,
+    Incomplete,
+    Completed,
+    Canceled,
+    Failed
 }

@@ -35,13 +35,30 @@ public class FSHJobFilter : IClientFilter
             using var scope = _services.CreateScope();
 
             var httpContext = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>()?.HttpContext;
-            _ = httpContext ?? throw new InvalidOperationException("Can't create a TenantJob without HttpContext.");
+            // _ = httpContext ?? throw new InvalidOperationException("Can't create a TenantJob without HttpContext.");
 
-            var tenantInfo = scope.ServiceProvider.GetRequiredService<ITenantInfo>();
-            context.SetJobParameter(MultitenancyConstants.TenantIdName, tenantInfo.Identifier);
+            if (httpContext != null)
+            {
+                var tenantInfo = scope.ServiceProvider.GetRequiredService<ITenantInfo>();
+                context.SetJobParameter(MultitenancyConstants.TenantIdName, tenantInfo.Identifier);
 
-            string? userId = httpContext.User.GetUserId();
-            context.SetJobParameter(QueryStringKeys.UserId, userId);
+                string? userId = httpContext.User.GetUserId();
+                context.SetJobParameter(QueryStringKeys.UserId, userId);
+            }
+            else
+            {
+                var tenantInfo = scope.ServiceProvider.GetRequiredService<ITenantInfo>();
+                if (tenantInfo?.Identifier != null)
+                {
+                    context.SetJobParameter(MultitenancyConstants.TenantIdName, tenantInfo.Identifier);
+                }
+            }
+
+            // var tenantInfo = scope.ServiceProvider.GetRequiredService<ITenantInfo>();
+            // context.SetJobParameter(MultitenancyConstants.TenantIdName, tenantInfo.Identifier);
+
+            // string? userId = httpContext.User.GetUserId();
+            // context.SetJobParameter(QueryStringKeys.UserId, userId);
         }
     }
 

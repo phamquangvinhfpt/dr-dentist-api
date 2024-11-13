@@ -1,12 +1,12 @@
 {
   "SwaggerSettings": {
     "Enable": true,
-    "Title": ".NET 7 GEO WebAPI",
+    "Title": ".NET 7 DCMS WebAPI",
     "Version": "1.0.0",
     "Description": "Dr Dentist - Dental Clinic Management System. WebApi built with Multitenancy Support.",
     "ContactName": "phamquangvinh",
     "ContactEmail": "9277.dev@gmail.com",
-    "ContactUrl": "https://facebook.com/phamquangvinh",
+    "ContactUrl": "https://facebook.com/phamquangvinh2002",
     "License": true,
     "LicenseName": "MIT License"
   }

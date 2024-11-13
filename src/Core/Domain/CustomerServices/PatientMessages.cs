@@ -2,20 +2,21 @@ namespace FSH.WebApi.Domain.CustomerServices;
 
 public class PatientMessages : AuditableEntity, IAggregateRoot
 {
-    public string? PatientId { get; set; }
-    public string? StaffId { get; set; }
+    public string? SenderId { get; set; }
+    public string? receiverId { get; set; }
     public string Message { get; set; } = string.Empty;
+    public bool isStaffSender { get; set; } = false;
     public bool IsRead { get; set; } = false;
 
     public PatientMessages()
     {
     }
 
-    public PatientMessages(string? patientId, string? staffID, string message, bool isRead)
+    public PatientMessages(string senderId, string receiverId, string message, bool isStaffSender)
     {
-        PatientId = patientId;
-        StaffId = staffID;
+        SenderId = senderId;
+        this.receiverId = receiverId;
         Message = message;
-        IsRead = isRead;
+        this.isStaffSender = isStaffSender;
     }
 }

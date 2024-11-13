@@ -1,6 +1,8 @@
-﻿using FSH.WebApi.Application.Common.Exceptions;
+﻿using DocumentFormat.OpenXml.Presentation;
+using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.SpeedSMS;
+using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Domain.Identity;
@@ -101,36 +103,58 @@ internal partial class UserService
 
         return user;
     }
-
-    public async Task<string> CreateAsync(CreateUserRequest request, string origin)
+    //checked
+    public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
     {
+        var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
         var user = new ApplicationUser
         {
             Email = request.Email,
+            Gender = request.IsMale,
+            BirthDate = request.BirthDay,
             FirstName = request.FirstName,
             LastName = request.LastName,
             UserName = request.UserName,
             PhoneNumber = request.PhoneNumber,
+            Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
+            Job = request.Job,
             IsActive = true
         };
-
         var result = await _userManager.CreateAsync(user, request.Password);
+
         if (!result.Succeeded)
         {
             throw new InternalServerException(_t["Validation Errors Occurred."], result.GetErrors(_t));
         }
 
-        await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
-        //var studentList = await _studentRepo.ListAsync(new StudentByEmailSpec(user.Email));
-
-        //if (studentList.Any())
-        //{
-        //    foreach (var student in studentList)
-        //    {
-        //        student.StId = Guid.Parse(user.Id);
-        //        await _studentRepo.UpdateAsync(student);
-        //    }
-        //}
+        await _userManager.AddToRoleAsync(user, role.Name);
+        if (request.Role.Equals(FSHRoles.Dentist))
+        {
+            request.DoctorProfile.DoctorID = user.Id;
+            await UpdateDoctorProfile(request.DoctorProfile, cancellationToken);
+        }
+        else if (request.Role.Equals(FSHRoles.Patient)) {
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = user.Id,
+                PatientCode = code
+            });
+            await _db.SaveChangesAsync(cancellationToken);
+        }
 
         var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
 
@@ -144,11 +168,22 @@ internal partial class UserService
                 UserName = user.UserName,
                 Url = emailVerificationUri
             };
-            var mailRequest = new MailRequest(
+            if (local.Equals("en"))
+            {
+                var mailRequest = new MailRequest(
                 new List<string> { user.Email },
                 _t["Confirm Registration"],
-                _templateService.GenerateEmailTemplate("email-confirmation", eMailModel));
-            _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                _templateService.GenerateEmailTemplate("email-confirmation-en", eMailModel));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+            }
+            else
+            {
+                var mailRequest = new MailRequest(
+                new List<string> { user.Email },
+                _t["Confirm Registration"],
+                _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+            }
             messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
         }
 
@@ -156,17 +191,20 @@ internal partial class UserService
 
         return string.Join(Environment.NewLine, messages);
     }
-
-    public async Task UpdateAsync(UpdateUserRequest request)
+    public async Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId!);
-
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
+        var user = await _userManager.FindByIdAsync(request.UserId!) ?? throw new NotFoundException(_t["User Not Found."]);
+        var role = await GetRolesAsync(user.Id, cancellationToken);
 
         user.FirstName = request.FirstName ?? user.FirstName;
         user.LastName = request.LastName ?? user.LastName;
         user.Gender = request.Gender ?? user.Gender;
         user.BirthDate = request.BirthDate ?? user.BirthDate;
+        user.Address = request.Address ?? user.Address;
+        if (role.RoleName == FSHRoles.Patient)
+        {
+            user.Job = request.Job ?? user.Job;
+        }
 
         var result = await _userManager.UpdateAsync(user);
 
@@ -234,9 +272,11 @@ internal partial class UserService
 
     public async Task UpdateAvatarAsync(UpdateAvatarRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(request.UserId);
-
-        _ = user ?? throw new NotFoundException(_t["User Not Found."]);
+        if(_currentUserService.GetUserId().ToString() != request.UserId)
+        {
+            throw new BadRequestException("Only user update for personal.");
+        }
+        var user = await _userManager.FindByIdAsync(request.UserId) ?? throw new NotFoundException(_t["User Not Found."]);
 
         string currentImage = user.ImageUrl ?? string.Empty;
 

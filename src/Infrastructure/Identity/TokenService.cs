@@ -67,6 +67,10 @@ internal class TokenService : ITokenService
             throw new UnauthorizedException(_t["Authentication Failed, Invalid Email or Password."]);
         }
 
+        if (_userManager.IsLockedOutAsync(user).Result)
+        {
+            throw new UnauthorizedException(_t["User Was Ban."]);
+        }
         if (!user.IsActive)
         {
             throw new UnauthorizedException(_t["User Not Active. Please contact the administrator."]);
@@ -137,7 +141,9 @@ internal class TokenService : ITokenService
             if (applicationRole is not null)
             {
                 var roleC = _roleManager.GetClaimsAsync(applicationRole).Result;
+                var roleB = _userManager.GetClaimsAsync(user).Result;
                 roleClaims.AddRange(roleC);
+                roleClaims.AddRange(roleB);
             }
         }
 

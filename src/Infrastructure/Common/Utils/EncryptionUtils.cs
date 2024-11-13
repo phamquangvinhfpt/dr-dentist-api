@@ -5,7 +5,7 @@ namespace FSH.WebApi.Infrastructure.Common.Utils;
 public class EncryptionUtils
 {
     private const int AESBLOCKSIZE = 16;
-    private const string Password = "GEO2024";
+    private const string Password = "DCMS2024";
 
     private static void DeriveKey(string password, out byte[] key)
     {

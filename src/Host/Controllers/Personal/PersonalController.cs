@@ -2,6 +2,7 @@ using FSH.WebApi.Application.Auditing;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Application.Identity.WorkingCalendars;
 using System.Security.Claims;
 
 namespace FSH.WebApi.Host.Controllers.Identity;
@@ -10,21 +11,24 @@ public class PersonalController : VersionNeutralApiController
 {
     private readonly IUserService _userService;
     private readonly IAuditService _auditService;
-    public PersonalController(IUserService userService, IAuditService auditService)
+    private readonly IWorkingCalendarService _workingCalendarService;
+
+    public PersonalController(IUserService userService, IAuditService auditService, IWorkingCalendarService workingCalendarService)
     {
         _userService = userService;
         _auditService = auditService;
+        _workingCalendarService = workingCalendarService;
     }
 
+
+    //checked
     [HttpGet("profile")]
     [OpenApiOperation("Get profile details of currently logged in user.", "")]
-    public async Task<ActionResult<UserDetailsDto>> GetProfileAsync(CancellationToken cancellationToken)
+    public async Task<UserProfileResponse> GetProfileAsync(CancellationToken cancellationToken)
     {
-        return User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId)
-            ? Unauthorized()
-            : Ok(await _userService.GetAsync(userId, cancellationToken));
+        return await _userService.GetUserProfileAsync(cancellationToken);
     }
-
+    //checked
     [HttpPut("profile")]
     [OpenApiOperation("Update profile details of currently logged in user.", "")]
     public Task<string> UpdateProfileAsync(UpdateUserRequest request)
@@ -43,12 +47,7 @@ public class PersonalController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public async Task<ActionResult> ChangePasswordAsync(ChangePasswordRequest model)
     {
-        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized();
-        }
-
-        await _userService.ChangePasswordAsync(model, userId);
+        await _userService.ChangePasswordAsync(model);
         return Ok();
     }
 
@@ -110,6 +109,25 @@ public class PersonalController : VersionNeutralApiController
         }
 
         request.UserId = userId;
+        return Mediator.Send(request);
+    }
+    //checked
+    [HttpPut("patient/update-profile")]
+    [OpenApiOperation("Update Patient Profile, Medical History, Patient Family.", "")]
+    public Task<string> UpdatePatientProfileAsync(UpdateOrCreatePatientProfile request)
+    {
+        if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException();
+        }
+        return Mediator.Send(request);
+    }
+    //checked
+    [HttpPost("update-doctor-profile")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    [OpenApiOperation("Update Doctor Profile", "")]
+    public Task<string> UpdateDoctorProfile(UpdateDoctorProfile request)
+    {
         return Mediator.Send(request);
     }
 
