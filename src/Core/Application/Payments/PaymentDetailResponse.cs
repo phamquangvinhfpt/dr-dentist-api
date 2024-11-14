@@ -1,0 +1,25 @@
+﻿using FSH.WebApi.Domain.Payments;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FSH.WebApi.Application.Payments;
+public class PaymentDetailResponse
+{
+    public Guid PaymentId { get; set; }
+    public Guid PatientProfileId { get; set; }
+    public string? PatientName { get; set; }
+    public string? PatientCode { get; set; }
+    public Guid AppointmentId { get; set; }
+    public Guid ServiceId { get; set; }
+    public string? ServiceName { get; set; }
+    public double DepositAmount { get; set; }
+    public DateOnly DepositDate { get; set; }
+    public double RemainingAmount { get; set; }
+    public double Amount { get; set; }
+    public PaymentMethod Method { get; set; }
+    public PaymentStatus Status { get; set; }
+    public List<PaymentDetail>? Details { get; set; }
+}

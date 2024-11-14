@@ -7,10 +7,12 @@ using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Notifications;
+using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Infrastructure.Persistence.Configuration;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using FSH.WebApi.Shared.Notifications;
@@ -74,7 +76,7 @@ internal class AppointmentService : IAppointmentService
         return !appointment;
     }
 
-    public async Task<AppointmentDepositRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
+    public async Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -145,7 +147,7 @@ internal class AppointmentService : IAppointmentService
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            var result = new AppointmentDepositRequest
+            var result = new PayAppointmentRequest
             {
                 Key = isStaffOrAdmin ? null : _jobService.Schedule(
                     () => DeleteUnpaidBooking(request.PatientId!, appointment.Id, calendar.Id, pay.Id, cancellationToken),
@@ -153,9 +155,9 @@ internal class AppointmentService : IAppointmentService
                 AppointmentId = appointment.Id,
                 PaymentID = pay.Id,
                 PatientCode = patient.PatientCode,
-                DepositAmount = 10000,
-                DepositTime = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
-                IsDeposit = isStaffOrAdmin,
+                Amount = 10000,
+                Time = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
+                IsPay = isStaffOrAdmin,
             };
 
             if (!isStaffOrAdmin)
@@ -176,7 +178,7 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async Task VerifyAndFinishBooking(AppointmentDepositRequest request, CancellationToken cancellationToken)
+    public async Task VerifyAndFinishBooking(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -185,6 +187,7 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new KeyNotFoundException("Key job not found");
             }
+            await _cacheService.RemoveAsync(request.PatientCode!);
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentId);
             var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
             var payment = await _db.Payments.FirstOrDefaultAsync(p => p.Id == request.PaymentID);
@@ -661,5 +664,46 @@ internal class AppointmentService : IAppointmentService
             _logger.LogError(ex.Message);
         }
         return result;
+    }
+
+    public async Task<PaymentDetailResponse> GetRemainingAmountOfAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var query = await _db.Payments
+                .Where(p => p.AppointmentId == id)
+                .Select(a => new
+                {
+                    Payment = a,
+                    pProfile = _db.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId),
+                    Service = _db.Services.FirstOrDefault(p => p.Id == a.ServiceId),
+                    Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            var patient = await _userManager.FindByIdAsync(query.pProfile.UserId);
+
+            var response = new PaymentDetailResponse
+            {
+                PaymentId = query.Payment.Id,
+                PatientProfileId = query.pProfile.Id,
+                PatientCode = query.pProfile.PatientCode,
+                PatientName = patient.UserName,
+                DepositAmount = query.Payment.DepositAmount!.Value,
+                DepositDate = query.Payment.DepositDate!.Value,
+                RemainingAmount = query.Payment.RemainingAmount!.Value,
+                TotalAmount = query.Payment.Amount!.Value,
+                Method = Domain.Payments.PaymentMethod.None,
+                Status = query.Payment.Status,
+                Details = new List<PaymentDetail>()
+            };
+
+
+            return response;
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
     }
 }

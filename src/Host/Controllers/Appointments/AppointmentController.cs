@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Identity.MedicalHistories;
+using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
     [OpenApiOperation("Create Appointment", "")]
-    public Task<AppointmentDepositRequest> CreateAppointment(CreateAppointmentRequest request)
+    public Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request)
     {
         return Mediator.Send(request);
     }
@@ -67,5 +68,13 @@ public class AppointmentController : VersionNeutralApiController
     public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
     {
         return _appointmentService.ToggleAppointment(id, cancellationToken);
+    }
+
+    [HttpGet("payment/{id}")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Get Remaining Amount Of Appointment By AppointmentID", "")]
+    public Task<PaymentDetailResponse> GetRemainingAmountOfAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        return _appointmentService.GetRemainingAmountOfAppointment(id, cancellationToken);
     }
 }

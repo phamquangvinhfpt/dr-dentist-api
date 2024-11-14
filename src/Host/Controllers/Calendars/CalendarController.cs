@@ -32,4 +32,11 @@ public class CalendarController : VersionNeutralApiController
     {
         return Mediator.Send(request);
     }
+
+    [HttpPost("detail/{id}")]
+    [OpenApiOperation("Get Working Calendar Detail.", "")]
+    public async Task<GetWorkingDetailResponse> GetDetailAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetCalendarDetail(id, cancellationToken);
+    }
 }

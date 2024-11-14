@@ -19,7 +19,7 @@ internal class MedicalHistoryService : IMedicalHistoryService
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<MedicalHistoryService> _logger;
 
-    public MedicalHistoryService(ApplicationDbContext db, IStringLocalizer t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalHistoryService> logger)
+    public MedicalHistoryService(ApplicationDbContext db, IStringLocalizer<MedicalHistoryService> t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalHistoryService> logger)
     {
         _db = db;
         _t = t;

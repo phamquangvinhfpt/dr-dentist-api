@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Domain.Payments;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,15 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Appointments;
-public class AppointmentDepositRequest
+public class PayAppointmentRequest
 {
     public string? Key { get; set; }
     public Guid PaymentID { get; set; }
     public Guid AppointmentId { get; set; }
     public string? PatientCode { get; set; }
-    public double DepositAmount { get; set; }
-    public TimeSpan DepositTime { get; set; }
-    public bool IsDeposit { get; set; } = false;
+    public double Amount { get; set; }
+    public TimeSpan Time { get; set; }
+    public PaymentMethod Method { get; set; }
+    public bool IsPay { get; set; } = false;
 }
 
 //public class AppointmentDepositRequestValidator : CustomValidator<AppointmentDepositRequest>

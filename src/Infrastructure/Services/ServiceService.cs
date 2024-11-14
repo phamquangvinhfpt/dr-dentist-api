@@ -31,7 +31,7 @@ internal class ServiceService : IServiceService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<ServiceService> _logger;
 
-    public ServiceService(ApplicationDbContext db, IStringLocalizer t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<ServiceService> logger)
+    public ServiceService(ApplicationDbContext db, IStringLocalizer<ServiceService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<ServiceService> logger)
     {
         _db = db;
         _t = t;

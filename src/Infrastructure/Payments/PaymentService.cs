@@ -48,8 +48,8 @@ public class PaymentService : IPaymentService
             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
             if (check_context != null)
             {
-                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
-                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                var deposit_info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                if (deposit_info != null && deposit_info.Amount == decimal.ToDouble(transaction.Amount))
                 {
                     await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
@@ -73,8 +73,8 @@ public class PaymentService : IPaymentService
             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
             if (check_context != null)
             {
-                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
-                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                var deposit_info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                if (deposit_info != null && deposit_info.Amount == decimal.ToDouble(transaction.Amount))
                 {
                     await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);

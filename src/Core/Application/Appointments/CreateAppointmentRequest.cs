@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Appointments;
-public class CreateAppointmentRequest : IRequest<AppointmentDepositRequest>
+public class CreateAppointmentRequest : IRequest<PayAppointmentRequest>
 {
     public string? PatientId { get; set; }
     public string? DentistId { get; set; }
@@ -128,7 +128,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
     }
 }
 
-public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, AppointmentDepositRequest>
+public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, PayAppointmentRequest>
 {
     private readonly IAppointmentService appointmentService;
     private readonly IStringLocalizer<CreateAppointmentRequest> _t;
@@ -139,7 +139,7 @@ public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointment
         _t = t;
     }
 
-    public Task<AppointmentDepositRequest> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
+    public Task<PayAppointmentRequest> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
         return appointmentService.CreateAppointment(request, cancellationToken);
     }

@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Pomelo.EntityFrameworkCore.MySql.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -166,6 +167,75 @@ internal class WorkingCalendarService : IWorkingCalendarService
         return result;
     }
 
+    public async Task<GetWorkingDetailResponse> GetCalendarDetail(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            bool check = await _db.WorkingCalendars.AnyAsync(a => a.Id == id);
+            if (!check)
+            {
+                throw new BadRequestException("Calendar Not Found");
+            }
+            var calendar = await _db.WorkingCalendars
+                .Where(p => p.Id == id)
+                .Select(p => new
+                {
+                    Calendar = p,
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == p.DoctorId),
+                    Appointment = _db.Appointments.FirstOrDefault(a => a.Id == p.AppointmentId),
+                    TreamentPlan = _db.TreatmentPlanProcedures.FirstOrDefault(t => t.Id == p.PlanID),
+                })
+                .FirstOrDefaultAsync();
+
+            var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == calendar.Appointment.PatientId);
+            var pUser = await _userManager.FindByIdAsync(pProfile.UserId);
+
+            var dProfile = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+
+            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == calendar.Appointment.ServiceId);
+
+            var result = new GetWorkingDetailResponse
+            {
+                CalendarID = calendar.Calendar.Id,
+                PatientProfileID = calendar.Appointment.PatientId,
+                PatientCode = pProfile.PatientCode,
+                PatientName = pUser.UserName,
+                DoctorProfileID = calendar.Doctor.Id,
+                DoctorName = dProfile.UserName,
+                AppointmentId = calendar.Appointment.Id,
+                AppointmentType = calendar.Calendar.Type,
+                ServiceID = service.Id,
+                ServiceName = service.ServiceName,
+                Date = calendar.Calendar.Date!.Value,
+                StartTime = calendar.Calendar.StartTime!.Value,
+                EndTime = calendar.Calendar.EndTime!.Value,
+                Status = calendar.Calendar.Status,
+                Note = calendar.Calendar.Note,
+            };
+
+            if(calendar.TreamentPlan != null)
+            {
+                var sp = await _db.ServiceProcedures
+                .Where(p => p.Id == calendar.TreamentPlan.ServiceProcedureId)
+                .Select(a => new
+                {
+                    SP = a,
+                    Procedure = _db.Procedures.FirstOrDefault(r => r.Id == a.ProcedureId),
+                })
+                .FirstOrDefaultAsync();
+                result.Step = sp.SP.StepOrder;
+                result.ProcedureName = sp.Procedure.Name;
+                result.ProcedureID = sp.Procedure.Id;
+            }
+            return result;
+
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message, ex);
+            throw new BadRequestException(ex.Message);
+        }
+    }
+
     public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendars(PaginationFilter filter, DateOnly date, CancellationToken cancellation)
     {
 
@@ -241,6 +311,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                                 WorkingCalendars = calendars.Select(x =>
                                 new WorkingCalendarDetail
                                 {
+                                    CalendarID = x.Id,
                                     AppointmentId = x.AppointmentId.Value,
                                     Date = x.Date.Value,
                                     EndTime = x.EndTime.Value,
