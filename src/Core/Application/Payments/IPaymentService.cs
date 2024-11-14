@@ -7,4 +7,5 @@ public interface IPaymentService : ITransientService
 {
     public Task CheckNewTransactions(CancellationToken cancellationToken);
     public Task CheckTransactionsAsync(CancellationToken cancellationToken);
+    public Task<bool> CheckPaymentExisting(Guid id);
 }

@@ -77,4 +77,18 @@ public class AppointmentController : VersionNeutralApiController
     {
         return _appointmentService.GetRemainingAmountOfAppointment(id, cancellationToken);
     }
+
+    [HttpPost("payment/do")]
+    [OpenApiOperation("Send request for payment method", "")]
+    public Task<string> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpPost("payment/cancel")]
+    [OpenApiOperation("Cancel request for payment", "")]
+    public async Task<string> CancelPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        return await _appointmentService.CancelPayment(request, cancellationToken);
+    }
 }

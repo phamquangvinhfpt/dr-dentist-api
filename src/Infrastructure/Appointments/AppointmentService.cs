@@ -1,4 +1,5 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Bibliography;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Exceptions;
@@ -11,6 +12,7 @@ using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Configuration;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -20,6 +22,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Threading;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 internal class AppointmentService : IAppointmentService
@@ -158,6 +161,7 @@ internal class AppointmentService : IAppointmentService
                 Amount = 10000,
                 Time = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
                 IsPay = isStaffOrAdmin,
+                IsVerify = true,
             };
 
             if (!isStaffOrAdmin)
@@ -685,24 +689,145 @@ internal class AppointmentService : IAppointmentService
 
             var response = new PaymentDetailResponse
             {
+                AppointmentId = id,
+                ServiceId = query.Service.Id,
+                ServiceName = query.Service.ServiceName,
                 PaymentId = query.Payment.Id,
                 PatientProfileId = query.pProfile.Id,
                 PatientCode = query.pProfile.PatientCode,
                 PatientName = patient.UserName,
                 DepositAmount = query.Payment.DepositAmount!.Value,
-                DepositDate = query.Payment.DepositDate!.Value,
+                DepositDate = query.Payment.DepositAmount.Value == 0 ? query.Payment.DepositDate : default,
                 RemainingAmount = query.Payment.RemainingAmount!.Value,
                 TotalAmount = query.Payment.Amount!.Value,
                 Method = Domain.Payments.PaymentMethod.None,
                 Status = query.Payment.Status,
-                Details = new List<PaymentDetail>()
+                Details = new List<Application.Payments.PaymentDetail>()
             };
 
-
+            foreach(var item in query.Detail)
+            {
+                var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item.ProcedureID);
+                response.Details.Add(new Application.Payments.PaymentDetail
+                {
+                    ProcedureID = item.ProcedureID,
+                    ProcedureName = pro.Name,
+                    PaymentAmount = item.PaymentAmount,
+                    PaymentStatus = item.PaymentStatus
+                });
+            }
             return response;
         }
         catch (Exception ex) {
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task HandlePaymentRequest(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if(request.IsPay && (request.Method == Domain.Payments.PaymentMethod.Cash))
+            {
+                var query = await _db.Payments
+                    .Where(p => p.Id == request.PaymentID)
+                    .Select(a => new
+                    {
+                        Payment = a,
+                        Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList(),
+                    })
+                    .FirstOrDefaultAsync();
+
+                if(query.Payment.RemainingAmount != request.Amount)
+                {
+                    throw new Exception("Warning: Amount is not equal");
+                }
+
+                query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
+                query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
+
+                foreach (var item in query.Detail) {
+                    item.PaymentStatus = Domain.Payments.PaymentStatus.Completed;
+                }
+
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else if(!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
+            {
+                var query = await _db.Payments
+                    .Where(p => p.Id == request.PaymentID)
+                    .Select(a => new
+                    {
+                        Payment = a,
+                        Patient = _db.PatientProfiles.FirstOrDefault(e => e.Id == a.PatientProfileId),
+                        Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList(),
+                    })
+                    .FirstOrDefaultAsync();
+
+                var result = new PayAppointmentRequest
+                {
+                    AppointmentId = request.AppointmentId,
+                    PaymentID = request.PaymentID,
+                    PatientCode = query.Patient.PatientCode,
+                    Amount = query.Payment.RemainingAmount.Value,
+                    IsVerify = false,
+                };
+                await _cacheService.SetAsync(query.Patient.PatientCode, result, request.Time);
+            }
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task DoPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var query = await _db.Payments
+                    .Where(p => p.Id == request.PaymentID)
+                    .Select(a => new
+                    {
+                        Payment = a,
+                        Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList(),
+                    })
+                    .FirstOrDefaultAsync();
+
+            if (query.Payment.RemainingAmount != request.Amount)
+            {
+                throw new Exception("Warning: Amount is not equal");
+            }
+
+            query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
+            query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
+            query.Payment.RemainingAmount = 0;
+            foreach (var item in query.Detail)
+            {
+                item.PaymentStatus = Domain.Payments.PaymentStatus.Completed;
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            _cacheService.Remove(request.PatientCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> CancelPayment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _cacheService.RemoveAsync(request.PatientCode);
+            return _t["Success"];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
     }

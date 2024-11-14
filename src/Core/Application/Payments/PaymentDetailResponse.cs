@@ -16,9 +16,9 @@ public class PaymentDetailResponse
     public Guid ServiceId { get; set; }
     public string? ServiceName { get; set; }
     public double DepositAmount { get; set; }
-    public DateOnly DepositDate { get; set; }
+    public DateOnly? DepositDate { get; set; }
     public double RemainingAmount { get; set; }
-    public double Amount { get; set; }
+    public double TotalAmount { get; set; }
     public PaymentMethod Method { get; set; }
     public PaymentStatus Status { get; set; }
     public List<PaymentDetail>? Details { get; set; }

@@ -22,4 +22,7 @@ public interface IAppointmentService : ITransientService
     Task<AppointmentResponse> GetAppointmentByID(Guid id, CancellationToken cancellationToken);
     Task<List<TreatmentPlanResponse>> ToggleAppointment(Guid id, CancellationToken cancellationToken);
     Task<PaymentDetailResponse> GetRemainingAmountOfAppointment(DefaultIdType id, CancellationToken cancellationToken);
+    Task HandlePaymentRequest(PayAppointmentRequest request, CancellationToken cancellationToken);
+    Task DoPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken);
+    Task<string> CancelPayment(PayAppointmentRequest request, CancellationToken cancellationToken);
 }

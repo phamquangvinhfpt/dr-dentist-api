@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Payments;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Appointments;
-public class PayAppointmentRequest
+public class PayAppointmentRequest : IRequest<string>
 {
     public string? Key { get; set; }
     public Guid PaymentID { get; set; }
@@ -16,59 +17,63 @@ public class PayAppointmentRequest
     public double Amount { get; set; }
     public TimeSpan Time { get; set; }
     public PaymentMethod Method { get; set; }
+    public bool IsVerify { get; set; } = false;
     public bool IsPay { get; set; } = false;
+    public bool IsCancel { get; set; } = false;
 }
 
-//public class AppointmentDepositRequestValidator : CustomValidator<AppointmentDepositRequest>
-//{
-//    public AppointmentDepositRequestValidator(IAppointmentService appointmentService)
-//    {
-//        RuleFor(p => p.AppointmentId)
-//            .NotEmpty()
-//            .WithMessage("Appointment Id is required")
-//            .When(p => p.IsDeposit)
-//            .MustAsync(async (id, _) => await appointmentService.CheckAppointmentExisting(id))
-//            .When(p => p.IsDeposit)
-//            .WithMessage((_, id) => "Appointment is not existing");
+public class PayAppointmentRequestValidator : CustomValidator<PayAppointmentRequest>
+{
+    public PayAppointmentRequestValidator(IAppointmentService appointmentService, IPaymentService paymentService)
+    {
+        RuleFor(p => p.AppointmentId)
+            .NotEmpty()
+            .When(p => !p.IsCancel)
+            .WithMessage("Appointment Id is required")
+            .MustAsync(async (id, _) => await appointmentService.CheckAppointmentExisting(id))
+            .When(p => !p.IsCancel)
+            .WithMessage((_, id) => "Appointment is not existing");
 
-//        RuleFor(p => p.DepositAmount)
-//            .NotEmpty()
-//            .When(p => p.IsDeposit)
-//            .WithMessage("Deposit amount is required")
-//            .GreaterThan(0)
-//            .When(p => p.IsDeposit)
-//            .WithMessage("Deposit amount must be greater than 0");
+        RuleFor(p => p.PaymentID)
+            .NotEmpty()
+            .When(p => !p.IsCancel)
+            .WithMessage("Payment Informaiton is required")
+            .MustAsync(async (id, _) => await paymentService.CheckPaymentExisting(id))
+            .When(p => !p.IsCancel)
+            .WithMessage((_, id) => "Payment information is not existing");
 
-//        RuleFor(p => p.DepositTime)
-//            .NotEmpty()
-//            .When(p => p.IsDeposit)
-//            .WithMessage("Deposit time is required")
-//            .Must(time => time > TimeSpan.Zero && time <= TimeSpan.FromMinutes(10))
-//            .When(p => p.IsDeposit)
-//            .WithMessage("Time is over");
+        RuleFor(p => p.Amount)
+            .NotEmpty()
+            .When(p => !p.IsCancel)
+            .WithMessage("Deposit amount is required")
+            .GreaterThan(0)
+            .When(p => !p.IsCancel)
+            .WithMessage("Deposit amount must be greater than 0");
 
-//        RuleFor(p => p)
-//        .MustAsync(async (request, cancellation) =>
-//               request.IsDeposit)
-//        .WithErrorCode(400.ToString())
-//        .WithMessage("Appointment is time over");
-//    }
-//}
+        RuleFor(p => p.Time)
+            .NotEmpty()
+            .When(p => !p.IsPay && !p.IsCancel)
+            .WithMessage("Time is required")
+            .Must(time => time > TimeSpan.Zero && time <= TimeSpan.FromMinutes(10))
+            .When(p => !p.IsPay && !p.IsCancel)
+            .WithMessage("Time is over");
+    }
+}
 
-//public class AppointmentDepositRequestHandler : IRequestHandler<AppointmentDepositRequest, string>
-//{
-//    private readonly IAppointmentService _appointmentService;
-//    private readonly IStringLocalizer<AppointmentDepositRequest> _t;
+public class PayAppointmentRequestHandler : IRequestHandler<PayAppointmentRequest, string>
+{
+    private readonly IAppointmentService _appointmentService;
+    private readonly IStringLocalizer<PayAppointmentRequest> _t;
 
-//    public AppointmentDepositRequestHandler(IAppointmentService appointmentService, IStringLocalizer<AppointmentDepositRequest> t)
-//    {
-//        this._appointmentService = appointmentService;
-//        _t = t;
-//    }
+    public PayAppointmentRequestHandler(IAppointmentService appointmentService, IStringLocalizer<PayAppointmentRequest> t)
+    {
+        _appointmentService = appointmentService;
+        _t = t;
+    }
 
-//    public async Task<string> Handle(AppointmentDepositRequest request, CancellationToken cancellationToken)
-//    {
-//        await _appointmentService.VerifyAndFinishBooking(request, cancellationToken);
-//        return _t["Success"];
-//    }
-//}
+    public async Task<string> Handle(PayAppointmentRequest request, CancellationToken cancellationToken)
+    {
+        await _appointmentService.HandlePaymentRequest(request, cancellationToken);
+        return _t["Success"];
+    }
+}
