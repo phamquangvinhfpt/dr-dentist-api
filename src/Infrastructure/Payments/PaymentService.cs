@@ -48,10 +48,17 @@ public class PaymentService : IPaymentService
             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
             if (check_context != null)
             {
-                var deposit_info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
-                if (deposit_info != null && deposit_info.Amount == decimal.ToDouble(transaction.Amount))
+                var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
                 {
-                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                    if (!info.IsCancel)
+                    {
+                        await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                    }
+                    else
+                    {
+                        await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+                    }
                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
                 }
             }

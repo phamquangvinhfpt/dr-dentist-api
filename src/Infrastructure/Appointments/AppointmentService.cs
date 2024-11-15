@@ -259,7 +259,7 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken)
     {
         try
         {
@@ -290,8 +290,14 @@ internal class AppointmentService : IAppointmentService
             var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
             var appointmentsQuery = _db.Appointments
                 .IgnoreQueryFilters()
-                .AsNoTracking()
-                .WithSpecification(spec);
+                .AsNoTracking();
+
+            if (date != default)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
+            }
+
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
 
             var count = await appointmentsQuery.CountAsync(cancellationToken);
 

@@ -42,9 +42,9 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
     [OpenApiOperation("View Appointments", "")]
-    public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken)
     {
-        return await _appointmentService.GetAppointments(filter, cancellationToken);
+        return await _appointmentService.GetAppointments(filter, date, cancellationToken);
     }
 
     [HttpPost("schedule")]

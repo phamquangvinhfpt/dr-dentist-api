@@ -15,7 +15,7 @@ public interface IAppointmentService : ITransientService
     Task<bool> CheckAppointmentExisting(Guid appointmentId);
     Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken);
     Task VerifyAndFinishBooking(PayAppointmentRequest request, CancellationToken cancellationToken);
-    Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, CancellationToken cancellationToken);
+    Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);
     Task RescheduleAppointment(RescheduleRequest request, CancellationToken cancellationToken);
     Task CancelAppointment(CancelAppointmentRequest request, CancellationToken cancellationToken);
     Task ScheduleAppointment(ScheduleAppointmentRequest request, CancellationToken cancellationToken);
