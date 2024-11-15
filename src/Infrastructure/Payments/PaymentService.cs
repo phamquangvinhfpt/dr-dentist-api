@@ -51,7 +51,7 @@ public class PaymentService : IPaymentService
                 var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
                 if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
                 {
-                    if (!info.IsCancel)
+                    if (info.IsVerify)
                     {
                         await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
                     }
