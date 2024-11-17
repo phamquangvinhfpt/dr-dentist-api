@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241112091025_Init")]
+    [Migration("20241115044706_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -1217,17 +1217,17 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<Guid?>("RecordId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid?>("TreatmentID")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("RecordId")
+                    b.HasIndex("TreatmentID")
                         .IsUnique();
 
                     b.ToTable("Prescription", "Treatment");
@@ -1923,12 +1923,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
-                    b.HasOne("FSH.WebApi.Domain.Examination.MedicalRecord", "MedicalRecord")
+                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "TreatmentPlanProcedures")
                         .WithOne("Prescription")
-                        .HasForeignKey("FSH.WebApi.Domain.Treatment.Prescription", "RecordId")
+                        .HasForeignKey("FSH.WebApi.Domain.Treatment.Prescription", "TreatmentID")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("MedicalRecord");
+                    b.Navigation("TreatmentPlanProcedures");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.PrescriptionItem", b =>
@@ -2039,8 +2039,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("Diagnosis");
 
                     b.Navigation("Indication");
-
-                    b.Navigation("Prescription");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.DoctorProfile", b =>
@@ -2090,6 +2088,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", b =>
+                {
+                    b.Navigation("Prescription");
                 });
 #pragma warning restore 612, 618
         }

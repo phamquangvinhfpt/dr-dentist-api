@@ -28,6 +28,8 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     public ServiceProcedures? ServiceProcedure { get; set; }
     [JsonIgnore]
     public PaymentDetail? PaymentDetail { get; set; }
+    [JsonIgnore]
+    public Prescription? Prescription { get; set; }
     public TreatmentPlanProcedures()
     {
     }

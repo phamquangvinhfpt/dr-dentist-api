@@ -59,6 +59,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     (c.StartTime <= start && start < c.EndTime) ||
                     (c.StartTime < end && end <= c.EndTime) ||
                     (start <= c.StartTime && c.EndTime <= end)
+                ) &&
+                (
+                    c.Status == CalendarStatus.Booked ||
+                    c.Status == CalendarStatus.Waiting
                 )
             )
             .AnyAsync();
@@ -77,6 +81,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     (c.StartTime <= treatmentTime && treatmentTime < c.EndTime) ||
                     (c.StartTime < endTime && endTime <= c.EndTime) ||
                     (treatmentTime <= c.StartTime && c.EndTime <= endTime)
+                ) &&
+                (
+                    c.Status == CalendarStatus.Booked ||
+                    c.Status == CalendarStatus.Waiting
                 )
             )
             .AnyAsync();
@@ -98,6 +106,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     (c.StartTime <= startTime && startTime < c.EndTime) ||
                     (c.StartTime < endTime && endTime <= c.EndTime) ||
                     (startTime <= c.StartTime && c.EndTime <= endTime)
+                ) &&
+                (
+                    c.Status == CalendarStatus.Booked ||
+                    c.Status == CalendarStatus.Waiting
                 )
             )
             .AnyAsync();
@@ -139,7 +151,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
     public async Task<List<AvailableTimeResponse>> GetAvailableTimeSlot(GetAvailableTimeRequest request, CancellationToken cancellationToken)
     {
         var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
-        var timeSlot = await _db.WorkingCalendars.Where(a => a.DoctorId == dprofile.Id && a.Date == request.Date).OrderBy(a => a.StartTime).ToListAsync();
+        var timeSlot = await _db.WorkingCalendars.Where(a => a.DoctorId == dprofile.Id && a.Date == request.Date &&
+        (a.Status == CalendarStatus.Booked || a.Status == CalendarStatus.Waiting))
+            .OrderBy(a => a.StartTime).ToListAsync();
 
         var startOfDay = new TimeSpan(8, 0, 0);
         var endOfDay = new TimeSpan(17, 0, 0);
@@ -253,8 +267,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     filter.AdvancedSearch = new Search();
                     filter.AdvancedSearch.Fields = new List<string>();
                 }
+                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == currentUserId);
                 filter.AdvancedSearch.Fields.Add("DoctorId");
-                filter.AdvancedSearch.Keyword = currentUserId;
+                filter.AdvancedSearch.Keyword = profile.Id.ToString();
                 //if (filter.AdvancedSearch?.Keyword != null &&
                 //    filter.AdvancedSearch.Fields.Contains("Date"))
                 //{
@@ -323,6 +338,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                                     PatientProfileID = patientProfile.Id,
                                     StartTime = x.StartTime.Value,
                                     Status = x.Status,
+                                    AppointmentType = x.Type,
                                 }).ToList(),
                             });
                         }

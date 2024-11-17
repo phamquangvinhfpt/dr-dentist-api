@@ -439,18 +439,36 @@ internal class AppointmentService : IAppointmentService
                 }
             }
             var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
             appoint.Status = AppointmentStatus.Cancelled;
-            calendar.Status = CalendarStatus.Canceled;
-            var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
-            payment.Status = Domain.Payments.PaymentStatus.Canceled;
+            if (appoint.Status == AppointmentStatus.Confirmed) {
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
 
-            await _db.SaveChangesAsync(cancellationToken);
-
-            _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
+                calendar.Status = CalendarStatus.Canceled;
+                var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
+                payment.Status = Domain.Payments.PaymentStatus.Canceled;
+                _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
                 appoint.DentistId,
                 appoint.AppointmentDate,
                 TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
+            }
+            else if(appoint.Status == AppointmentStatus.Success)
+            {
+                var query = await _db.TreatmentPlanProcedures
+                    .Where(p => p.AppointmentID == request.AppointmentID).ToListAsync();
+                foreach (var item in query) {
+                    if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active) {
+                        item.Status = Domain.Treatment.TreatmentPlanStatus.Cancelled;
+                        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == item.Id);
+                        calendar.Status = CalendarStatus.Canceled;
+                        _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
+                            appoint.DentistId,
+                            calendar.Date.Value,
+                            TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
+                    }
+                }
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {

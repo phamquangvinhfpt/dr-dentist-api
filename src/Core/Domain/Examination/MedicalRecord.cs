@@ -25,6 +25,4 @@ public class MedicalRecord : AuditableEntity, IAggregateRoot
     public Indication? Indication { get; set; }
     [JsonIgnore]
     public BasicExamination? BasicExamination { get; set; }
-    [JsonIgnore]
-    public Prescription? Prescription { get; set; }
 }

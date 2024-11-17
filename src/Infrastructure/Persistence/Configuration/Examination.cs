@@ -160,9 +160,9 @@ public class PrescriptionsConfig : IEntityTypeConfiguration<Prescription>
                 .HasMaxLength(256);
 
         builder
-            .HasOne(b => b.MedicalRecord)
+            .HasOne(b => b.TreatmentPlanProcedures)
             .WithOne(b => b.Prescription)
-            .HasForeignKey<Prescription>(b => b.RecordId)
+            .HasForeignKey<Prescription>(b => b.TreatmentID)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

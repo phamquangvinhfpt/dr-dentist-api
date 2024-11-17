@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Domain.Identity;
+﻿using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Identity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,4 +21,5 @@ public class WorkingCalendarDetail
     public TimeSpan EndTime { get; set; }
     public CalendarStatus Status { get; set; }
     public string? Note { get; set; }
+    public AppointmentType AppointmentType { get; set; }
 }
