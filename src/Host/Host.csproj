@@ -51,7 +51,7 @@
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Databases\Host\" />
-      <Folder Include="Files\" />
+      <Folder Include="Files\Files\" />
     </ItemGroup>
     <ItemGroup>
       <Content Update="PaperTemplates\paper.cshtml">

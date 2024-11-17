@@ -30,6 +30,7 @@ public static class FSHResource
     public const string AuditLogs = nameof(AuditLogs);
     public const string Appointment = nameof(Appointment);
     public const string MedicalHistory = nameof(MedicalHistory);
+    public const string MedicalRecord = nameof(MedicalRecord);
     public const string ContactInformation = nameof(ContactInformation);
     public const string Feedback = nameof(Feedback);
     public const string PatientMessages = nameof(PatientMessages);
@@ -106,6 +107,13 @@ public static class FSHPermissions
         new("Update Medical History", FSHAction.Update, FSHResource.MedicalHistory, new[] { DENTIST }),
         new("Delete Medical History", FSHAction.Delete, FSHResource.MedicalHistory, new[] { ROOT, STAFF }),
         new("Search Medical History", FSHAction.Search, FSHResource.MedicalHistory, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+
+        // Medical Record
+        new("View Medical Record", FSHAction.View, FSHResource.MedicalRecord, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+        new("Create Medical Record", FSHAction.Create, FSHResource.MedicalRecord, new[] { DENTIST }),
+        new("Update Medical Record", FSHAction.Update, FSHResource.MedicalRecord, new[] { DENTIST }),
+        new("Delete Medical Record", FSHAction.Delete, FSHResource.MedicalRecord, new[] { ROOT, STAFF }),
+        new("Search Medical Record", FSHAction.Search, FSHResource.MedicalRecord, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Contact Information
         new("View Contact Information", FSHAction.View, FSHResource.ContactInformation, new[] { ROOT, PATIENT, STAFF, DENTIST }),
