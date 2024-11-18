@@ -12,7 +12,7 @@ namespace FSH.WebApi.Application.DentalServices;
 public class AddOrDeleteProcedureToService : IRequest<string>
 {
     public Guid ServiceID { get; set; }
-    public Guid ProcedureID { get; set; }
+    public List<Guid>? ProcedureID { get; set; }
     public bool IsRemove { get; set; } = false;
 }
 public class AddOrDeleteProcedureToServiceValidator : CustomValidator<AddOrDeleteProcedureToService>
@@ -23,9 +23,14 @@ public class AddOrDeleteProcedureToServiceValidator : CustomValidator<AddOrDelet
             .NotNull()
             .MustAsync(async (id, _) => await serviceService.CheckExistingService(id))
             .WithMessage((_, id) => $"Service {id} is not existed or deactivated.");
+
         RuleFor(p => p.ProcedureID)
             .NotNull()
+            .WithMessage("The Procedures information should be include");
+
+        RuleForEach(p => p.ProcedureID)
             .MustAsync(async (id, _) => await serviceService.CheckExistingProcedure(id))
+            .When(p => p.ProcedureID.Count() > 0)
             .WithMessage((_, id) => $"Procedure {id} is not existed or deleted.");
     }
 }

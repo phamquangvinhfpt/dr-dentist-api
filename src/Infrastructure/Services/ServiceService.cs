@@ -1,5 +1,6 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office.CustomUI;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
@@ -469,35 +470,125 @@ internal class ServiceService : IServiceService
         try
         {
             var currentServiceProcedures = await _db.ServiceProcedures
-    .Where(sp => sp.ServiceId == request.ServiceID)
-    .OrderBy(sp => sp.StepOrder)
-    .ToListAsync(cancellationToken);
+                .Where(sp => sp.ServiceId == request.ServiceID)
+                .OrderBy(sp => sp.StepOrder)
+                .ToListAsync(cancellationToken);
+            var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
             if (request.IsRemove)
             {
-                var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID)
-                    ?? throw new BadRequestException("This Procedure is not in this Service");
-
-                var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-                var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
-
-                var entry = _db.Services.Add(new Service
+                if (!wasUsed)
                 {
-                    ServiceName = current_service.ServiceName,
-                    ServiceDescription = current_service.ServiceDescription,
-                    TotalPrice = current_service.TotalPrice - current_procedure.Price,
-                    IsActive = true,
-                    CreatedBy = _currentUserService.GetUserId(),
-                    CreatedOn = DateTime.Now,
-                }).Entity;
-                int step = 1;
-                foreach (var item in currentServiceProcedures)
+                    foreach(var item in request.ProcedureID)
+                    {
+                        var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == item)
+                            ?? throw new BadRequestException("This Procedure is not in this Service");
+                        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+                        var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
+                        service.TotalPrice -= procedure.Price;
+                        currentServiceProcedures.Remove(sp);
+                    }
+                }
+                else
                 {
-                    if (item.ProcedureId != request.ProcedureID)
+                    var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+
+                    var newService = new Service
+                    {
+                        ServiceName = current_service.ServiceName,
+                        ServiceDescription = current_service.ServiceDescription,
+                        TotalPrice = current_service.TotalPrice,
+                        IsActive = true,
+                        CreatedBy = _currentUserService.GetUserId(),
+                        CreatedOn = DateTime.Now,
+                    };
+                    var entry = _db.Services.Add(newService).Entity;
+
+                    int step = 1;
+                    foreach (var currentProcedure in currentServiceProcedures)
+                    {
+                        if (!request.ProcedureID.Contains(currentProcedure.ProcedureId.Value))
+                        {
+                            _db.ServiceProcedures.Add(new ServiceProcedures
+                            {
+                                ServiceId = entry.Id,
+                                ProcedureId = currentProcedure.ProcedureId,
+                                StepOrder = step++,
+                                CreatedBy = _currentUserService.GetUserId(),
+                                CreatedOn = DateTime.UtcNow,
+                                LastModifiedBy = _currentUserService.GetUserId(),
+                                LastModifiedOn = DateTime.UtcNow
+                            });
+                        }
+                        else
+                        {
+                            var procedure = await _db.Procedures.FirstOrDefaultAsync(p =>
+                                p.Id == currentProcedure.ProcedureId);
+                            newService.TotalPrice -= procedure.Price;
+                        }
+                    }
+                    current_service.IsActive = false;
+                    current_service.DeletedOn = DateTime.UtcNow;
+                    current_service.DeletedBy = _currentUserService.GetUserId();
+                }
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                if (!wasUsed)
+                {
+                    var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p =>
+                        p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID.First());
+                    if (ser_pro is not null)
+                    {
+                        throw new BadRequestException("The Procedure is already in this Service");
+                    }
+
+                    var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+                    var lastStep = currentServiceProcedures.Any() ?
+                        currentServiceProcedures.Max(x => x.StepOrder) : 0;
+
+                    foreach (var procedureId in request.ProcedureID)
+                    {
+                        var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == procedureId);
+
+                        _db.ServiceProcedures.Add(new ServiceProcedures
+                        {
+                            ServiceId = request.ServiceID,
+                            ProcedureId = procedureId,
+                            StepOrder = ++lastStep,
+                            CreatedBy = _currentUserService.GetUserId(),
+                            CreatedOn = DateTime.UtcNow,
+                            LastModifiedBy = _currentUserService.GetUserId(),
+                            LastModifiedOn = DateTime.UtcNow
+                        });
+
+                        current_service.TotalPrice += current_procedure.Price;
+                    }
+                }
+                else
+                {
+                    var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+
+                    var newService = new Service
+                    {
+                        ServiceName = current_service.ServiceName,
+                        ServiceDescription = current_service.ServiceDescription,
+                        TotalPrice = current_service.TotalPrice,
+                        IsActive = true,
+                        CreatedBy = _currentUserService.GetUserId(),
+                        CreatedOn = DateTime.Now,
+                    };
+
+                    var entry = _db.Services.Add(newService).Entity;
+
+                    // Copy các procedure hiện tại sang service mới
+                    int step = 1;
+                    foreach (var currentProcedure in currentServiceProcedures)
                     {
                         _db.ServiceProcedures.Add(new ServiceProcedures
                         {
                             ServiceId = entry.Id,
-                            ProcedureId = item.ProcedureId,
+                            ProcedureId = currentProcedure.ProcedureId,
                             StepOrder = step++,
                             CreatedBy = _currentUserService.GetUserId(),
                             CreatedOn = DateTime.UtcNow,
@@ -505,61 +596,32 @@ internal class ServiceService : IServiceService
                             LastModifiedOn = DateTime.UtcNow
                         });
                     }
-                    item.DeletedOn = DateTime.UtcNow;
-                    item.DeletedBy = _currentUserService.GetUserId();
-                }
-                _db.Services.Remove(current_service);
-                await _db.SaveChangesAsync(cancellationToken);
-            }
-            else
-            {
-                var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == request.ProcedureID);
-                if (ser_pro is not null)
-                {
-                    throw new BadRequestException("The Procedure is in this Service");
-                }
-                var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-                var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == request.ProcedureID);
 
-                var entry = _db.Services.Add(new Service
-                {
-                    ServiceName = current_service.ServiceName,
-                    ServiceDescription = current_service.ServiceDescription,
-                    TotalPrice = current_service.TotalPrice + current_procedure.Price,
-                    IsActive = true,
-                    CreatedBy = _currentUserService.GetUserId(),
-                    CreatedOn = DateTime.Now,
-                }).Entity;
-                int step = 1;
-                foreach (var item in currentServiceProcedures)
-                {
-                    _db.ServiceProcedures.Add(new ServiceProcedures
+                    foreach (var procedureId in request.ProcedureID)
                     {
-                        ServiceId = entry.Id,
-                        ProcedureId = item.ProcedureId,
-                        StepOrder = step++,
-                        CreatedBy = _currentUserService.GetUserId(),
-                        CreatedOn = DateTime.UtcNow,
-                        LastModifiedBy = _currentUserService.GetUserId(),
-                        LastModifiedOn = DateTime.UtcNow
-                    });
+                        var current_procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == procedureId);
 
-                    item.DeletedOn = DateTime.UtcNow;
-                    item.DeletedBy = _currentUserService.GetUserId();
+                        _db.ServiceProcedures.Add(new ServiceProcedures
+                        {
+                            ServiceId = entry.Id,
+                            ProcedureId = procedureId,
+                            StepOrder = step++,
+                            CreatedBy = _currentUserService.GetUserId(),
+                            CreatedOn = DateTime.UtcNow,
+                            LastModifiedBy = _currentUserService.GetUserId(),
+                            LastModifiedOn = DateTime.UtcNow
+                        });
+
+                        newService.TotalPrice += current_procedure.Price;
+                    }
+
+                    // Vô hiệu hóa service cũ
+                    current_service.IsActive = false;
+                    current_service.DeletedOn = DateTime.UtcNow;
+                    current_service.DeletedBy = _currentUserService.GetUserId();
                 }
-                _db.ServiceProcedures.Add(new ServiceProcedures
-                {
-                    ServiceId = entry.Id,
-                    ProcedureId = current_procedure.Id,
-                    StepOrder = step++,
-                    CreatedBy = _currentUserService.GetUserId(),
-                    CreatedOn = DateTime.UtcNow,
-                    LastModifiedBy = _currentUserService.GetUserId(),
-                    LastModifiedOn = DateTime.UtcNow
-                });
-                _db.Services.Remove(current_service);
-                await _db.SaveChangesAsync(cancellationToken);
             }
+            await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
