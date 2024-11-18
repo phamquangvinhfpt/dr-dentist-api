@@ -32,4 +32,5 @@ public interface IServiceService : ITransientService
     Task<PaginationResponse<Procedure>> GetDeletedProcedureAsync(PaginationFilter request, CancellationToken cancellationToken);
     Task<string> RestoreProcedureAsync(DefaultIdType id, CancellationToken cancellationToken);
     Task<List<ProcedurePlanResponse>> GetProceduresByServiceID(Guid serviceID, CancellationToken cancellationToken);
+    Task<ServiceDTO> GetDeleteServiceByID(DefaultIdType id, CancellationToken cancellationToken);
 }

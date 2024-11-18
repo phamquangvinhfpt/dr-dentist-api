@@ -55,6 +55,16 @@ public class ServiceController : VersionNeutralApiController
     {
         return await _serviceService.GetDeletedServiceAsync(request, cancellationToken);
     }
+
+    //checked
+    [HttpGet("bin/get/{id}")]
+    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [OpenApiOperation("Get Deleted Service Detail.", "")]
+    public async Task<ServiceDTO> GetDeletedServiceAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetDeleteServiceByID(id, cancellationToken);
+    }
+
     //checked
     [HttpGet("{id}/restore")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
