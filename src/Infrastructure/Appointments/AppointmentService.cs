@@ -23,6 +23,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.Threading;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 internal class AppointmentService : IAppointmentService
@@ -852,6 +853,127 @@ internal class AppointmentService : IAppointmentService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, DateOnly date, TimeSpan time, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<AppointmentResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
+            var appointmentsQuery = _db.Appointments
+                .AsNoTracking().Where(p => p.DentistId == default);
+
+            if (date != default)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
+            }
+            if (time != default) {
+                appointmentsQuery = appointmentsQuery.Where(w => w.StartTime == time);
+            }
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
+
+            var count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            var appointments = await appointmentsQuery
+                .Select(appointment => new
+                {
+                    Appointment = appointment,
+                    Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                    Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
+                    Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var a in appointments)
+            {
+                result.Add(new AppointmentResponse
+                {
+                    AppointmentId = a.Appointment.Id,
+                    PatientId = a.Appointment.PatientId,
+                    DentistId = default,
+                    ServiceId = a.Appointment.ServiceId,
+                    AppointmentDate = a.Appointment.AppointmentDate,
+                    StartTime = a.Appointment.StartTime,
+                    Duration = a.Appointment.Duration,
+                    Status = a.Appointment.Status,
+                    Notes = a.Appointment.Notes,
+
+                    PatientCode = a.Patient?.PatientCode,
+                    PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
+                    DentistName = null,
+                    ServiceName = a.Service?.ServiceName,
+                    ServicePrice = a.Service?.TotalPrice ?? 0,
+                    PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                });
+            }
+            return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if(request.DoctorID == default || request.AppointmentID == default)
+            {
+                throw new Exception("All Information should be include.");
+            }
+            var doctor = await _db.DoctorProfiles
+                .Where(p => p.Id == request.DoctorID)
+                .FirstOrDefaultAsync();
+            if(doctor == null)
+            {
+                throw new Exception("Doctor can not be found.");
+            }
+            var user = await _userManager.FindByIdAsync(doctor.DoctorId);
+            if (!user.IsActive)
+            {
+                throw new Exception("Doctor has been deactive.");
+            }
+            var appoitment = await _db.Appointments
+                .Where(p => p.Id == request.AppointmentID && p.Status == AppointmentStatus.Confirmed)
+                .Select(c => new
+                {
+                    Appointment = c,
+                    Calendar = _db.WorkingCalendars.FirstOrDefault(p => p.AppointmentId == c.Id)
+                })
+                .FirstOrDefaultAsync();
+
+            if (appoitment == null) {
+                throw new Exception("Appointment can not be found or be cancel.");
+            }
+            if(appoitment.Appointment.AppointmentDate < DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new Exception("Appointment invalid.");
+            }
+
+            var check = await _workingCalendarService.CheckAvailableTimeSlot(
+                appoitment.Appointment.AppointmentDate,
+                appoitment.Appointment.StartTime,
+                appoitment.Appointment.StartTime.Add(appoitment.Appointment.Duration),
+                request.DoctorID);
+            if (!check) {
+                throw new Exception("Doctor has a meeting in this time");
+            }
+            appoitment.Appointment.DentistId = request.DoctorID;
+            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
+
+            calendar.DoctorId = request.DoctorID;
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return _t["Success"];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
         }
     }

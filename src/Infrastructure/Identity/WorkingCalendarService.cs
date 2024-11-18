@@ -70,6 +70,27 @@ internal class WorkingCalendarService : IWorkingCalendarService
         return !calendars;
     }
 
+    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, Guid DoctorID)
+    {
+        var calendars = await _db.WorkingCalendars
+            .Where(c =>
+                c.DoctorId == DoctorID &&
+                c.Date == date &&
+                (
+                    (c.StartTime <= start && start < c.EndTime) ||
+                    (c.StartTime < end && end <= c.EndTime) ||
+                    (start <= c.StartTime && c.EndTime <= end)
+                ) &&
+                (
+                    c.Status == CalendarStatus.Booked ||
+                    c.Status == CalendarStatus.Waiting
+                )
+            )
+            .AnyAsync();
+
+        return !calendars;
+    }
+
     public async Task<bool> CheckAvailableTimeSlotToAddFollowUp(Guid doctorID, DateOnly treatmentDate, TimeSpan treatmentTime)
     {
         var endTime = treatmentTime.Add(TimeSpan.FromMinutes(30));

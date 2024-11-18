@@ -91,4 +91,20 @@ public class AppointmentController : VersionNeutralApiController
     {
         return await _appointmentService.CancelPayment(request, cancellationToken);
     }
+
+    [HttpPost("non-doctor/get-all")]
+    [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
+    [OpenApiOperation("View Appointments that have non-doctor", "")]
+    public async Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, [FromQuery] DateOnly date, TimeSpan time, CancellationToken cancellationToken)
+    {
+        return await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
+    }
+
+    [HttpPost("non-doctor/add-doctor")]
+    [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
+    [OpenApiOperation("Add Doctor to Appointments that have non-doctor", "")]
+    public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
+    {
+        return await _appointmentService.AddDoctorToAppointments(request, cancellationToken);
+    }
 }

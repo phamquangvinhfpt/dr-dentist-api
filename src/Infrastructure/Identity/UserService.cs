@@ -574,22 +574,19 @@ internal partial class UserService : IUserService
 
             foreach (var user in users)
             {
-                if (await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
+                list_user.Add(new ListUserDTO
                 {
-                    list_user.Add(new ListUserDTO
-                    {
-                        Id = user.Id.ToString(),
-                        UserName = user.UserName,
-                        Address = user.Address,
-                        Email = user.Email,
-                        Gender = user.Gender,
-                        ImageUrl = user.ImageUrl,
-                        PhoneNumber = user.PhoneNumber,
-                        IsActive = user.IsActive,
-                        Role = await GetRolesAsync(user.Id, cancellationToken),
-                        isBanned = await _userManager.IsLockedOutAsync(user)
-                    });
-                }
+                    Id = user.Id.ToString(),
+                    UserName = user.UserName,
+                    Address = user.Address,
+                    Email = user.Email,
+                    Gender = user.Gender,
+                    ImageUrl = user.ImageUrl,
+                    PhoneNumber = user.PhoneNumber,
+                    IsActive = user.IsActive,
+                    Role = await GetRolesAsync(user.Id, cancellationToken),
+                    isBanned = await _userManager.IsLockedOutAsync(user)
+                });
             }
         }
         catch (Exception ex)
