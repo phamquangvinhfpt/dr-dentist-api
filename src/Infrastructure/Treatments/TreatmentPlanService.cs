@@ -9,6 +9,7 @@ using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -133,18 +134,30 @@ internal class TreatmentPlanService : ITreatmentPlanService
             var plan = await _db.TreatmentPlanProcedures
                 .FirstOrDefaultAsync(p => p.Id == request.TreatmentID);
 
+            if(plan.StartDate != DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new Exception("The plan date is not available");
+            }
+
             if(plan.Status != Domain.Treatment.TreatmentPlanStatus.Active)
             {
-                throw new Exception("The plan is not done");
+                throw new Exception("The plan is not schedule");
             }
+            plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
             var entry = _db.Prescriptions
                 .Add(new Domain.Treatment.Prescription
                 {
+                    DoctorID = appointment.DentistId,
+                    PatientID = appointment.PatientId,
                     TreatmentID = request.TreatmentID,
                     Notes = request.Notes,
+                    CreatedBy = _currentUserService.GetUserId(),
+                    CreatedOn = DateTime.Now,
                 }).Entity;
 
-            foreach (var item in request.ItemRequests) {
+            foreach (var item in request.ItemRequests)
+            {
                 _db.PrescriptionItems.Add(new Domain.Treatment.PrescriptionItem
                 {
                     PrescriptionId = entry.Id,
@@ -181,6 +194,133 @@ internal class TreatmentPlanService : ITreatmentPlanService
     {
         var result = await _db.TreatmentPlanProcedures.AnyAsync(p => p.Id == id);
         return result;
+    }
+
+    public async Task<List<PrescriptionResponse>> GetPrescriptionByPatient(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var patientUser = await _userManager.FindByIdAsync(id);
+            if(!await _userManager.IsInRoleAsync(patientUser, FSHRoles.Patient))
+            {
+                throw new Exception("User is not patient");
+            }
+            var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == patientUser.Id);
+            var prescriptions = await _db.Prescriptions
+                .Where(p => p.PatientID == patientProfile.Id)
+                .Select(g => new
+                {
+                    Prescriptions = g,
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == g.DoctorID),
+                    Items = _db.PrescriptionItems
+                        .Where(pi => pi.PrescriptionId == g.Id)
+                        .ToList(),
+                })
+                .ToListAsync(cancellationToken);
+
+            if (prescriptions == null)
+            {
+                throw new Exception("No prescriptions found for this patient.");
+            }
+
+            var result = new List<PrescriptionResponse>();
+
+            foreach (var prescription in prescriptions)
+            {
+                var doctorUser = await _userManager.FindByIdAsync(prescription.Doctor.DoctorId);
+
+                var prescriptionResponse = new PrescriptionResponse
+                {
+                    PatientID = patientUser.Id,
+                    PatientName = $"{patientUser.FirstName} {patientUser.LastName}",
+                    DoctorID = doctorUser.Id,
+                    DoctorName = $"{doctorUser.FirstName} {doctorUser.LastName}",
+                    Notes = prescription.Prescriptions.Notes,
+                    Items = prescription.Items
+                        .Where(i => i.PrescriptionId == prescription.Prescriptions.Id)
+                        .Select(item => new PrescriptionItemRespomse
+                        {
+                            Dosage = item.Dosage,
+                            Frequency = item.Frequency,
+                            MedicineName = item.MedicineName
+                        })
+                        .ToList()
+                };
+
+                result.Add(prescriptionResponse);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PrescriptionResponse> GetPrescriptionByTreatment(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var plan = await _db.TreatmentPlanProcedures
+                .Where(p => p.Id == id)
+                .FirstOrDefaultAsync();
+
+            if(plan == null)
+            {
+                throw new Exception("Plan can not be found");
+            }
+            if(plan.Status != Domain.Treatment.TreatmentPlanStatus.Completed)
+            {
+                throw new Exception("The plan do not have any prescription information.");
+            }
+
+            var pre = await _db.Prescriptions
+                .Where(p => p.TreatmentID == plan.Id)
+                .Select(s => new
+                {
+                    Prescription = s,
+                    Patient = _db.PatientProfiles.FirstOrDefault(c => c.Id == s.PatientID),
+                    Items = _db.PrescriptionItems.Where(p => p.PrescriptionId == s.Id).ToList(),
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == s.DoctorID),
+                })
+                .FirstOrDefaultAsync();
+
+            if (pre != null) {
+                var patient = await _userManager.FindByIdAsync(pre.Patient.UserId);
+                var doctor = await _userManager.FindByIdAsync(pre.Doctor.DoctorId);
+                var result = new PrescriptionResponse
+                {
+                    CreateDate = pre.Prescription.CreatedOn,
+                    PatientID = patient.Id,
+                    PatientName = patient.FirstName + " " + patient.LastName,
+                    Notes = pre.Prescription.Notes,
+                    DoctorID = doctor.Id,
+                    DoctorName = doctor.FirstName + " " + doctor.LastName,
+                };
+                result.Items = new List<PrescriptionItemRespomse>();
+                foreach(var item in pre.Prescription.Items)
+                {
+                    result.Items.Add(new PrescriptionItemRespomse
+                    {
+                        Dosage = item.Dosage,
+                        Frequency = item.Frequency,
+                        MedicineName = item.MedicineName,
+                    });
+                }
+                return result;
+            }
+            else
+            {
+                throw new Exception("Prescription can not be found.");
+            }
+
+        }catch(Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
+        }
     }
 
     public async Task<List<TreatmentPlanResponse>> GetTreamentPlanByAppointment(Guid appointmentId, CancellationToken cancellationToken)

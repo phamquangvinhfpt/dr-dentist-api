@@ -6,6 +6,8 @@ namespace FSH.WebApi.Domain.Treatment;
 public class Prescription : AuditableEntity, IAggregateRoot
 {
     public Guid? TreatmentID { get; set; }
+    public Guid? DoctorID { get; set; }
+    public Guid? PatientID { get; set; }
     public string? Notes { get; set; }
 
     // navigation property

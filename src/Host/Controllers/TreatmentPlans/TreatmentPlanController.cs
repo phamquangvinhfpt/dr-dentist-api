@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.TreatmentPlan;
+using FSH.WebApi.Application.TreatmentPlan.Prescriptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,5 +36,29 @@ public class TreatmentPlanController : VersionNeutralApiController
     public Task<string> UpdateTreatmentPlanDetail(AddTreatmentDetail request, CancellationToken cancellationToken)
     {
         return _treatmentPlanService.UpdateTreamentPlan(request, cancellationToken);
+    }
+
+    [HttpGet("precsription/get/{id}")]
+    [OpenApiOperation("Get Prescription", "")]
+    public Task<string> AddPrescriptionTreatmentPlan(AddPrescriptionRequest request, CancellationToken cancellationToken)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpGet("precsription/get/{id}")]
+    [OpenApiOperation("Get Prescription By TreatmetnID", "")]
+    public Task<PrescriptionResponse> GetPrescriptionByTreatmentID(Guid id, CancellationToken cancellationToken)
+    {
+        return _treatmentPlanService.GetPrescriptionByTreatment(id, cancellationToken);
+    }
+    [HttpGet("precsription/patient/get/{id}")]
+    [OpenApiOperation("Get Prescription By patient id", "")]
+    public Task<List<PrescriptionResponse>> GetPrescriptionByPatientID(string id, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(id))
+        {
+            throw new ArgumentNullException("Patient identity is empty");
+        }
+        return _treatmentPlanService.GetPrescriptionByPatient(id, cancellationToken);
     }
 }

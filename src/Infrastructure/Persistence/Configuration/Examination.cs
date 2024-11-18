@@ -164,6 +164,15 @@ public class PrescriptionsConfig : IEntityTypeConfiguration<Prescription>
             .WithOne(b => b.Prescription)
             .HasForeignKey<Prescription>(b => b.TreatmentID)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne<PatientProfile>()
+            .WithMany(b => b.Prescriptions)
+            .HasForeignKey(b => b.PatientID).IsRequired(false);
+        builder
+            .HasOne<DoctorProfile>()
+            .WithMany(b => b.Prescriptions)
+            .HasForeignKey(b => b.DoctorID).IsRequired(false);
     }
 }
 

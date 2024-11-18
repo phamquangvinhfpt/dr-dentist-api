@@ -25,4 +25,6 @@ public class DoctorProfile : AuditableEntity, IAggregateRoot
     public ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
     [JsonIgnore]
     public ICollection<TreatmentPlanProcedures>? TreatmentPlanProcedures { get; set; }
+    [JsonIgnore]
+    public ICollection<Prescription>? Prescriptions { get; set; }
 }

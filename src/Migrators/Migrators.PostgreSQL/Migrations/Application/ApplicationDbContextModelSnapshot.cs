@@ -1204,6 +1204,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("DoctorID")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -1214,6 +1217,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<Guid?>("PatientID")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -1223,6 +1229,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DoctorID");
+
+                    b.HasIndex("PatientID");
 
                     b.HasIndex("TreatmentID")
                         .IsUnique();
@@ -1920,6 +1930,14 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
+                    b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("DoctorID");
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.PatientProfile", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("PatientID");
+
                     b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "TreatmentPlanProcedures")
                         .WithOne("Prescription")
                         .HasForeignKey("FSH.WebApi.Domain.Treatment.Prescription", "TreatmentID")
@@ -2044,6 +2062,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Navigation("MedicalRecords");
 
+                    b.Navigation("Prescriptions");
+
                     b.Navigation("TreatmentPlanProcedures");
                 });
 
@@ -2058,6 +2078,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("PatientFamily");
 
                     b.Navigation("Payments");
+
+                    b.Navigation("Prescriptions");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Payment", b =>

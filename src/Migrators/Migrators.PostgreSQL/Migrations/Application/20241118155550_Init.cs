@@ -939,6 +939,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     TreatmentID = table.Column<Guid>(type: "uuid", nullable: true),
+                    DoctorID = table.Column<Guid>(type: "uuid", nullable: true),
+                    PatientID = table.Column<Guid>(type: "uuid", nullable: true),
                     Notes = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -951,6 +953,18 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Prescription", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Prescription_DoctorProfile_DoctorID",
+                        column: x => x.DoctorID,
+                        principalSchema: "Identity",
+                        principalTable: "DoctorProfile",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Prescription_PatientProfile_PatientID",
+                        column: x => x.PatientID,
+                        principalSchema: "Identity",
+                        principalTable: "PatientProfile",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Prescription_TreatmentPlanProcedures_TreatmentID",
                         column: x => x.TreatmentID,
@@ -1183,6 +1197,18 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Payment",
                 table: "PaymentDetail",
                 column: "ProcedureID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Prescription_DoctorID",
+                schema: "Treatment",
+                table: "Prescription",
+                column: "DoctorID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Prescription_PatientID",
+                schema: "Treatment",
+                table: "Prescription",
+                column: "PatientID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Prescription_TreatmentID",
