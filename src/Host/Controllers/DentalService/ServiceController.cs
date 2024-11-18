@@ -136,7 +136,7 @@ public class ServiceController : VersionNeutralApiController
     [HttpPost("add-delete-procedure")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Add or Delete Procedure throw Service.", "")]
-    public Task<string> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
+    public Task<ServiceDTO> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
     }

@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.DentalServices;
-public class AddOrDeleteProcedureToService : IRequest<string>
+public class AddOrDeleteProcedureToService : IRequest<ServiceDTO>
 {
     public Guid ServiceID { get; set; }
     public List<Guid>? ProcedureID { get; set; }
@@ -35,7 +35,7 @@ public class AddOrDeleteProcedureToServiceValidator : CustomValidator<AddOrDelet
     }
 }
 
-public class AddOrDeleteProcedureToServiceHandler : IRequestHandler<AddOrDeleteProcedureToService, string>
+public class AddOrDeleteProcedureToServiceHandler : IRequestHandler<AddOrDeleteProcedureToService, ServiceDTO>
 {
     private readonly IServiceService _serviceService;
     private readonly IStringLocalizer<AddOrDeleteProcedureToService> _t;
@@ -46,9 +46,8 @@ public class AddOrDeleteProcedureToServiceHandler : IRequestHandler<AddOrDeleteP
         _t = t;
     }
 
-    public async Task<string> Handle(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
+    public async Task<ServiceDTO> Handle(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
-        await _serviceService.AddOrDeleteProcedureToService(request, cancellationToken);
-        return _t["Successfully."];
+        return await _serviceService.AddOrDeleteProcedureToService(request, cancellationToken);
     }
 }

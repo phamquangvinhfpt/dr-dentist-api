@@ -465,7 +465,7 @@ internal class ServiceService : IServiceService
         return procedure is not null;
     }
 
-    public async Task AddOrDeleteProcedureToService(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
+    public async Task<ServiceDTO> AddOrDeleteProcedureToService(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
         try
         {
@@ -474,6 +474,7 @@ internal class ServiceService : IServiceService
                 .OrderBy(sp => sp.StepOrder)
                 .ToListAsync(cancellationToken);
             var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
+            var id = request.ServiceID;
             if (request.IsRemove)
             {
                 if (!wasUsed)
@@ -485,7 +486,7 @@ internal class ServiceService : IServiceService
                         var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
                         var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
                         service.TotalPrice -= procedure.Price;
-                        currentServiceProcedures.Remove(sp);
+                        _db.ServiceProcedures.Remove(sp);
                     }
                 }
                 else
@@ -529,6 +530,7 @@ internal class ServiceService : IServiceService
                     current_service.IsActive = false;
                     current_service.DeletedOn = DateTime.UtcNow;
                     current_service.DeletedBy = _currentUserService.GetUserId();
+                    id = entry.Id;
                 }
                 await _db.SaveChangesAsync(cancellationToken);
             }
@@ -619,9 +621,39 @@ internal class ServiceService : IServiceService
                     current_service.IsActive = false;
                     current_service.DeletedOn = DateTime.UtcNow;
                     current_service.DeletedBy = _currentUserService.GetUserId();
+                    id = entry.Id;
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
+            var existing = await _db.Services.Where(p => p.Id == id).FirstOrDefaultAsync(cancellationToken);
+            var user = await _userManager.FindByIdAsync(existing.CreatedBy.ToString());
+            var result = new ServiceDTO();
+            result.ServiceID = existing.Id;
+            result.Name = existing.ServiceName;
+            result.CreateDate = existing.CreatedOn;
+            result.CreateBy = user.UserName;
+            result.TotalPrice = existing.TotalPrice;
+            result.Description = existing.ServiceDescription;
+            var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == id).ToListAsync(cancellationToken);
+            if (service_procedure != null)
+            {
+                result.Procedures = new List<ProcedureDTO>();
+                foreach (var item in service_procedure)
+                {
+                    var pro = await _db.Procedures.IgnoreQueryFilters().Where(p => p.Id == item.ProcedureId).FirstOrDefaultAsync(cancellationToken);
+                    var u = await _userManager.FindByIdAsync(pro.CreatedBy.ToString());
+                    result.Procedures.Add(new ProcedureDTO
+                    {
+                        Description = pro.Description,
+                        Name = pro.Name,
+                        Price = pro.Price,
+                        ProcedureID = pro.Id,
+                        CreateBy = u.UserName,
+                        CreateDate = pro.CreatedOn,
+                    });
+                }
+            }
+            return result;
         }
         catch (Exception ex)
         {
