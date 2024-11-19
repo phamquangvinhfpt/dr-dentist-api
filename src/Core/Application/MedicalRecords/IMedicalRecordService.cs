@@ -7,4 +7,7 @@ public interface IMedicalRecordService : ITransientService
     Task<MedicalRecordResponse> GetMedicalRecordByID(Guid id, CancellationToken cancellationToken);
     Task<MedicalRecordResponse> GetMedicalRecordByAppointmentID(Guid id, CancellationToken cancellationToken);
     Task CreateMedicalRecord(CreateMedicalRecordRequest request, CancellationToken cancellationToken);
+    Task UpdateMedicalRecord(UpdateMedicalRecordRequest request, CancellationToken cancellationToken);
+    Task<string> DeleteMedicalRecordID(Guid id, CancellationToken cancellationToken);
+    Task<string> DeleteMedicalRecordByPatientID(string id, CancellationToken cancellationToken);
 }

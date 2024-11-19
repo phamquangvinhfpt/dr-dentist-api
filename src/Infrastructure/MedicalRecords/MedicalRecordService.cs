@@ -1,4 +1,5 @@
 ﻿using ClosedXML;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.MedicalRecords;
@@ -106,6 +107,58 @@ public class MedicalRecordService : IMedicalRecordService
         {
             _logger.LogError(ex.Message, ex);
             throw;
+        }
+    }
+
+    public async Task<string> DeleteMedicalRecordByPatientID(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id)
+                ?? throw new NotFoundException($"Patient with ID {id} not found");
+
+            var medicalRecords = await _db.MedicalRecords
+            .Where(x => x.PatientProfile.UserId == id)
+            .ToListAsync();
+
+            if (medicalRecords == null || !medicalRecords.Any())
+                throw new NotFoundException($"No medical records found for patient");
+
+            var currentUser = _currentUser.GetUserId();
+
+            foreach (var record in medicalRecords)
+            {
+                record.DeletedOn = DateTime.Now;
+                record.DeletedBy = currentUser;
+            }
+
+            _db.MedicalRecords.UpdateRange(medicalRecords);
+            await _db.SaveChangesAsync(cancellationToken);
+            return _t["Delete medical records success"];
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> DeleteMedicalRecordID(DefaultIdType id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var medical = _db.MedicalRecords.FirstOrDefault(x => x.Id == id);
+            if (medical == null) throw new BadRequestException("Not found Medical record");
+
+            _db.MedicalRecords.Remove(medical);
+            await _db.SaveChangesAsync(cancellationToken);
+            return _t["Delete successfully"];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
         }
     }
 
@@ -327,6 +380,121 @@ public class MedicalRecordService : IMedicalRecordService
         {
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task UpdateMedicalRecord(UpdateMedicalRecordRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Get Medical record
+            var medical = await _db.MedicalRecords.Where(x => x.Id == request.RecordID).FirstOrDefaultAsync();
+            if (medical == null)
+                throw new BadRequestException("Not found Medical record");
+
+            // Get basic
+            var basicExamination = await _db.BasicExaminations
+                .FirstOrDefaultAsync(x => x.RecordId == request.RecordID);
+
+            // Get Diagnosi
+            var diagnosis = await _db.Diagnoses
+                .FirstOrDefaultAsync(x => x.RecordId == request.RecordID);
+
+            // Get Indication and Images
+            var indication = await _db.Indications
+                .Include(x => x.Images)
+                .FirstOrDefaultAsync(x => x.RecordId == request.RecordID);
+
+            // Update Basic Examination
+            if (request.BasicExamination != null)
+            {
+                if (basicExamination == null)
+                {
+                    basicExamination = new BasicExamination
+                    {
+                        RecordId = request.RecordID,
+                        ExaminationContent = request.BasicExamination.ExaminationContent,
+                        TreatmentPlanNote = request.BasicExamination.TreatmentPlanNote
+                    };
+                    await _db.BasicExaminations.AddAsync(basicExamination);
+                }
+                else
+                {
+                    basicExamination.ExaminationContent = request.BasicExamination.ExaminationContent;
+                    basicExamination.TreatmentPlanNote = request.BasicExamination.TreatmentPlanNote;
+                    _db.BasicExaminations.Update(basicExamination);
+                }
+            }
+
+            // Update Diagnosis
+            if (request.Diagnosis != null)
+            {
+                if (diagnosis == null)
+                {
+                    diagnosis = new Diagnosis
+                    {
+                        RecordId = request.RecordID,
+                        ToothNumber = request.Diagnosis.ToothNumber,
+                        TeethConditions = request.Diagnosis.TeethConditions
+                    };
+                    await _db.Diagnoses.AddAsync(diagnosis);
+                }
+                else
+                {
+                    diagnosis.ToothNumber = request.Diagnosis.ToothNumber;
+                    diagnosis.TeethConditions = request.Diagnosis.TeethConditions;
+                    _db.Diagnoses.Update(diagnosis);
+                }
+            }
+
+            // Update Indication and Images
+            if (request.Indication != null)
+            {
+                if (indication == null)
+                {
+                    indication = new Indication
+                    {
+                        RecordId = request.RecordID,
+                        IndicationType = request.Indication.IndicationType,
+                        Description = request.Indication.Description
+                    };
+                    await _db.Indications.AddAsync(indication);
+                }
+                else
+                {
+                    indication.IndicationType = request.Indication.IndicationType;
+                    indication.Description = request.Indication.Description;
+                    _db.Indications.Update(indication);
+                }
+
+                // Update Images
+                if (request.IndicationImages != null && request.IndicationImages.Any())
+                {
+                    // Remove existing images
+                    if (indication.Images != null && indication.Images.Any())
+                    {
+                        _db.PatientImages.RemoveRange(indication.Images);
+                    }
+
+                    // Add new images
+                    var newImages = request.IndicationImages.Select(img => new PatientImage
+                    {
+                        IndicationId = indication.Id,
+                        ImageUrl = img.ImageUrl,
+                        ImageType = img.ImageType
+                    }).ToList();
+
+                    await _db.PatientImages.AddRangeAsync(newImages);
+                }
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
         }
     }
 }

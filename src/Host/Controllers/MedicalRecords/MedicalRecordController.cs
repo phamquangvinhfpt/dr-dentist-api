@@ -42,4 +42,28 @@ public class MedicalRecordController : VersionNeutralApiController
     {
         return _mediicalRecordService.GetMedicalRecordsByPatientId(id, cancellationToken);
     }
+
+    [HttpPut("update")]
+    [MustHavePermission(FSHAction.Update, FSHResource.MedicalRecord)]
+    [OpenApiOperation("Update Medical record.", "")]
+    public Task<string> UpdateMedicalRecord(UpdateMedicalRecordRequest request)
+    {
+        return Mediator.Send(request);
+    }
+
+    [HttpDelete("delete/{id}")]
+    [OpenApiOperation("Delete Medical record by ID", "")]
+    [MustHavePermission(FSHAction.Delete, FSHResource.MedicalRecord)]
+    public Task<string> DeleteMedicalRecordByID(Guid id, CancellationToken cancellationToken)
+    {
+        return _mediicalRecordService.DeleteMedicalRecordID(id, cancellationToken);
+    }
+
+    [HttpDelete("delete-by-patient/{id}")]
+    [OpenApiOperation("Delete Medical records by patient ID", "")]
+    [MustHavePermission(FSHAction.Delete, FSHResource.MedicalRecord)]
+    public Task<string> DeleteMedicalRecordsByPatientID(string id, CancellationToken cancellationToken)
+    {
+        return _mediicalRecordService.DeleteMedicalRecordByPatientID(id, cancellationToken);
+    }
 }
