@@ -17,13 +17,13 @@ public class CalendarController : VersionNeutralApiController
     //checked
     [HttpPost("get-schedules")]
     [OpenApiOperation("Get Working Schedule for all Doctor.", "")]
-    public Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingSchedulesAsync(PaginationFilter filter, CancellationToken cancellationToken)
+    public Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingSchedulesAsync([FromQuery] DateOnly date, PaginationFilter filter, CancellationToken cancellationToken)
     {
         if (User.GetUserId() is not { } userId || string.IsNullOrEmpty(userId))
         {
             throw new UnauthorizedAccessException();
         }
-        return _workingCalendarService.GetWorkingCalendars(filter, cancellationToken);
+        return _workingCalendarService.GetWorkingCalendars(filter, date, cancellationToken);
     }
 
     [HttpPost("available-time")]
@@ -31,5 +31,12 @@ public class CalendarController : VersionNeutralApiController
     public Task<List<AvailableTimeResponse>> GetAvailableTimeSlotAsync(GetAvailableTimeRequest request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
+    }
+
+    [HttpPost("detail/{id}")]
+    [OpenApiOperation("Get Working Calendar Detail.", "")]
+    public async Task<GetWorkingDetailResponse> GetDetailAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetCalendarDetail(id, cancellationToken);
     }
 }

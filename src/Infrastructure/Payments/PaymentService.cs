@@ -48,10 +48,17 @@ public class PaymentService : IPaymentService
             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
             if (check_context != null)
             {
-                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
-                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
                 {
-                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                    if (info.IsVerify)
+                    {
+                        await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                    }
+                    else
+                    {
+                        await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+                    }
                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
                 }
             }
@@ -73,10 +80,17 @@ public class PaymentService : IPaymentService
             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
             if (check_context != null)
             {
-                var deposit_info = await _cacheService.GetAsync<AppointmentDepositRequest>(check_context.PatientCode, cancellationToken);
-                if (deposit_info != null && deposit_info.DepositAmount == decimal.ToDouble(transaction.Amount))
+                var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
                 {
-                    await _appointmentService.VerifyAndFinishBooking(deposit_info, cancellationToken);
+                    if (info.IsVerify)
+                    {
+                        await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                    }
+                    else
+                    {
+                        await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+                    }
                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
                 }
             }
@@ -121,5 +135,17 @@ public class PaymentService : IPaymentService
         if (syncTransactions.Count == 0) return syncTransactions;
         List<Transaction> todayTransaction = await _context.Transactions.ToListAsync(cancellationToken);
         return syncTransactions.Where(t => !todayTransaction.Any(tt => tt.TransactionID == t.TransactionID)).ToList();
+    }
+
+    public async Task<bool> CheckPaymentExisting(Guid id)
+    {
+        try
+        {
+            return await _context.Payments.AnyAsync(t => t.Id == id);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
     }
 }

@@ -2,6 +2,7 @@ using Ardalis.Specification;
 using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Events;
@@ -20,16 +21,21 @@ using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
+using FSH.WebApi.Infrastructure.Auditing;
 using FSH.WebApi.Infrastructure.Auth;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using FSH.WebApi.Infrastructure.Treatments;
 using FSH.WebApi.Shared.Authorization;
+using Hangfire.Common;
 using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Numerics;
 using System.Threading;
+using static QRCoder.PayloadGenerator;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -54,6 +60,7 @@ internal partial class UserService : IUserService
     private readonly ICurrentUser _currentUserService;
     private readonly IMedicalHistoryService _medicalHistoryService;
     private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly ILogger<UserService> _logger;
     public UserService(
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
@@ -73,7 +80,8 @@ internal partial class UserService : IUserService
         ISpeedSMSService speedSMSService,
         ICurrentUser currentUser,
         IMedicalHistoryService medicalHistoryService,
-        IWorkingCalendarService workingCalendarService)
+        IWorkingCalendarService workingCalendarService,
+        ILogger<UserService> logger)
     {
         _signInManager = signInManager;
         _userManager = userManager;
@@ -94,39 +102,48 @@ internal partial class UserService : IUserService
         _currentUserService = currentUser;
         _medicalHistoryService = medicalHistoryService;
         _workingCalendarService = workingCalendarService;
+        _logger = logger;
     }
     //checked
     public async Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken)
     {
         var list_user = new List<ListUserDTO>();
-        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(filter);
-
-        var users = await _userManager.Users
-            .AsNoTracking()
-            .WithSpecification(spec)
-            .ToListAsync(cancellationToken);
-        foreach (var user in users)
+        int count = 0;
+        try
         {
-            var role = await GetRolesAsync(user.Id, cancellationToken);
-            if(role.RoleName != FSHRoles.Admin)
+            var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(filter);
+
+            var users = await _userManager.Users
+                .AsNoTracking()
+                .Where(p => p.IsActive == filter.IsActive)
+                .WithSpecification(spec)
+                .ToListAsync(cancellationToken);
+            foreach (var user in users)
             {
-                list_user.Add(new ListUserDTO
+                var role = await GetRolesAsync(user.Id, cancellationToken);
+                if (role.RoleName != FSHRoles.Admin)
                 {
-                    Id = user.Id.ToString(),
-                    UserName = user.UserName,
-                    Address = user.Address,
-                    Email = user.Email,
-                    Gender = user.Gender,
-                    ImageUrl = user.ImageUrl,
-                    PhoneNumber = user.PhoneNumber,
-                    IsActive = user.IsActive,
-                    Role = role,
-                    isBanned = await _userManager.IsLockedOutAsync(user)
-                });
+                    list_user.Add(new ListUserDTO
+                    {
+                        Id = user.Id.ToString(),
+                        UserName = user.UserName,
+                        Address = user.Address,
+                        Email = user.Email,
+                        Gender = user.Gender,
+                        ImageUrl = user.ImageUrl,
+                        PhoneNumber = user.PhoneNumber,
+                        IsActive = user.IsActive,
+                        Role = role,
+                        isBanned = await _userManager.IsLockedOutAsync(user)
+                    });
+                }
             }
+            count = await _userManager.Users
+                .CountAsync(cancellationToken);
         }
-        int count = await _userManager.Users
-            .CountAsync(cancellationToken);
+        catch (Exception ex) {
+            _logger.LogError(ex.Message, ex);
+        }
 
         return new PaginationResponse<ListUserDTO>(list_user, count, filter.PageNumber, filter.PageSize);
     }
@@ -212,20 +229,27 @@ internal partial class UserService : IUserService
 
     public async Task ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.Users.Where(u => u.Id == request.Id).FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
-
-
-        bool isAdmin = await _userManager.IsInRoleAsync(user, FSHRoles.Admin);
-        if (isAdmin)
+        try
         {
-            throw new ConflictException(_t["Administrators Profile's Status cannot be toggled"]);
+            var user = await _userManager.Users.Where(u => u.Id == request.Id).FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException(_t["User Not Found."]);
+
+
+            bool isAdmin = await _userManager.IsInRoleAsync(user, FSHRoles.Admin);
+            if (isAdmin)
+            {
+                throw new ConflictException(_t["Administrators Profile's Status cannot be toggled"]);
+            }
+
+            user.IsActive = request.Activate;
+
+            await _userManager.UpdateAsync(user);
+
+            await _events.PublishAsync(new ApplicationUserUpdatedEvent(user.Id));
         }
-
-        user.IsActive = request.Activate;
-
-        await _userManager.UpdateAsync(user);
-
-        await _events.PublishAsync(new ApplicationUserUpdatedEvent(user.Id));
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
     }
 
     public async Task<UserDetailsDto> GetUserDetailByEmailAsync(string email, CancellationToken cancellationToken)
@@ -277,34 +301,41 @@ internal partial class UserService : IUserService
     }
     public async Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken)
     {
-        if(request.DoctorID == null)
+        try
         {
-            throw new BadRequestException("Doctor Information should be include");
-        }
-        var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
-        if (profile != null)
-        {
-            profile.LastModifiedBy = _currentUserService.GetUserId();
-            profile.Certification = request.Certification ?? profile.Certification;
-            profile.College = request.College ?? profile.College;
-            profile.Education = request.Education ?? profile.Education;
-            profile.SeftDescription = request.SeftDescription ?? profile.SeftDescription;
-            profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        else
-        {
-            _db.DoctorProfiles.Add(new DoctorProfile
+            if (request.DoctorID == null)
             {
-                DoctorId = request.DoctorID,
-                CreatedBy = _currentUserService.GetUserId(),
-                Certification = request.Certification,
-                College = request.College,
-                Education = request.Education,
-                SeftDescription = request.SeftDescription,
-                YearOfExp = request.YearOfExp,
-            });
-            await _db.SaveChangesAsync(cancellationToken);
+                throw new BadRequestException("Doctor Information should be include");
+            }
+            var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
+            if (profile != null)
+            {
+                profile.LastModifiedBy = _currentUserService.GetUserId();
+                profile.Certification = request.Certification ?? profile.Certification;
+                profile.College = request.College ?? profile.College;
+                profile.Education = request.Education ?? profile.Education;
+                profile.SeftDescription = request.SeftDescription ?? profile.SeftDescription;
+                profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                _db.DoctorProfiles.Add(new DoctorProfile
+                {
+                    DoctorId = request.DoctorID,
+                    CreatedBy = _currentUserService.GetUserId(),
+                    Certification = request.Certification,
+                    College = request.College,
+                    Education = request.Education,
+                    SeftDescription = request.SeftDescription,
+                    YearOfExp = request.YearOfExp,
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
         }
     }
 
@@ -347,21 +378,42 @@ internal partial class UserService : IUserService
         return profile;
     }
 
-    public async Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(PaginationFilter request)
+    public async Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request)
     {
         var doctorResponses = new List<GetDoctorResponse>();
-        var spec = new EntitiesByPaginationFilterSpec<DoctorProfile>(request);
-
-        var dprofiles = await _db.DoctorProfiles
-            .AsNoTracking()
-            .WithSpecification(spec)
-            .ToListAsync();
-
-        foreach (var doctor in dprofiles)
+        int totalRecords = 0;
+        try
         {
-            var user = await _userManager.FindByIdAsync(doctor.DoctorId);
-            if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
+            var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+            var role = _db.Roles
+                .Where(p => p.Name == FSHRoles.Dentist)
+                .FirstOrDefault();
+
+            if (role == null)
             {
+                return new PaginationResponse<GetDoctorResponse>(new List<GetDoctorResponse>(), 0, request.PageNumber, request.PageSize);
+            }
+
+            var query = _db.UserRoles
+                .AsNoTracking()
+                .Where(p => p.RoleId == role.Id)
+                .Join(
+                    _db.Users,
+                    ur => ur.UserId,
+                    u => u.Id,
+                    (ur, u) => u
+                );
+
+            totalRecords = query.Count();
+
+            var users = query
+                .Where(p => p.IsActive == request.IsActive)
+                .WithSpecification(spec)
+                .ToList();
+
+            foreach (var user in users)
+            {
+                var doctor = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
                 doctorResponses.Add(new GetDoctorResponse
                 {
                     Id = user.Id,
@@ -376,11 +428,11 @@ internal partial class UserService : IUserService
                     Rating = await GetDoctorRating(doctor.Id),
                 });
             }
+        }catch(Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
         }
-
-        int count = await _db.DoctorProfiles.CountAsync();
-
-        return new PaginationResponse<GetDoctorResponse>(doctorResponses, count, request.PageNumber, request.PageSize);
+        return new PaginationResponse<GetDoctorResponse>(doctorResponses, totalRecords, request.PageNumber, request.PageSize);
     }
 
     private async Task<double> GetDoctorRating(Guid doctorProfileID)
@@ -400,72 +452,80 @@ internal partial class UserService : IUserService
 
     public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)
     {
-        if (request.IsUpdateProfile)
+        try
         {
-            var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId && p.UserId == request.Profile.UserId) ?? throw new BadRequestException("Profile is not found.");
-            profile.IDCardNumber = request.Profile.IDCardNumber ?? profile.IDCardNumber;
-            profile.Occupation = request.Profile.Occupation ?? profile.Occupation;
-            profile.LastModifiedBy = _currentUserService.GetUserId();
-            profile.LastModifiedOn = DateTime.Now;
-            await _db.SaveChangesAsync(cancellationToken);
-        }
+            if (request.IsUpdateProfile)
+            {
+                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId && p.UserId == request.Profile.UserId) ?? throw new BadRequestException("Profile is not found.");
+                profile.IDCardNumber = request.Profile.IDCardNumber ?? profile.IDCardNumber;
+                profile.Occupation = request.Profile.Occupation ?? profile.Occupation;
+                profile.LastModifiedBy = _currentUserService.GetUserId();
+                profile.LastModifiedOn = DateTime.Now;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
 
-        if (request.IsUpdateMedicalHistory)
-        {
-            var history = await _db.MedicalHistorys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
-            if(history != null)
+            if (request.IsUpdateMedicalHistory)
             {
-                history.MedicalName = request.MedicalHistory.MedicalName ?? history.MedicalName;
-                history.Note = request.MedicalHistory.Note ?? history.Note;
-                history.LastModifiedBy = _currentUserService.GetUserId();
-                history.LastModifiedOn = DateTime.Now;
-            }
-            else
-            {
-                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
-                await _db.MedicalHistorys.AddAsync(new MedicalHistory
+                var history = await _db.MedicalHistorys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
+                if (history != null)
                 {
-                    PatientProfileId = request.PatientProfileId,
-                    MedicalName = request.MedicalHistory.MedicalName,
-                    Note = request.MedicalHistory.Note,
-                    CreatedBy = _currentUserService.GetUserId(),
-                    CreatedOn = DateTime.Now,
-                });
+                    history.MedicalName = request.MedicalHistory.MedicalName ?? history.MedicalName;
+                    history.Note = request.MedicalHistory.Note ?? history.Note;
+                    history.LastModifiedBy = _currentUserService.GetUserId();
+                    history.LastModifiedOn = DateTime.Now;
+                }
+                else
+                {
+                    var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+                    await _db.MedicalHistorys.AddAsync(new MedicalHistory
+                    {
+                        PatientProfileId = request.PatientProfileId,
+                        MedicalName = request.MedicalHistory.MedicalName,
+                        Note = request.MedicalHistory.Note,
+                        CreatedBy = _currentUserService.GetUserId(),
+                        CreatedOn = DateTime.Now,
+                    });
+                }
+                await _db.SaveChangesAsync(cancellationToken);
             }
-            await _db.SaveChangesAsync(cancellationToken);
-        }
 
-        if (request.IsUpdatePatientFamily)
-        {
-            var family = await _db.PatientFamilys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
-            var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone).FirstOrDefaultAsync();
-            if (phone_existing != null)
+            if (request.IsUpdatePatientFamily)
             {
-                throw new BadRequestException("Phone number is existing");
-            }
-            if (family != null) {
-                family.Phone = request.PatientFamily.Phone ?? family.Phone;
-                family.Relationship = request.PatientFamily.Relationship;
-                family.Name = request.PatientFamily.Name ?? family.Name;
-                family.Email = request.PatientFamily.Email ?? family.Email;
-                family.LastModifiedBy = _currentUserService.GetUserId();
-                family.LastModifiedOn = DateTime.Now;
-            }
-            else
-            {
-                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
-                await _db.PatientFamilys.AddAsync(new PatientFamily
+                var family = await _db.PatientFamilys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
+                var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone).FirstOrDefaultAsync();
+                if (phone_existing != null)
                 {
-                    PatientProfileId = request.PatientProfileId,
-                    Name = request.PatientFamily.Name,
-                    Relationship = request.PatientFamily.Relationship,
-                    Email = request.PatientFamily.Email,
-                    Phone = request.PatientFamily.Phone,
-                    CreatedBy = _currentUserService.GetUserId(),
-                    CreatedOn = DateTime.Now,
-                });
+                    throw new BadRequestException("Phone number is existing");
+                }
+                if (family != null)
+                {
+                    family.Phone = request.PatientFamily.Phone ?? family.Phone;
+                    family.Relationship = request.PatientFamily.Relationship;
+                    family.Name = request.PatientFamily.Name ?? family.Name;
+                    family.Email = request.PatientFamily.Email ?? family.Email;
+                    family.LastModifiedBy = _currentUserService.GetUserId();
+                    family.LastModifiedOn = DateTime.Now;
+                }
+                else
+                {
+                    var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+                    await _db.PatientFamilys.AddAsync(new PatientFamily
+                    {
+                        PatientProfileId = request.PatientProfileId,
+                        Name = request.PatientFamily.Name,
+                        Relationship = request.PatientFamily.Relationship,
+                        Email = request.PatientFamily.Email,
+                        Phone = request.PatientFamily.Phone,
+                        CreatedBy = _currentUserService.GetUserId(),
+                        CreatedOn = DateTime.Now,
+                    });
+                }
+                await _db.SaveChangesAsync(cancellationToken);
             }
-            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
         }
     }
 
@@ -482,40 +542,70 @@ internal partial class UserService : IUserService
     public async Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken)
     {
         var list_user = new List<ListUserDTO>();
-        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
-
-        var users = await _userManager.Users
-            .AsNoTracking()
-            .WithSpecification(spec)
-            .ToListAsync(cancellationToken);
-        foreach (var user in users)
+        int totalRecords = 0;
+        try
         {
-            if (user.IsActive && await CheckUserInRoleAsync(user.Id.ToString(), FSHRoles.Patient) && !_userManager.IsLockedOutAsync(user).Result)
+            var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+            var role = await _db.Roles
+                .Where(p => p.Name == FSHRoles.Patient)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (role == null)
             {
-                list_user.Add(new ListUserDTO
+                return new PaginationResponse<ListUserDTO>(new List<ListUserDTO>(), 0, request.PageNumber, request.PageSize);
+            }
+
+            var query = _db.UserRoles
+                .AsNoTracking()
+                .Where(p => p.RoleId == role.Id)
+                .Join(
+                    _db.Users,
+                    ur => ur.UserId,
+                    u => u.Id,
+                    (ur, u) => u
+                );
+
+            totalRecords = await query.CountAsync(cancellationToken);
+
+            var users = await query
+                .Where(p => p.IsActive == request.IsActive)
+                .WithSpecification(spec)
+                .ToListAsync(cancellationToken);
+
+            foreach (var user in users)
+            {
+                if (await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
                 {
-                    Id = user.Id.ToString(),
-                    UserName = user.UserName,
-                    Address = user.Address,
-                    Email = user.Email,
-                    Gender = user.Gender,
-                    ImageUrl = user.ImageUrl,
-                    PhoneNumber = user.PhoneNumber,
-                    IsActive = user.IsActive,
-                    //Role = _userManager,
-                    isBanned = false,
-                });
+                    list_user.Add(new ListUserDTO
+                    {
+                        Id = user.Id.ToString(),
+                        UserName = user.UserName,
+                        Address = user.Address,
+                        Email = user.Email,
+                        Gender = user.Gender,
+                        ImageUrl = user.ImageUrl,
+                        PhoneNumber = user.PhoneNumber,
+                        IsActive = user.IsActive,
+                        Role = await GetRolesAsync(user.Id, cancellationToken),
+                        isBanned = await _userManager.IsLockedOutAsync(user)
+                    });
+                }
             }
         }
-        int count = await _userManager.Users
-            .CountAsync(cancellationToken);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
 
-        return new PaginationResponse<ListUserDTO>(list_user, count, request.PageNumber, request.PageSize);
+        return new PaginationResponse<ListUserDTO>(list_user, totalRecords, request.PageNumber, request.PageSize);
     }
 
     public async Task<List<GetDoctorResponse>> GetTop4Doctors()
     {
-        var topDoctors = await _db.Feedbacks
+        var doctorResponses = new List<GetDoctorResponse>();
+        try
+        {
+            var topDoctors = await _db.Feedbacks
             //.Where(f => f.DoctorProfileId != null)
             .GroupBy(f => f.DoctorProfileId)
             .Select(group => new
@@ -528,238 +618,276 @@ internal partial class UserService : IUserService
             .ThenByDescending(x => x.TotalFeedbacks)
             .Take(4)
             .ToListAsync();
-
-        var doctorResponses = new List<GetDoctorResponse>();
-        if(topDoctors.Any())
-        {
-            foreach (var item in topDoctors)
+            if (topDoctors.Any())
             {
-                var doctorProfile = await _db.DoctorProfiles
-                    .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
-                var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
-                if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
+                foreach (var item in topDoctors)
                 {
-                    doctorResponses.Add(new GetDoctorResponse
+                    var doctorProfile = await _db.DoctorProfiles
+                        .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
+                    var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
+                    if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
                     {
-                        Id = user.Id,
-                        Email = user.Email,
-                        FirstName = user.FirstName,
-                        Gender = user.Gender,
-                        ImageUrl = user.ImageUrl,
-                        LastName = user.LastName,
-                        PhoneNumber = user.PhoneNumber,
-                        UserName = user.UserName,
-                        DoctorProfile = doctorProfile,
-                        Rating = item.AverageRating,
-                    });
+                        doctorResponses.Add(new GetDoctorResponse
+                        {
+                            Id = user.Id,
+                            Email = user.Email,
+                            FirstName = user.FirstName,
+                            Gender = user.Gender,
+                            ImageUrl = user.ImageUrl,
+                            LastName = user.LastName,
+                            PhoneNumber = user.PhoneNumber,
+                            UserName = user.UserName,
+                            DoctorProfile = doctorProfile,
+                            Rating = item.AverageRating,
+                        });
+                    }
+                }
+            }
+            if (doctorResponses.Count() < 4)
+            {
+                var existingDoctorIds = doctorResponses.Select(d => d.Id).ToList();
+
+                var role = await _db.Roles.FirstOrDefaultAsync(p => p.Name == FSHRoles.Dentist);
+
+                var additionalDoctors = await _db.Users
+                    .Join(
+                        _db.UserRoles.Where(ur => ur.RoleId == role.Id),
+                        user => user.Id,
+                        userRole => userRole.UserId,
+                        (user, userRole) => user
+                    )
+                    .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id) &&
+                        (!u.LockoutEnabled || (u.LockoutEnabled && (!u.LockoutEnd.HasValue || u.LockoutEnd <= DateTime.Now))))
+                    .Take(4 - doctorResponses.Count)
+                    .ToListAsync();
+
+                foreach (var user in additionalDoctors)
+                {
+                    var doctorProfile = await _db.DoctorProfiles
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+
+                    if (doctorProfile != null)
+                    {
+                        doctorResponses.Add(new GetDoctorResponse
+                        {
+                            Id = user.Id,
+                            Email = user.Email,
+                            FirstName = user.FirstName,
+                            Gender = user.Gender,
+                            ImageUrl = user.ImageUrl,
+                            LastName = user.LastName,
+                            PhoneNumber = user.PhoneNumber,
+                            UserName = user.UserName,
+                            DoctorProfile = doctorProfile,
+                            Rating = 0
+                        });
+                    }
                 }
             }
         }
-        if(doctorResponses.Count() < 4)
+        catch (Exception ex)
         {
-            var existingDoctorIds = doctorResponses.Select(d => d.Id).ToList();
-
-            var role = await _db.Roles.FirstOrDefaultAsync(p => p.Name == FSHRoles.Dentist);
-
-            var additionalDoctors = await _db.Users
-                .Join(
-                    _db.UserRoles.Where(ur => ur.RoleId == role.Id),
-                    user => user.Id,
-                    userRole => userRole.UserId,
-                    (user, userRole) => user
-                )
-                .Where(u => u.IsActive && !existingDoctorIds.Contains(u.Id) &&
-                    (!u.LockoutEnabled || (u.LockoutEnabled && (!u.LockoutEnd.HasValue || u.LockoutEnd <= DateTime.Now))))
-                .Take(4 - doctorResponses.Count)
-                .ToListAsync();
-
-            foreach (var user in additionalDoctors)
-            {
-                var doctorProfile = await _db.DoctorProfiles
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.DoctorId == user.Id);
-
-                if (doctorProfile != null)
-                {
-                    doctorResponses.Add(new GetDoctorResponse
-                    {
-                        Id = user.Id,
-                        Email = user.Email,
-                        FirstName = user.FirstName,
-                        Gender = user.Gender,
-                        ImageUrl = user.ImageUrl,
-                        LastName = user.LastName,
-                        PhoneNumber = user.PhoneNumber,
-                        UserName = user.UserName,
-                        DoctorProfile = doctorProfile,
-                        Rating = 0
-                    });
-                }
-            }
+            _logger.LogError(ex.Message, ex);
         }
         return doctorResponses;
     }
 
     public async Task<DoctorDetailResponse> GetDoctorDetail(string doctorId)
     {
-        var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId) ?? throw new NotFoundException("Doctor profile not found");
+        var result = new DoctorDetailResponse();
+        try
+        {
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId) ?? throw new NotFoundException("Doctor profile not found");
 
-        var totalRating = await _db.Feedbacks
-            .Where(f => f.DoctorProfileId == dProfile.Id)
-            .GroupBy(f => f.DoctorProfileId)
+            var totalRating = await _db.Feedbacks
+                .Where(f => f.DoctorProfileId == dProfile.Id)
+                .GroupBy(f => f.DoctorProfileId)
+                .Select(group => new
+                {
+                    AverageRating = group.Average(f => f.Rating),
+                    TotalFeedbacks = group.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            var feedbackByRating = await _db.Feedbacks
+            .Where(p => p.DoctorProfileId == dProfile.Id)
+            .GroupBy(f => f.Rating)
             .Select(group => new
             {
-                AverageRating = group.Average(f => f.Rating),
-                TotalFeedbacks = group.Count()
-            })
-            .FirstOrDefaultAsync();
-
-        var feedbackByRating = await _db.Feedbacks
-        .Where(p => p.DoctorProfileId == dProfile.Id)
-        .GroupBy(f => f.Rating)
-        .Select(group => new
-        {
-            Rating = group.Key,
-            TotalFeedbacks = group.Count(),
-            ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
-            Doctor = dProfile,
-            Feedbacks = group.Select(f => new
-            {
-                f.Id,
-                f.PatientProfileId,
-                f.DoctorProfileId,
-                f.ServiceId,
-                f.Message,
-                f.Rating,
-                f.CreatedOn,
-            }).ToList()
-        })
-        .OrderByDescending(x => x.Rating)
-        .ToListAsync();
-
-        var user = await _userManager.FindByIdAsync(doctorId);
-        if (user == null)
-            throw new NotFoundException("User not found");
-
-        // Create response
-        var result = new DoctorDetailResponse
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            PhoneNumber = user.PhoneNumber,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Gender = user.Gender,
-            ImageUrl = user.ImageUrl,
-            Rating = totalRating?.AverageRating,
-            TotalFeedback = totalRating?.TotalFeedbacks,
-            DoctorProfile = dProfile,
-            DoctorFeedback = new List<FeedBackDoctorResponse>()
-        };
-
-        // Process feedback groups
-        foreach (var ratingGroup in feedbackByRating)
-        {
-            var feedbackDoctorResponse = new FeedBackDoctorResponse
-            {
-                RatingType = ratingGroup.Rating,
-                Feedbacks = new List<FeedBackResponse>()
-            };
-
-            foreach (var feedback in ratingGroup.Feedbacks)
-            {
-                var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
-
-                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
-                var patientUser = patientProfile != null ?
-                    await _userManager.FindByIdAsync(patientProfile.UserId) : null;
-
-                var feedbackResponse = new FeedBackResponse
+                Rating = group.Key,
+                TotalFeedbacks = group.Count(),
+                ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
+                Doctor = dProfile,
+                Feedbacks = group.Select(f => new
                 {
-                    ServiceID = feedback.ServiceId,
-                    ServiceName = service?.ServiceName,
-                    PatientID = patientUser.Id,
-                    PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
-                    CreateDate = feedback.CreatedOn,
-                    Ratings = feedback.Rating,
-                    Message = feedback.Message
+                    f.Id,
+                    f.PatientProfileId,
+                    f.DoctorProfileId,
+                    f.ServiceId,
+                    f.Message,
+                    f.Rating,
+                    f.CreatedOn,
+                }).ToList()
+            })
+            .OrderByDescending(x => x.Rating)
+            .ToListAsync();
+
+            var user = await _userManager.FindByIdAsync(doctorId);
+            if (user == null)
+                throw new NotFoundException("User not found");
+
+            // Create response
+            result.Id = user.Id;
+            result.UserName = user.UserName;
+            result.PhoneNumber = user.PhoneNumber;
+            result.FirstName = user.FirstName;
+            result.LastName = user.LastName;
+            result.Email = user.Email;
+            result.Gender = user.Gender;
+            result.ImageUrl = user.ImageUrl;
+            result.Rating = totalRating?.AverageRating;
+            result.TotalFeedback = totalRating?.TotalFeedbacks;
+            result.DoctorProfile = dProfile;
+            result.DoctorFeedback = new List<FeedBackDoctorResponse>();
+            // Process feedback groups
+            foreach (var ratingGroup in feedbackByRating)
+            {
+                var feedbackDoctorResponse = new FeedBackDoctorResponse
+                {
+                    RatingType = ratingGroup.Rating,
+                    Feedbacks = new List<FeedBackResponse>()
                 };
 
-                feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);
+                foreach (var feedback in ratingGroup.Feedbacks)
+                {
+                    var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
+
+                    var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
+                    var patientUser = patientProfile != null ?
+                        await _userManager.FindByIdAsync(patientProfile.UserId) : null;
+
+                    var feedbackResponse = new FeedBackResponse
+                    {
+                        ServiceID = feedback.ServiceId,
+                        ServiceName = service?.ServiceName,
+                        PatientID = patientUser.Id,
+                        PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
+                        CreateDate = feedback.CreatedOn,
+                        Ratings = feedback.Rating,
+                        Message = feedback.Message
+                    };
+
+                    feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);
+                }
+
+                result.DoctorFeedback.Add(feedbackDoctorResponse);
             }
-
-            result.DoctorFeedback.Add(feedbackDoctorResponse);
         }
-
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
         return result;
     }
 
     public async Task<UserProfileResponse> GetUserDetailByID(string userId, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByIdAsync(userId) ?? throw new BadRequestException("User is not found.");
-        var user_role = GetRolesAsync(user.Id, cancellationToken).Result;
-        var profile = new UserProfileResponse
+        var profile = new UserProfileResponse();
+        try
         {
-            Id = user.Id,
-            UserName = user.UserName,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Gender = user.Gender,
-            BirthDate = user.BirthDate,
-            Email = user.Email,
-            IsActive = user.IsActive,
-            EmailConfirmed = user.EmailConfirmed,
-            PhoneNumber = user.PhoneNumber,
-            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            Job = user.Job,
-            ImageUrl = user.ImageUrl,
-            Address = user.Address,
-        };
-        if (user_role.RoleName.Equals(FSHRoles.Dentist))
-        {
-            profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
+            var user = await _userManager.FindByIdAsync(userId) ?? throw new BadRequestException("User is not found.");
+            var user_role = GetRolesAsync(user.Id, cancellationToken).Result;
+            profile.Id = user.Id;
+            profile.UserName = user.UserName;
+            profile.FirstName = user.FirstName;
+            profile.LastName = user.LastName;
+            profile.Gender = user.Gender;
+            profile.BirthDate = user.BirthDate;
+            profile.Email = user.Email;
+            profile.IsActive = user.IsActive;
+            profile.EmailConfirmed = user.EmailConfirmed;
+            profile.PhoneNumber = user.PhoneNumber;
+            profile.PhoneNumberConfirmed = user.PhoneNumberConfirmed;
+            profile.Job = user.Job;
+            profile.ImageUrl = user.ImageUrl;
+            profile.Address = user.Address;
+            if (user_role.RoleName.Equals(FSHRoles.Dentist))
+            {
+                profile.DoctorProfile = await _db.DoctorProfiles.Where(p => p.DoctorId == user.Id).FirstOrDefaultAsync();
+            }
+            else if (user_role.RoleName.Equals(FSHRoles.Patient))
+            {
+                profile.PatientProfile = await _db.PatientProfiles.Where(p => p.UserId == user.Id).FirstOrDefaultAsync(cancellationToken);
+                profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+                profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+            }
         }
-        else if (user_role.RoleName.Equals(FSHRoles.Patient))
+        catch (Exception ex)
         {
-            profile.PatientProfile = await _db.PatientProfiles.Where(p => p.UserId == user.Id).FirstOrDefaultAsync(cancellationToken);
-            profile.PatientFamily = await _db.PatientFamilys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
-            profile.MedicalHistory = await _db.MedicalHistorys.Where(p => p.PatientProfileId == profile.PatientProfile.Id).FirstOrDefaultAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
         }
         return profile;
     }
 
-    public async Task<PaginationResponse<ListUserDTO>> GetAllStaff(PaginationFilter request, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<ListUserDTO>> GetAllStaff(UserListFilter request, CancellationToken cancellationToken)
     {
         var list_user = new List<ListUserDTO>();
-        var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
-
-        var users = await _userManager.Users
-            .AsNoTracking()
-            .WithSpecification(spec)
-            .ToListAsync(cancellationToken);
-        foreach (var user in users)
+        int totalRecords = 0;
+        try
         {
-            if (await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
+            var spec = new EntitiesByPaginationFilterSpec<ApplicationUser>(request);
+            var role = await _db.Roles
+                .Where(p => p.Name == FSHRoles.Staff)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (role == null)
             {
-                list_user.Add(new ListUserDTO
+                return new PaginationResponse<ListUserDTO>(new List<ListUserDTO>(), 0, request.PageNumber, request.PageSize);
+            }
+
+            var query = _db.UserRoles
+                .AsNoTracking()
+                .Where(p => p.RoleId == role.Id)
+                .Join(
+                    _db.Users,
+                    ur => ur.UserId,
+                    u => u.Id,
+                    (ur, u) => u
+                );
+
+            totalRecords = await query.CountAsync(cancellationToken);
+
+            var users = await query
+                .Where(p => p.IsActive == request.IsActive)
+                .WithSpecification(spec)
+                .ToListAsync(cancellationToken);
+
+            foreach (var user in users)
+            {
+                if (await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
                 {
-                    Id = user.Id.ToString(),
-                    UserName = user.UserName,
-                    Address = user.Address,
-                    Email = user.Email,
-                    Gender = user.Gender,
-                    ImageUrl = user.ImageUrl,
-                    PhoneNumber = user.PhoneNumber,
-                    IsActive = user.IsActive,
-                    Role = GetRolesAsync(user.Id, cancellationToken).Result,
-                    isBanned = await _userManager.IsLockedOutAsync(user)
-                });
+                    list_user.Add(new ListUserDTO
+                    {
+                        Id = user.Id.ToString(),
+                        UserName = user.UserName,
+                        Address = user.Address,
+                        Email = user.Email,
+                        Gender = user.Gender,
+                        ImageUrl = user.ImageUrl,
+                        PhoneNumber = user.PhoneNumber,
+                        IsActive = user.IsActive,
+                        Role = await GetRolesAsync(user.Id, cancellationToken),
+                        isBanned = await _userManager.IsLockedOutAsync(user)
+                    });
+                }
             }
         }
-        int count = await _userManager.Users
-        .CountAsync(cancellationToken);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+        }
 
-        return new PaginationResponse<ListUserDTO>(list_user, count, request.PageNumber, request.PageSize);
+        return new PaginationResponse<ListUserDTO>(list_user, totalRecords, request.PageNumber, request.PageSize);
     }
 }
