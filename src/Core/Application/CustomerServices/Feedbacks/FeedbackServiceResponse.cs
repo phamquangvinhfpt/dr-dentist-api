@@ -8,5 +8,6 @@ namespace FSH.WebApi.Application.CustomerServices.Feedbacks;
 public class FeedbackServiceResponse
 {
     public int RatingType { get; set; }
+    public int TotalFeedback { get; set; }
     public List<FeedbackServiceDetail>? Feedbacks { get; set; }
 }

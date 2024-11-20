@@ -5,6 +5,7 @@ using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
+using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.DentalServices.Procedures;
 using FSH.WebApi.Application.DentalServices.Services;
@@ -12,6 +13,7 @@ using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -1003,57 +1005,130 @@ internal class ServiceService : IServiceService
 
     public async Task<ServiceHaveFeedback> GetServiceDetailHaveFeedback(Guid id, CancellationToken cancellationToken)
     {
+        var result = new ServiceHaveFeedback();
         try
         {
-            //var service = _db.Services.FirstOrDefault(s => s.Id == id);
-            //if (service != null)
-            //{
-            //    throw new InvalidOperationException("Error when found service.");
-            //}
-            //var result = new ServiceHaveFeedback();
+            var service = await _db.Services.FirstOrDefaultAsync(s => s.Id == id)
+                ?? throw new NotFoundException("Service not found");
 
-            ////var totalRating = await _db.Feedbacks
-            ////    .Where(f => f.ServiceId == id)
-            ////    .GroupBy(f => f.ServiceId)
-            ////    .Select(group => new
-            ////    {
-            ////        AverageRating = group.Average(f => f.Rating),
-            ////        TotalFeedbacks = group.Count()
-            ////    })
-            ////    .FirstOrDefaultAsync();
+            var totalRating = await _db.Feedbacks
+                .Where(f => f.ServiceId == id)
+                .GroupBy(f => f.ServiceId)
+                .Select(group => new
+                {
+                    AverageRating = group.Average(f => f.Rating),
+                    TotalFeedbacks = group.Count()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
 
-            //var feedbackByRating = await _db.Feedbacks
-            //.Where(p => p.ServiceId == id)
-            //.GroupBy(f => f.Rating)
-            //.Select(group => new
-            //{
-            //    Rating = group.Key,
-            //    TotalFeedbacks = group.Count(),
-            //    //ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
-            //    Feedbacks = group.Select(f => new
-            //    {
-            //        f.Id,
-            //        f.PatientProfileId,
-            //        f.DoctorProfileId,
-            //        f.ServiceId,
-            //        f.Message,
-            //        f.Rating,
-            //        f.CreatedOn,
-            //    }).ToList()
-            //})
-            //.OrderByDescending(x => x.Rating)
-            //.ToListAsync();
+            var feedbackByRating = await _db.Feedbacks
+                .Where(f => f.ServiceId == id)
+                .GroupBy(f => f.Rating)
+                .Select(group => new
+                {
+                    Rating = group.Key,
+                    TotalFeedbacks = group.Count(),
+                    Feedbacks = group.Select(f => new
+                    {
+                        f.Id,
+                        f.PatientProfileId,
+                        f.DoctorProfileId,
+                        f.Message,
+                        f.Rating,
+                        f.CreatedOn
+                    }).ToList()
+                })
+                .OrderByDescending(x => x.Rating)
+                .ToListAsync(cancellationToken);
 
-            //result.ServiceDTO.ServiceID = service.Id;
-            //result.ServiceDTO.CreateDate = service.CreatedOn;
-            //result.ServiceDTO.Name =
-            throw new Exception();
+            // Get procedures for the service
+            var procedures = await _db.ServiceProcedures
+                .Where(p => p.ServiceId == id)
+                .GroupBy(p => p.ServiceId)
+                .Select(p => new
+                {
+                    Procedure = p.Select(pro => pro.ProcedureId).Distinct().ToList(),
+                })
+                .FirstOrDefaultAsync(cancellationToken);
 
+            var p = new List<ProcedureDTO>();
+
+            foreach(var item in procedures.Procedure)
+            {
+                var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item.Value);
+                var createby = await _userManager.FindByIdAsync(pro.CreatedBy.ToString());
+                p.Add(new ProcedureDTO
+                {
+                    ProcedureID = pro.Id,
+                    Name = pro.Name,
+                    Description = pro.Description,
+                    Price = pro.Price,
+                    CreateBy = $"{createby.FirstName} {createby.LastName}",
+                    CreateDate = pro.CreatedOn,
+                });
+            }
+            var createBy = await _userManager.FindByIdAsync(service.CreatedBy.ToString());
+            result.ServiceDTO = new ServiceDTO
+            {
+                ServiceID = service.Id,
+                Name = service.ServiceName,
+                Description = service.ServiceDescription,
+                CreateBy = $"{createBy.FirstName} {createBy.LastName}",
+                CreateDate = service.CreatedOn,
+                IsActive = service.IsActive,
+                TotalPrice = service.TotalPrice,
+                Procedures = p
+            };
+
+            // Initialize feedback list
+            result.Feedbacks = new List<FeedbackServiceResponse>();
+
+            // Process each rating group
+            foreach (var ratingGroup in feedbackByRating)
+            {
+                var feedbackServiceResponse = new FeedbackServiceResponse
+                {
+                    RatingType = ratingGroup.Rating,
+                    TotalFeedback = ratingGroup.TotalFeedbacks,
+                    Feedbacks = new List<FeedbackServiceDetail>()
+                };
+
+                // Process each feedback in the rating group
+                foreach (var feedback in ratingGroup.Feedbacks)
+                {
+                    var doctorProfile = await _db.DoctorProfiles
+                        .FirstOrDefaultAsync(d => d.Id == feedback.DoctorProfileId, cancellationToken);
+                    var doctorUser = doctorProfile != null ?
+                        await _userManager.FindByIdAsync(doctorProfile.DoctorId) : null;
+
+                    var patientProfile = await _db.PatientProfiles
+                        .FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId, cancellationToken);
+                    var patientUser = patientProfile != null ?
+                        await _userManager.FindByIdAsync(patientProfile.UserId) : null;
+
+                    var feedbackDetail = new FeedbackServiceDetail
+                    {
+                        DoctorID = doctorProfile?.DoctorId,
+                        DoctorName = doctorUser != null ? $"{doctorUser.FirstName} {doctorUser.LastName}" : null,
+                        PatientID = patientProfile?.UserId,
+                        PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
+                        CreateDate = feedback.CreatedOn,
+                        Ratings = feedback.Rating,
+                        Message = feedback.Message
+                    };
+
+                    feedbackServiceResponse.Feedbacks.Add(feedbackDetail);
+                }
+
+                result.Feedbacks.Add(feedbackServiceResponse);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw new Exception(ex.Message);
+            throw;
         }
+
+        return result;
     }
 }

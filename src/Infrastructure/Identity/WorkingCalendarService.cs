@@ -313,6 +313,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             }
 
             var calendarsGrouped = await query
+                .Where(p => p.DoctorId != null)
                 .WithSpecification(spec)
                 .GroupBy(c => c.DoctorId)
                 .ToDictionaryAsync(g => g.Key, g => g.ToList());

@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using Namotion.Reflection;
 using System.Numerics;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -302,7 +303,7 @@ internal class AppointmentService : IAppointmentService
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
 
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec).OrderBy(p => p.AppointmentDate);
+            appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty).WithSpecification(spec).OrderBy(p => p.AppointmentDate);
 
             var count = await appointmentsQuery.CountAsync(cancellationToken);
 
@@ -311,6 +312,7 @@ internal class AppointmentService : IAppointmentService
                 {
                     Appointment = appointment,
                     Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
                     Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
                     Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
                 })
@@ -319,6 +321,7 @@ internal class AppointmentService : IAppointmentService
             foreach (var a in appointments)
             {
                 bool feedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == a.Appointment.Id);
+                var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
                 var r = new AppointmentResponse
                 {
                     AppointmentId = a.Appointment.Id,
@@ -333,21 +336,14 @@ internal class AppointmentService : IAppointmentService
                     canFeedback = a.Appointment.canFeedback,
                     isFeedback = feedback,
 
+                    DentistId = a.Appointment.DentistId,
+                    DentistName = $"{dUser.FirstName} {dUser.LastName}",
                     PatientCode = a.Patient?.PatientCode,
                     PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
                 };
-
-                if(a.Appointment.DentistId != Guid.Empty)
-                {
-                    var Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == a.Appointment.DentistId);
-                    r.DentistId = Doctor.Id;
-                    var dUser = await _userManager.FindByIdAsync(Doctor.DoctorId);
-                    r.DentistName = $"{dUser.FirstName} {dUser.LastName}";
-                }
-
                 result.Add(r);
             }
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
@@ -447,25 +443,33 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var user_role = _currentUserService.GetRole();
+            var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
             if (user_role == FSHRoles.Patient)
             {
                 if (request.UserID != _currentUserService.GetUserId().ToString())
                 {
                     throw new Exception("Only Patient can cancel their appointment");
                 }
+                var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId ==  request.UserID);
+                if(appoint.PatientId != pProfile.Id)
+                {
+                    throw new Exception("Only Patient can cancel their appointment");
+                }
             }
-            var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            appoint.Status = AppointmentStatus.Cancelled;
+            
             if (appoint.Status == AppointmentStatus.Confirmed) {
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
 
                 calendar.Status = CalendarStatus.Canceled;
                 var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
                 payment.Status = Domain.Payments.PaymentStatus.Canceled;
-                _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
-                appoint.DentistId,
-                appoint.AppointmentDate,
-                TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
+                if(appoint.DentistId != Guid.Empty)
+                {
+                    _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
+                        appoint.DentistId,
+                        appoint.AppointmentDate,
+                        TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
+                }
             }
             else if(appoint.Status == AppointmentStatus.Success)
             {
@@ -483,7 +487,7 @@ internal class AppointmentService : IAppointmentService
                     }
                 }
             }
-
+            appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -547,7 +551,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"You has a meet with patient {patient.UserName} in {AppointmentDate}",
+                            Message = $"You has a meet with patient {patient.FirstName} {patient.LastName} in {AppointmentDate}",
                             Title = "Booking Schedule Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -557,7 +561,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Patient {patient.UserName} was reschedule to {AppointmentDate}",
+                            Message = $"Patient {patient.FirstName} {patient.LastName} was reschedule to {AppointmentDate}",
                             Title = "Reschedule Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -567,7 +571,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Patient {patient.UserName} was cancel the meeting in {AppointmentDate}",
+                            Message = $"Patient {patient.FirstName} {patient.LastName} was cancel the meeting in {AppointmentDate}",
                             Title = "Cancel Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -596,7 +600,7 @@ internal class AppointmentService : IAppointmentService
                 .FirstOrDefaultAsync(cancellationToken);
 
             bool isFeedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == id);
-
+            var patient = await _userManager.FindByIdAsync(appointments.Patient.UserId);
             var result = new AppointmentResponse
             {
                 AppointmentId = appointments.Appointment.Id,
@@ -610,13 +614,13 @@ internal class AppointmentService : IAppointmentService
                 canFeedback = appointments.Appointment.canFeedback,
                 isFeedback = isFeedback,
                 PatientCode = appointments.Patient?.PatientCode,
-                PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == appointments.Patient.UserId).Result.UserName,
+                PatientName = $"{patient.FirstName} {patient.LastName}",
                 ServiceName = appointments.Service?.ServiceName,
                 ServicePrice = appointments.Service?.TotalPrice ?? 0,
                 PaymentStatus = appointments.Payment is not null ? appointments.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
             };
 
-            if(appointments.Appointment.DentistId != null)
+            if(appointments.Appointment.DentistId != Guid.Empty)
             {
                 var dentist = _db.DoctorProfiles.FirstOrDefault(p => p.Id == appointments.Appointment.DentistId);
                 if (dentist != null) {
@@ -700,7 +704,7 @@ internal class AppointmentService : IAppointmentService
                         ProcedureName = pro.Name,
                         Price = pro.Price,
                         DoctorID = doctor.Id,
-                        DoctorName = doctor.UserName,
+                        DoctorName = $"{doctor.FirstName} {doctor.LastName}",
                         DiscountAmount = 0.3,
                         PlanCost = entry.TotalCost,
                         PlanDescription = null,
@@ -754,7 +758,7 @@ internal class AppointmentService : IAppointmentService
                     PaymentId = query.Payment.Id,
                     PatientProfileId = query.pProfile.Id,
                     PatientCode = query.pProfile.PatientCode,
-                    PatientName = patient.UserName,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
                     DepositAmount = query.Payment.DepositAmount!.Value,
                     DepositDate = query.Payment.DepositAmount.Value == 0 ? query.Payment.DepositDate : default,
                     RemainingAmount = query.Payment.RemainingAmount!.Value,
