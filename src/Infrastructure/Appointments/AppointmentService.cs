@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Numerics;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -309,7 +310,6 @@ internal class AppointmentService : IAppointmentService
                 .Select(appointment => new
                 {
                     Appointment = appointment,
-                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
                     Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
                     Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
                     Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
@@ -319,11 +319,10 @@ internal class AppointmentService : IAppointmentService
             foreach (var a in appointments)
             {
                 bool feedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == a.Appointment.Id);
-                result.Add(new AppointmentResponse
+                var r = new AppointmentResponse
                 {
                     AppointmentId = a.Appointment.Id,
                     PatientId = a.Appointment.PatientId,
-                    DentistId = a.Appointment.DentistId,
                     ServiceId = a.Appointment.ServiceId,
                     AppointmentDate = a.Appointment.AppointmentDate,
                     StartTime = a.Appointment.StartTime,
@@ -336,11 +335,20 @@ internal class AppointmentService : IAppointmentService
 
                     PatientCode = a.Patient?.PatientCode,
                     PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
-                    DentistName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Doctor.DoctorId).Result.UserName,
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
-                });
+                };
+
+                if(a.Appointment.DentistId != Guid.Empty)
+                {
+                    var Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == a.Appointment.DentistId);
+                    r.DentistId = Doctor.Id;
+                    var dUser = await _userManager.FindByIdAsync(Doctor.DoctorId);
+                    r.DentistName = $"{dUser.FirstName} {dUser.LastName}";
+                }
+
+                result.Add(r);
             }
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
