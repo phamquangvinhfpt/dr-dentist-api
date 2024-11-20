@@ -107,6 +107,7 @@ internal class AppointmentService : IAppointmentService
                 Duration = request.Duration,
                 Status = isStaffOrAdmin ? AppointmentStatus.Confirmed : AppointmentStatus.Pending,
                 Notes = request.Notes,
+                canFeedback = false,
             };
 
             if (!hasDoctor)
@@ -118,6 +119,7 @@ internal class AppointmentService : IAppointmentService
 
             var cal = new Domain.Identity.WorkingCalendar
             {
+                PatientId = patient.Id,
                 AppointmentId = appointment.Id,
                 Date = appointment.AppointmentDate,
                 StartTime = appointment.StartTime,
@@ -237,6 +239,7 @@ internal class AppointmentService : IAppointmentService
             {
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+                // send mail to notify block action
             }
             else
             {
@@ -298,7 +301,7 @@ internal class AppointmentService : IAppointmentService
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
 
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec).OrderBy(p => p.AppointmentDate);
 
             var count = await appointmentsQuery.CountAsync(cancellationToken);
 
@@ -315,6 +318,7 @@ internal class AppointmentService : IAppointmentService
 
             foreach (var a in appointments)
             {
+                bool feedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == a.Appointment.Id);
                 result.Add(new AppointmentResponse
                 {
                     AppointmentId = a.Appointment.Id,
@@ -326,6 +330,9 @@ internal class AppointmentService : IAppointmentService
                     Duration = a.Appointment.Duration,
                     Status = a.Appointment.Status,
                     Notes = a.Appointment.Notes,
+
+                    canFeedback = a.Appointment.canFeedback,
+                    isFeedback = feedback,
 
                     PatientCode = a.Patient?.PatientCode,
                     PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
@@ -574,32 +581,44 @@ internal class AppointmentService : IAppointmentService
                 .Select(appointment => new
                 {
                     Appointment = appointment,
-                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
                     Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
                     Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
                     Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
-            return new AppointmentResponse
+            bool isFeedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == id);
+
+            var result = new AppointmentResponse
             {
                 AppointmentId = appointments.Appointment.Id,
                 PatientId = appointments.Appointment.PatientId,
-                DentistId = appointments.Appointment.DentistId,
                 ServiceId = appointments.Appointment.ServiceId,
                 AppointmentDate = appointments.Appointment.AppointmentDate,
                 StartTime = appointments.Appointment.StartTime,
                 Duration = appointments.Appointment.Duration,
                 Status = appointments.Appointment.Status,
                 Notes = appointments.Appointment.Notes,
-
+                canFeedback = appointments.Appointment.canFeedback,
+                isFeedback = isFeedback,
                 PatientCode = appointments.Patient?.PatientCode,
                 PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == appointments.Patient.UserId).Result.UserName,
-                DentistName = _db.Users.FirstOrDefaultAsync(p => p.Id == appointments.Doctor.DoctorId).Result.UserName,
                 ServiceName = appointments.Service?.ServiceName,
                 ServicePrice = appointments.Service?.TotalPrice ?? 0,
                 PaymentStatus = appointments.Payment is not null ? appointments.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
             };
+
+            if(appointments.Appointment.DentistId != null)
+            {
+                var dentist = _db.DoctorProfiles.FirstOrDefault(p => p.Id == appointments.Appointment.DentistId);
+                if (dentist != null) {
+                    var d = await _userManager.FindByIdAsync(dentist.DoctorId);
+                    result.DentistId = dentist.Id;
+                    result.DentistName = $"{d.FirstName} {d.LastName}";
+                }
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
@@ -710,23 +729,31 @@ internal class AppointmentService : IAppointmentService
                 })
                 .FirstOrDefaultAsync();
 
+            if(query.Payment.Status != PaymentStatus.Incomplete)
+            {
+                throw new Exception("The appointment have no any amount to pay.");
+            }
+
             var patient = await _userManager.FindByIdAsync(query.pProfile.UserId);
 
             var response = new PaymentDetailResponse
             {
-                AppointmentId = id,
-                ServiceId = query.Service.Id,
-                ServiceName = query.Service.ServiceName,
-                PaymentId = query.Payment.Id,
-                PatientProfileId = query.pProfile.Id,
-                PatientCode = query.pProfile.PatientCode,
-                PatientName = patient.UserName,
-                DepositAmount = query.Payment.DepositAmount!.Value,
-                DepositDate = query.Payment.DepositAmount.Value == 0 ? query.Payment.DepositDate : default,
-                RemainingAmount = query.Payment.RemainingAmount!.Value,
-                TotalAmount = query.Payment.Amount!.Value,
-                Method = Domain.Payments.PaymentMethod.None,
-                Status = query.Payment.Status,
+                PaymentResponse = new PaymentResponse
+                {
+                    AppointmentId = id,
+                    ServiceId = query.Service.Id,
+                    ServiceName = query.Service.ServiceName,
+                    PaymentId = query.Payment.Id,
+                    PatientProfileId = query.pProfile.Id,
+                    PatientCode = query.pProfile.PatientCode,
+                    PatientName = patient.UserName,
+                    DepositAmount = query.Payment.DepositAmount!.Value,
+                    DepositDate = query.Payment.DepositAmount.Value == 0 ? query.Payment.DepositDate : default,
+                    RemainingAmount = query.Payment.RemainingAmount!.Value,
+                    TotalAmount = query.Payment.Amount!.Value,
+                    Method = Domain.Payments.PaymentMethod.None,
+                    Status = query.Payment.Status,
+                },
                 Details = new List<Application.Payments.PaymentDetail>()
             };
 
@@ -970,6 +997,101 @@ internal class AppointmentService : IAppointmentService
 
             await _db.SaveChangesAsync(cancellationToken);
             return _t["Success"];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var currentUser = _currentUserService.GetRole();
+            if (currentUser.Equals(FSHRoles.Patient))
+            {
+                if (filter.AdvancedSearch == null)
+                {
+                    filter.AdvancedSearch = new Search();
+                    filter.AdvancedSearch.Fields = new List<string>();
+                }
+                filter.AdvancedSearch.Fields.Add("PatientId");
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                filter.AdvancedSearch.Keyword = patientProfile.Id.ToString();
+            }
+            else if (currentUser.Equals(FSHRoles.Dentist))
+            {
+                if (filter.AdvancedSearch == null)
+                {
+                    filter.AdvancedSearch = new Search();
+                    filter.AdvancedSearch.Fields = new List<string>();
+                }
+                filter.AdvancedSearch.Fields.Add("DoctorId");
+                var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
+                filter.AdvancedSearch.Keyword = dProfile.Id.ToString();
+            }
+            var result = new List<GetWorkingDetailResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+            var appointmentsQuery = _db.WorkingCalendars
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(p => p.Type == AppointmentType.FollowUp);
+
+            if (date != default)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.Date == date);
+            }
+
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
+
+            var count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            var appointments = await appointmentsQuery
+                .Select(appointment => new
+                {
+                    Appointment = appointment,
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DoctorId),
+                    Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                    TreatmentPlan = _db.TreatmentPlanProcedures.FirstOrDefault(s => s.Id == appointment.PlanID),
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var a in appointments)
+            {
+                var doctor = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
+                var patient = await _userManager.FindByIdAsync(a.Patient.UserId);
+                var sp = await _db.ServiceProcedures.Where(p => p.Id == a.TreatmentPlan.ServiceProcedureId)
+                    .Select(s => new
+                    {
+                        Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
+                        Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                        Step= s.StepOrder
+                    }).FirstOrDefaultAsync();
+                result.Add(new GetWorkingDetailResponse
+                {
+                    AppointmentId = a.Appointment.AppointmentId.Value,
+                    AppointmentType = a.Appointment.Type,
+                    CalendarID = a.Appointment.Id,
+                    Date = a.Appointment.Date.Value,
+                    DoctorName = $"{doctor.FirstName} {doctor.LastName}",
+                    DoctorProfileID = a.Appointment.DoctorId.Value,
+                    EndTime = a.Appointment.EndTime.Value,
+                    Note = a.Appointment.Note,
+                    PatientCode = a.Patient.PatientCode,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
+                    PatientProfileID = a.Patient.Id,
+                    ProcedureID = sp.Procedure.Id,
+                    ProcedureName = sp.Procedure.Name,
+                    ServiceID = sp.Service.Id,
+                    ServiceName = sp.Service.ServiceName,
+                    StartTime = a.Appointment.StartTime.Value,
+                    Status = a.Appointment.Status,
+                    Step = sp.Step,
+                });
+            }
+            return new PaginationResponse<GetWorkingDetailResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
         {

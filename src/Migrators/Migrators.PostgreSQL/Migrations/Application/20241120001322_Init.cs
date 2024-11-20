@@ -48,6 +48,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Notes = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     SpamCount = table.Column<int>(type: "integer", nullable: false),
+                    canFeedback = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -525,6 +526,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     PatientProfileId = table.Column<Guid>(type: "uuid", nullable: true),
                     DoctorProfileId = table.Column<Guid>(type: "uuid", nullable: true),
                     ServiceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     Message = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
@@ -538,6 +540,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Feedback", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Feedback_Appointment_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalSchema: "Treatment",
+                        principalTable: "Appointment",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Feedback_DoctorProfile_DoctorProfileId",
                         column: x => x.DoctorProfileId,
@@ -981,6 +989,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DoctorId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PatientId = table.Column<Guid>(type: "uuid", nullable: true),
                     AppointmentId = table.Column<Guid>(type: "uuid", nullable: true),
                     PlanID = table.Column<Guid>(type: "uuid", nullable: true),
                     Date = table.Column<DateOnly>(type: "date", nullable: true),
@@ -1011,6 +1020,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         column: x => x.DoctorId,
                         principalSchema: "Identity",
                         principalTable: "DoctorProfile",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_WorkingCalendar_PatientProfile_PatientId",
+                        column: x => x.PatientId,
+                        principalSchema: "Identity",
+                        principalTable: "PatientProfile",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WorkingCalendar_TreatmentPlanProcedures_PlanID",
@@ -1076,6 +1091,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity",
                 table: "DoctorProfile",
                 column: "DoctorId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Feedback_AppointmentId",
+                schema: "CustomerService",
+                table: "Feedback",
+                column: "AppointmentId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -1321,6 +1343,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity",
                 table: "WorkingCalendar",
                 column: "DoctorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkingCalendar_PatientId",
+                schema: "Identity",
+                table: "WorkingCalendar",
+                column: "PatientId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkingCalendar_PlanID",

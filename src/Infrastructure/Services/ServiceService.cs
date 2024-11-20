@@ -1000,4 +1000,60 @@ internal class ServiceService : IServiceService
         }
         return result;
     }
+
+    public async Task<ServiceHaveFeedback> GetServiceDetailHaveFeedback(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            //var service = _db.Services.FirstOrDefault(s => s.Id == id);
+            //if (service != null)
+            //{
+            //    throw new InvalidOperationException("Error when found service.");
+            //}
+            //var result = new ServiceHaveFeedback();
+
+            ////var totalRating = await _db.Feedbacks
+            ////    .Where(f => f.ServiceId == id)
+            ////    .GroupBy(f => f.ServiceId)
+            ////    .Select(group => new
+            ////    {
+            ////        AverageRating = group.Average(f => f.Rating),
+            ////        TotalFeedbacks = group.Count()
+            ////    })
+            ////    .FirstOrDefaultAsync();
+
+            //var feedbackByRating = await _db.Feedbacks
+            //.Where(p => p.ServiceId == id)
+            //.GroupBy(f => f.Rating)
+            //.Select(group => new
+            //{
+            //    Rating = group.Key,
+            //    TotalFeedbacks = group.Count(),
+            //    //ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
+            //    Feedbacks = group.Select(f => new
+            //    {
+            //        f.Id,
+            //        f.PatientProfileId,
+            //        f.DoctorProfileId,
+            //        f.ServiceId,
+            //        f.Message,
+            //        f.Rating,
+            //        f.CreatedOn,
+            //    }).ToList()
+            //})
+            //.OrderByDescending(x => x.Rating)
+            //.ToListAsync();
+
+            //result.ServiceDTO.ServiceID = service.Id;
+            //result.ServiceDTO.CreateDate = service.CreatedOn;
+            //result.ServiceDTO.Name =
+            throw new Exception();
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
 }

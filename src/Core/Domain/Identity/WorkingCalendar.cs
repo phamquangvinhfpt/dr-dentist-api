@@ -5,6 +5,7 @@ namespace FSH.WebApi.Domain.Identity;
 public class WorkingCalendar : AuditableEntity, IAggregateRoot
 {
     public Guid? DoctorId { get; set; }
+    public Guid? PatientId { get; set; }
     public Guid? AppointmentId { get; set; }
     public Guid? PlanID { get; set; }
     public DateOnly? Date { get; set; }

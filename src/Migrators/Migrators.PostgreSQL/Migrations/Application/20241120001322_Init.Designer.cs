@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241118155550_Init")]
+    [Migration("20241120001322_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -82,6 +82,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("canFeedback")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -154,6 +157,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AppointmentId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -195,6 +201,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("character varying(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
 
                     b.HasIndex("DoctorProfileId");
 
@@ -774,6 +783,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("PatientId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("PlanID")
                         .HasColumnType("uuid");
 
@@ -796,6 +808,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasIndex("AppointmentId");
 
                     b.HasIndex("DoctorId");
+
+                    b.HasIndex("PatientId");
 
                     b.HasIndex("PlanID")
                         .IsUnique();
@@ -1727,6 +1741,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.Feedback", b =>
                 {
+                    b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.CustomerServices.Feedback", "AppointmentId");
+
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", "DoctorProfile")
                         .WithMany("Feedbacks")
                         .HasForeignKey("DoctorProfileId")
@@ -1869,6 +1887,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()
                         .HasForeignKey("DoctorId");
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.PatientProfile", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId");
 
                     b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", null)
                         .WithOne()

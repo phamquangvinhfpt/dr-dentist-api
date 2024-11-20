@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.Payments;
+﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using System;
 using System.Collections.Generic;
@@ -27,4 +28,5 @@ public interface IAppointmentService : ITransientService
     Task<string> CancelPayment(PayAppointmentRequest request, CancellationToken cancellationToken);
     Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, DateOnly date, TimeSpan time, CancellationToken cancellationToken);
     Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken);
+    Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);
 }

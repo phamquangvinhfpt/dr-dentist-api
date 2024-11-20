@@ -1,4 +1,5 @@
-﻿using DocumentFormat.OpenXml.Vml.Office;
+﻿using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Vml.Office;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
@@ -103,6 +104,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 plan.Plan.Status = Domain.Treatment.TreatmentPlanStatus.Active;
                 _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
                 {
+                    PatientId = appointment.PatientId,
                     DoctorId = appointment.DentistId,
                     AppointmentId = request.AppointmentID,
                     PlanID = plan.Plan.Id,
@@ -143,7 +145,13 @@ internal class TreatmentPlanService : ITreatmentPlanService
             {
                 throw new Exception("The plan is not schedule");
             }
+
+            var cal = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
+                ?? throw new Exception("Calendar is not found.");
+
             plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
+            cal.Status = Domain.Identity.CalendarStatus.Completed;
+
             var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
             var entry = _db.Prescriptions
                 .Add(new Domain.Treatment.Prescription
@@ -166,6 +174,12 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Frequency = item.Frequency
                 });
             }
+            var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed);
+
+            if (isCompleted == 0) {
+                appointment.canFeedback = true;
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -371,12 +385,6 @@ internal class TreatmentPlanService : ITreatmentPlanService
     {
         try
         {
-            //var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            //if (appointment.Status != AppointmentStatus.Success)
-            //{
-            //    throw new Exception("Appointment in status that can not do this action");
-            //}
-
             var plan = await _db.TreatmentPlanProcedures
                 .Where(p => p.Id == request.TreatmentId && p.AppointmentID == request.AppointmentID)
                 .Select(b => new

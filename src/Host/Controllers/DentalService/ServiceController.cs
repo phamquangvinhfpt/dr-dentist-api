@@ -182,4 +182,13 @@ public class ServiceController : VersionNeutralApiController
     //{
     //    return await _serviceService.GetProceduresByServiceID(id, cancellationToken);
     //}
+
+    //checked
+    [HttpGet("customer/get/{id}")]
+    [MustHavePermission(FSHAction.Update, FSHResource.Procedure)]
+    [OpenApiOperation("Customer Get Service Detail, have feedback.", "")]
+    public async Task<ServiceHaveFeedback> GetServiceDetailHaveFeedback(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetServiceDetailHaveFeedback(id, cancellationToken);
+    }
 }

@@ -26,4 +26,6 @@ public class AppointmentResponse
     public string? Notes { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
     public double ServicePrice { get; set; }
+    public bool canFeedback { get; set; }
+    public bool isFeedback { get; set; }
 }

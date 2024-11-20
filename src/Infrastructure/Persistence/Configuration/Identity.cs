@@ -162,6 +162,11 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
             .HasForeignKey("DoctorId");
 
         builder
+            .HasOne<PatientProfile>()
+            .WithMany()
+            .HasForeignKey("PatientId");
+
+        builder
             .HasOne<Appointment>()
             .WithMany()
             .HasForeignKey("AppointmentId").IsRequired(false);

@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Identity.MedicalHistories;
+using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using Microsoft.AspNetCore.Http;
@@ -47,13 +48,13 @@ public class AppointmentController : VersionNeutralApiController
         return await _appointmentService.GetAppointments(filter, date, cancellationToken);
     }
 
-    [HttpPost("schedule")]
-    [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
-    [OpenApiOperation("Schedule Appointment", "")]
-    public Task<string> ScheduleAppointment(ScheduleAppointmentRequest request)
-    {
-        return Mediator.Send(request);
-    }
+    //[HttpPost("schedule")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    //[OpenApiOperation("Schedule Appointment", "")]
+    //public Task<string> ScheduleAppointment(ScheduleAppointmentRequest request)
+    //{
+    //    return Mediator.Send(request);
+    //}
     [HttpGet("get/{id}")]
     [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
     [OpenApiOperation("Get Appointment by ID", "")]
@@ -106,5 +107,14 @@ public class AppointmentController : VersionNeutralApiController
     public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
     {
         return await _appointmentService.AddDoctorToAppointments(request, cancellationToken);
+    }
+
+    //checked
+    [HttpPost("follow/get-all")]
+    [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
+    [OpenApiOperation("View Follow up Appointments", "")]
+    public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
     }
 }

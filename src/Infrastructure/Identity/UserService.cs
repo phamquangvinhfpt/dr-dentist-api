@@ -714,8 +714,8 @@ internal partial class UserService : IUserService
             {
                 Rating = group.Key,
                 TotalFeedbacks = group.Count(),
-                ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
-                Doctor = dProfile,
+                //ServiceIds = group.Select(f => f.ServiceId).Distinct().ToList(),
+                //Doctor = dProfile,
                 Feedbacks = group.Select(f => new
                 {
                     f.Id,
@@ -734,7 +734,6 @@ internal partial class UserService : IUserService
             if (user == null)
                 throw new NotFoundException("User not found");
 
-            // Create response
             result.Id = user.Id;
             result.UserName = user.UserName;
             result.PhoneNumber = user.PhoneNumber;
@@ -747,12 +746,13 @@ internal partial class UserService : IUserService
             result.TotalFeedback = totalRating?.TotalFeedbacks;
             result.DoctorProfile = dProfile;
             result.DoctorFeedback = new List<FeedBackDoctorResponse>();
-            // Process feedback groups
+
             foreach (var ratingGroup in feedbackByRating)
             {
                 var feedbackDoctorResponse = new FeedBackDoctorResponse
                 {
                     RatingType = ratingGroup.Rating,
+                    TotalRating = ratingGroup.TotalFeedbacks,
                     Feedbacks = new List<FeedBackResponse>()
                 };
 

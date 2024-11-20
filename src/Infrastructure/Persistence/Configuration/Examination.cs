@@ -310,6 +310,11 @@ public class FeedbackConfig : IEntityTypeConfiguration<Feedback>
         builder
             .Property(b => b.Message)
                 .HasMaxLength(256);
+
+        builder
+            .HasOne<Appointment>()
+            .WithOne()
+            .HasForeignKey<Feedback>("AppointmentId").IsRequired(false);
     }
 }
 

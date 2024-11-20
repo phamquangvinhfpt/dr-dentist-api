@@ -3,6 +3,7 @@ using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Application.TreatmentPlan.Prescriptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace FSH.WebApi.Host.Controllers.TreatmentPlans;
 public class TreatmentPlanController : VersionNeutralApiController
@@ -19,6 +20,10 @@ public class TreatmentPlanController : VersionNeutralApiController
     [OpenApiOperation("Get Treatment Plan By Appointment ID", "")]
     public Task<List<TreatmentPlanResponse>> GetTreatmentPlan(Guid id, CancellationToken cancellationToken)
     {
+        if (id == null || id == Guid.Empty)
+        {
+            throw new ArgumentNullException("Patient identity is empty");
+        }
         return _treatmentPlanService.GetTreamentPlanByAppointment(id, cancellationToken);
     }
 
@@ -38,8 +43,8 @@ public class TreatmentPlanController : VersionNeutralApiController
         return _treatmentPlanService.UpdateTreamentPlan(request, cancellationToken);
     }
 
-    [HttpGet("precsription/get/{id}")]
-    [OpenApiOperation("Get Prescription", "")]
+    [HttpGet("precsription/add")]
+    [OpenApiOperation("Add Prescription", "")]
     public Task<string> AddPrescriptionTreatmentPlan(AddPrescriptionRequest request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
@@ -49,6 +54,10 @@ public class TreatmentPlanController : VersionNeutralApiController
     [OpenApiOperation("Get Prescription By TreatmetnID", "")]
     public Task<PrescriptionResponse> GetPrescriptionByTreatmentID(Guid id, CancellationToken cancellationToken)
     {
+        if (id == null || id == Guid.Empty)
+        {
+            throw new ArgumentNullException("Patient identity is empty");
+        }
         return _treatmentPlanService.GetPrescriptionByTreatment(id, cancellationToken);
     }
     [HttpGet("precsription/patient/get/{id}")]
