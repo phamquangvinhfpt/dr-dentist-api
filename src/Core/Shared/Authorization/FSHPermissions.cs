@@ -89,7 +89,7 @@ public static class FSHPermissions
         new("Upload files", FSHAction.Upload, FSHResource.Files, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // NOTIFICATIONS
-        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, STAFF, PATIENT }),
+        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { STAFF, PATIENT }),
 
         // AUDIT LOGS
         new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs),
