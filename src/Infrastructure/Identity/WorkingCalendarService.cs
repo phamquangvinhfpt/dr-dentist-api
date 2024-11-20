@@ -344,7 +344,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                             {
                                 DoctorProfileID = dentist.Value,
                                 ImageUrl = doc_infor.ImageUrl,
-                                UserName = doc_infor.UserName,
+                                UserName = $"{doc_infor.FirstName} {doc_infor.LastName}",
                                 WorkingCalendars = calendars.Select(x =>
                                 new WorkingCalendarDetail
                                 {

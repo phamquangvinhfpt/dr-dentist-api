@@ -1,4 +1,7 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.CustomerServices;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
@@ -40,7 +43,10 @@ internal class ApplicationDbSeeder
         await SeedAdminUserAsync();
         await SeedAdmin2UserAsync();
         await SeedStaffUserAsync();
+        await SeedUserAsync();
         await SeedServiceAsync();
+        await SeedAppointmentAsync();
+        await SeedAppointmentInforAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -221,6 +227,7 @@ internal class ApplicationDbSeeder
     }
     private async Task SeedServiceAsync()
     {
+        _logger.LogInformation("Seeding Service.");
         if (_db.Services.Count() < 1)
         {
             string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -273,6 +280,441 @@ internal class ApplicationDbSeeder
             }
             await _db.SaveChangesAsync();
             _logger.LogInformation("Seeded Services.");
+        }
+    }
+
+    private async Task SeedAppointmentAsync()
+    {
+        _logger.LogInformation("Seeded Appointment.");
+        try
+        {
+            if (!_db.Appointments.Any())
+            {
+                var serviceProcedures = _db.ServiceProcedures
+                .GroupBy(p => p.ServiceId)
+                .Select(p => new
+                {
+                    ServiceID = p.Key,
+                    ProcedureIDs = p.Select(p => p.ProcedureId).ToList(),
+                })
+                .ToList();
+
+                var patients = _db.PatientProfiles.Select(p => new { PatientID = p.Id }).ToList();
+
+                var doctor = _db.DoctorProfiles.Select(p => new { DoctorId = p.Id }).ToList();
+
+                var appointments = new List<Appointment>();
+                //var feedbacks = new List<Feedback>();
+                var random = new Random();
+
+                var currentDate = DateOnly.FromDateTime(DateTime.Now);
+
+                for (int dayOffset = -30; dayOffset <= 30; dayOffset++)
+                {
+                    var appointmentDate = currentDate.AddDays(dayOffset);
+
+                    if (appointmentDate.DayOfWeek == DayOfWeek.Saturday ||
+                        appointmentDate.DayOfWeek == DayOfWeek.Sunday)
+                    {
+                        continue;
+                    }
+
+                    var appointmentsPerDay = random.Next(5, 11);
+                    var startHour = random.Next(8, 17);
+                    var startTime = new TimeSpan(startHour, 0, 0);
+
+                    var duration = TimeSpan.FromMinutes(30);
+
+                    var patientId = patients[random.Next(patients.Count)];
+                    var doctorId = doctor[random.Next(doctor.Count)];
+                    var service = serviceProcedures[random.Next(serviceProcedures.Count)];
+
+                    AppointmentStatus status;
+                    bool canProvideFeeback = false;
+
+                    // Xác định status dựa vào ngày
+                    if (dayOffset < 0)
+                    {
+                        status = AppointmentStatus.Success;
+                        canProvideFeeback = true;
+                    }
+                    else if (dayOffset == 0)
+                    {
+                        var currentTime = DateTime.Now.TimeOfDay;
+                        if (startTime < currentTime)
+                        {
+                            status = AppointmentStatus.Success;
+                            canProvideFeeback = true;
+                        }
+                        else
+                        {
+                            status = AppointmentStatus.Confirmed;
+                        }
+                    }
+                    else
+                    {
+                        status = AppointmentStatus.Confirmed;
+                    }
+
+                    var appointment = new Appointment
+                    {
+                        PatientId = patientId.PatientID,
+                        DentistId = doctorId.DoctorId,
+                        ServiceId = service.ServiceID.Value,
+                        AppointmentDate = appointmentDate,
+                        StartTime = startTime,
+                        Duration = duration,
+                        Status = status,
+                        SpamCount = 0,
+                        canFeedback = canProvideFeeback,
+                        CreatedOn = DateTime.Now.AddDays(dayOffset - random.Next(0, 3)),
+                        CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+                    };
+
+                    var entry = _db.Appointments.Add(appointment).Entity;
+
+
+
+                    //if (canProvideFeeback)
+                    //{
+                    //    var feedback = new Feedback
+                    //    {
+                    //        PatientProfileId = patientId.PatientID,
+                    //        DoctorProfileId = doctorId.DoctorId,
+                    //        ServiceId = service.ServiceID.Value,
+                    //        AppointmentId = entry.Id,
+                    //        Rating = random.Next(1, 5),
+                    //        Message = $"Feedback for appointment on {appointmentDate}",
+                    //        CreatedOn = DateTime.Now.AddDays(dayOffset + 1),
+                    //        CreatedBy = patientId.PatientID
+                    //    };
+
+                    //    feedbacks.Add(feedback);
+                    //}
+                    //else
+                    //{
+
+                    //}
+                }
+
+                //await _db.Feedbacks.AddRangeAsync(feedbacks);
+                await _db.SaveChangesAsync();
+
+                _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    private async Task SeedAppointmentInforAsync()
+    {
+        try
+        {
+            _logger.LogInformation($"Seeding Payment");
+            if (!_db.Payments.Any())
+            {
+                var random = new Random();
+                var currentDate = DateOnly.FromDateTime(DateTime.Now);
+                var appointments = _db.Appointments.ToList();
+
+                foreach (var appointment in appointments)
+                {
+                    if (appointment.AppointmentDate < currentDate)
+                    {
+                        var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
+                        var payment = _db.Payments.Add(new Domain.Payments.Payment
+                        {
+                            PatientProfileId = appointment.PatientId,
+                            AppointmentId = appointment.Id,
+                            ServiceId = appointment.ServiceId,
+                            DepositAmount = 0,
+                            Amount = s.TotalPrice,
+                            RemainingAmount = 0,
+                            Method = Domain.Payments.PaymentMethod.BankTransfer,
+                            Status = Domain.Payments.PaymentStatus.Completed,
+                        }).Entity;
+                        var payDetail = new List<Domain.Payments.PaymentDetail>();
+                        var sps = _db.ServiceProcedures.Where(p => p.ServiceId == s.Id)
+                            .OrderBy(p => p.StepOrder)
+                            .Select(s => new
+                            {
+                                SP = s,
+                                Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                            })
+                            .ToList();
+                        var next = 1;
+                        foreach (var item in sps)
+                        {
+                            payDetail.Add(new Domain.Payments.PaymentDetail
+                            {
+                                PaymentID = payment.Id,
+                                ProcedureID = item.Procedure.Id,
+                                PaymentAmount = item.Procedure.Price,
+                                PaymentStatus = Domain.Payments.PaymentStatus.Completed,
+                            });
+
+                            // seed treatment plan
+                            var t = _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
+                            {
+                                ServiceProcedureId = item.SP.Id,
+                                AppointmentID = appointment.Id,
+                                DoctorID = appointment.DentistId,
+                                Status = Domain.Treatment.TreatmentPlanStatus.Completed,
+                                Price = item.Procedure.Price,
+                                StartTime = appointment.StartTime,
+                                DiscountAmount = 0,
+                                TotalCost = item.Procedure.Price,
+                                StartDate = appointment.AppointmentDate.AddDays(+next++)
+                            }).Entity;
+
+                            var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                            {
+                                DoctorId = appointment.DentistId,
+                                AppointmentId = appointment.Id,
+                                PlanID = t.Id,
+                                Date = t.StartDate,
+                                StartTime = t.StartTime,
+                                EndTime = t.StartTime.Value.Add(TimeSpan.FromMinutes(30)),
+                                Status = Domain.Identity.CalendarStatus.Completed,
+                                Type = item.SP.StepOrder == 1 ? AppointmentType.Appointment : AppointmentType.FollowUp,
+                            });
+
+                            // seed prescription
+
+                            var pre = _db.Prescriptions.Add(new Domain.Treatment.Prescription
+                            {
+                                TreatmentID = t.Id,
+                                DoctorID = appointment.DentistId,
+                                PatientID = appointment.PatientId,
+                                Notes = "Use every day"
+                            }).Entity;
+
+                            var preItem = _db.PrescriptionItems.Add(new Domain.Treatment.PrescriptionItem
+                            {
+                                PrescriptionId = pre.Id,
+                                MedicineName = "",
+                                Dosage = "",
+                                Frequency = "",
+                            });
+                        }
+
+                        // Seed medical record
+
+                        var medical = _db.MedicalRecords.Add(new Domain.Examination.MedicalRecord
+                        {
+                            DoctorProfileId = appointment.DentistId,
+                            PatientProfileId = appointment.PatientId,
+                            Date = DateTime.Parse(appointment.AppointmentDate.ToString()),
+                            AppointmentId = appointment.Id,
+                        }).Entity;
+
+                        _db.BasicExaminations.Add(new Domain.Examination.BasicExamination
+                        {
+                            RecordId = medical.Id,
+                            ExaminationContent = "Good",
+                            TreatmentPlanNote = "Ok"
+                        });
+
+                        _db.Diagnoses.Add(new Domain.Examination.Diagnosis
+                        {
+                            RecordId = medical.Id,
+                            ToothNumber = 5,
+                            TeethConditions = new[] { "Sâu Răng" }
+                        });
+
+                        _db.Indications.Add(new Domain.Examination.Indication
+                        {
+                            RecordId = medical.Id,
+                            IndicationType = new[] { "Khác" },
+                            Description = "Sâu Răng"
+                        });
+
+                        _db.Feedbacks.Add(new Feedback
+                        {
+                            PatientProfileId = appointment.PatientId,
+                            DoctorProfileId = appointment.DentistId,
+                            ServiceId = s.Id,
+                            AppointmentId = appointment.Id,
+                            Rating = random.Next(1, 5),
+                            Message = $"Feedback for appointment on {appointment.AppointmentDate}",
+                            CreatedBy = appointment.PatientId
+                        });
+
+                    }
+                    else
+                    {
+                        var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
+                        var payment = _db.Payments.Add(new Domain.Payments.Payment
+                        {
+                            PatientProfileId = appointment.PatientId,
+                            AppointmentId = appointment.Id,
+                            ServiceId = appointment.ServiceId,
+                            DepositAmount = 0,
+                            Amount = s.TotalPrice,
+                            RemainingAmount = 0,
+                            Method = Domain.Payments.PaymentMethod.None,
+                            Status = Domain.Payments.PaymentStatus.Incomplete,
+                        }).Entity;
+                        var payDetail = new List<Domain.Payments.PaymentDetail>();
+                        var sps = _db.ServiceProcedures.Where(s => s.ServiceId == s.Id)
+                            .OrderBy(p => p.StepOrder)
+                            .Select(s => new
+                            {
+                                SP = s,
+                                Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                            })
+                            .ToList();
+                        var next = 1;
+                        foreach (var item in sps)
+                        {
+                            payDetail.Add(new Domain.Payments.PaymentDetail
+                            {
+                                PaymentID = payment.Id,
+                                ProcedureID = item.Procedure.Id,
+                                PaymentAmount = item.Procedure.Price,
+                                PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
+                            });
+
+                            // seed treatment plan
+                            var t = new Domain.Treatment.TreatmentPlanProcedures
+                            {
+                                ServiceProcedureId = item.SP.Id,
+                                AppointmentID = appointment.Id,
+                                DoctorID = appointment.DentistId,
+                                Status = item.SP.StepOrder == 1 ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Pending,
+                                Price = item.Procedure.Price,
+                                StartTime = appointment.StartTime,
+                                DiscountAmount = 0,
+                                TotalCost = item.Procedure.Price,
+                            };
+                            if (item.SP.StepOrder == 1)
+                            {
+                                t.StartDate = appointment.AppointmentDate.AddDays(+next++);
+                            }
+                            t = _db.TreatmentPlanProcedures.Add(t).Entity;
+
+                            if (item.SP.StepOrder == 1)
+                            {
+                                var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                                {
+                                    DoctorId = appointment.DentistId,
+                                    AppointmentId = appointment.Id,
+                                    PlanID = t.Id,
+                                    Date = t.StartDate,
+                                    StartTime = t.StartTime,
+                                    EndTime = t.StartTime.Value.Add(TimeSpan.FromMinutes(30)),
+                                    Status = Domain.Identity.CalendarStatus.Booked,
+                                    Type = AppointmentType.Appointment,
+                                });
+                            }
+
+                        }
+                    }
+                }
+
+                _db.SaveChanges();
+
+            }
+            _logger.LogInformation($"Seeded Payment");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    private async Task SeedUserAsync()
+    {
+        _logger.LogInformation("Seeding Users.");
+        if (_db.Users.Count() <= 5)
+        {
+            string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string userDataPath = Path.Combine(path!, "Identity", "UserData.json");
+            string patientDataPath = Path.Combine(path!, "Identity", "PatientProfileData.json");
+            string doctorDataPath = Path.Combine(path!, "Identity", "DoctorProfileData.json");
+            _logger.LogInformation("Started to Seed Users.");
+            string userData = await File.ReadAllTextAsync(userDataPath);
+            string patientData = await File.ReadAllTextAsync(patientDataPath);
+            string doctorData = await File.ReadAllTextAsync(doctorDataPath);
+            var users = _serializerService.Deserialize<List<ApplicationUser>>(userData);
+            var patients = _serializerService.Deserialize<List<PatientProfile>>(patientData);
+            var doctors = _serializerService.Deserialize<List<DoctorProfile>>(doctorData);
+            List<ApplicationUser> doctor = new List<ApplicationUser>();
+            List<ApplicationUser> staff = new List<ApplicationUser>();
+            List<ApplicationUser> patient = new List<ApplicationUser>();
+            int flash = 0;
+            int d_profile_index = 0;
+            int p_profile_index = 0;
+            foreach (var user in users)
+            {
+                var entry = _db.Users.Add(user).Entity;
+                if (flash < 5)
+                {
+                    doctors[d_profile_index].DoctorId = entry.Id;
+                    doctor.Add(entry);
+                    flash++;
+                    d_profile_index++;
+                }
+                else if (flash >= 5 && flash < 10)
+                {
+                    staff.Add(entry);
+                    flash++;
+                }
+                else
+                {
+                    patients[p_profile_index].UserId = entry.Id;
+                    patient.Add(entry);
+                    p_profile_index++;
+                }
+            }
+            await _db.DoctorProfiles.AddRangeAsync(doctors);
+            await _db.PatientProfiles.AddRangeAsync(patients);
+            await _db.SaveChangesAsync();
+            foreach (var user in doctor)
+            {
+                if (!await _userManager.IsInRoleAsync(user, FSHRoles.Dentist))
+                {
+                    _logger.LogInformation("Assigning Dentist Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+                    await _userManager.AddToRoleAsync(user, FSHRoles.Dentist);
+                }
+                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            await _db.SaveChangesAsync();
+            foreach (var user in staff)
+            {
+                if (!await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
+                {
+                    _logger.LogInformation("Assigning Staff Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+                    await _userManager.AddToRoleAsync(user, FSHRoles.Staff);
+                }
+            }
+            foreach (var user in patient)
+            {
+                if (!await _userManager.IsInRoleAsync(user, FSHRoles.Patient))
+                {
+                    _logger.LogInformation("Assigning Patient Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
+                    await _userManager.AddToRoleAsync(user, FSHRoles.Patient);
+                }
+            }
+            foreach (var user in doctor)
+            {
+                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            foreach (var user in patient)
+            {
+                var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            }
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Seeded Users.");
         }
     }
     private double GetToltalPrice(List<Procedure> procedures)

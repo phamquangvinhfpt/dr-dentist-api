@@ -502,11 +502,19 @@ internal class AppointmentService : IAppointmentService
         {
             var currentUserRole = _currentUserService.GetRole();
             var isStaffOrAdmin = currentUserRole == FSHRoles.Admin || currentUserRole == FSHRoles.Staff;
-            if (!isStaffOrAdmin)
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID, cancellationToken);
+            if (currentUserRole == FSHRoles.Patient)
+            {
+                var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                if (pProfile.Id != appointment.PatientId)
+                {
+                    throw new Exception("Only Patient can reschedule their appointment");
+                }
+            }
+            else if(!isStaffOrAdmin)
             {
                 throw new UnauthorizedAccessException("Only Staff or Admin can access this function.");
             }
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID, cancellationToken);
 
             if (appointment.Status != AppointmentStatus.Confirmed)
             {
@@ -928,11 +936,11 @@ internal class AppointmentService : IAppointmentService
 
             foreach (var a in appointments)
             {
+                var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
                 result.Add(new AppointmentResponse
                 {
                     AppointmentId = a.Appointment.Id,
                     PatientId = a.Appointment.PatientId,
-                    DentistId = default,
                     ServiceId = a.Appointment.ServiceId,
                     AppointmentDate = a.Appointment.AppointmentDate,
                     StartTime = a.Appointment.StartTime,
@@ -941,8 +949,7 @@ internal class AppointmentService : IAppointmentService
                     Notes = a.Appointment.Notes,
 
                     PatientCode = a.Patient?.PatientCode,
-                    PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
-                    DentistName = null,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
