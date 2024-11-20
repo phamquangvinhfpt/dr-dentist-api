@@ -47,6 +47,7 @@ internal class ApplicationDbSeeder
         await SeedServiceAsync();
         await SeedAppointmentAsync();
         await SeedAppointmentInforAsync();
+        await SeedNonDoctorAppointmentAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -304,7 +305,6 @@ internal class ApplicationDbSeeder
                 var doctor = _db.DoctorProfiles.Select(p => new { DoctorId = p.Id }).ToList();
 
                 var appointments = new List<Appointment>();
-                //var feedbacks = new List<Feedback>();
                 var random = new Random();
 
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
@@ -373,31 +373,105 @@ internal class ApplicationDbSeeder
 
                     var entry = _db.Appointments.Add(appointment).Entity;
 
+                    await _db.SaveChangesAsync();
 
+                    _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
+                }
+            }
 
-                    //if (canProvideFeeback)
-                    //{
-                    //    var feedback = new Feedback
-                    //    {
-                    //        PatientProfileId = patientId.PatientID,
-                    //        DoctorProfileId = doctorId.DoctorId,
-                    //        ServiceId = service.ServiceID.Value,
-                    //        AppointmentId = entry.Id,
-                    //        Rating = random.Next(1, 5),
-                    //        Message = $"Feedback for appointment on {appointmentDate}",
-                    //        CreatedOn = DateTime.Now.AddDays(dayOffset + 1),
-                    //        CreatedBy = patientId.PatientID
-                    //    };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
 
-                    //    feedbacks.Add(feedback);
-                    //}
-                    //else
-                    //{
+    private async Task SeedNonDoctorAppointmentAsync()
+    {
+        _logger.LogInformation("Seeded Appointment.");
+        try
+        {
+            var serviceProcedures = _db.ServiceProcedures
+                .GroupBy(p => p.ServiceId)
+                .Select(p => new
+                {
+                    ServiceID = p.Key,
+                    ProcedureIDs = p.Select(p => p.ProcedureId).ToList(),
+                })
+                .ToList();
 
-                    //}
+            var patients = _db.PatientProfiles.Select(p => new { PatientID = p.Id }).ToList();
+
+            var appointments = new List<Appointment>();
+            var random = new Random();
+
+            var currentDate = DateOnly.FromDateTime(DateTime.Now);
+
+            for (int dayOffset = 5; dayOffset <= 20; dayOffset++)
+            {
+                var appointmentDate = currentDate.AddDays(dayOffset);
+
+                if (appointmentDate.DayOfWeek == DayOfWeek.Saturday ||
+                    appointmentDate.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    continue;
                 }
 
-                //await _db.Feedbacks.AddRangeAsync(feedbacks);
+                var appointmentsPerDay = random.Next(5, 11);
+                var startHour = random.Next(8, 17);
+                var startTime = new TimeSpan(startHour, 0, 0);
+
+                var duration = TimeSpan.FromMinutes(30);
+
+                var patientId = patients[random.Next(patients.Count)];
+                var service = serviceProcedures[random.Next(serviceProcedures.Count)];
+
+                var appointment = _db.Appointments.Add(new Appointment
+                {
+                    PatientId = patientId.PatientID,
+                    ServiceId = service.ServiceID.Value,
+                    AppointmentDate = appointmentDate,
+                    StartTime = startTime,
+                    Duration = duration,
+                    Status = AppointmentStatus.Confirmed,
+                    SpamCount = 0,
+                    canFeedback = false,
+                    CreatedOn = DateTime.Now.AddDays(dayOffset - random.Next(0, 3)),
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+                }).Entity;
+
+                var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
+                var payment = _db.Payments.Add(new Domain.Payments.Payment
+                {
+                    PatientProfileId = appointment.PatientId,
+                    AppointmentId = appointment.Id,
+                    ServiceId = appointment.ServiceId,
+                    DepositAmount = 0,
+                    Amount = s.TotalPrice,
+                    RemainingAmount = 0,
+                    Method = Domain.Payments.PaymentMethod.None,
+                    Status = Domain.Payments.PaymentStatus.Incomplete,
+                }).Entity;
+                var payDetail = new List<Domain.Payments.PaymentDetail>();
+                var sps = _db.ServiceProcedures.Where(p => p.ServiceId == s.Id)
+                    .OrderBy(p => p.StepOrder)
+                    .Select(s => new
+                    {
+                        SP = s,
+                        Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                    })
+                    .ToList();
+                foreach (var item in sps)
+                {
+                    payDetail.Add(new Domain.Payments.PaymentDetail
+                    {
+                        PaymentID = payment.Id,
+                        ProcedureID = item.Procedure.Id,
+                        PaymentAmount = item.Procedure.Price,
+                        PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
+                    });
+                }
                 await _db.SaveChangesAsync();
 
                 _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
@@ -447,7 +521,7 @@ internal class ApplicationDbSeeder
                                 Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
                             })
                             .ToList();
-                        var next = 1;
+                        var next = 5;
                         foreach (var item in sps)
                         {
                             payDetail.Add(new Domain.Payments.PaymentDetail
@@ -457,30 +531,31 @@ internal class ApplicationDbSeeder
                                 PaymentAmount = item.Procedure.Price,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Completed,
                             });
-
+                            var date = appointment.AppointmentDate.AddDays(+next++);
                             // seed treatment plan
+                            bool c = date > currentDate;
                             var t = _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
                             {
                                 ServiceProcedureId = item.SP.Id,
                                 AppointmentID = appointment.Id,
                                 DoctorID = appointment.DentistId,
-                                Status = Domain.Treatment.TreatmentPlanStatus.Completed,
+                                Status = c ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Completed,
                                 Price = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
                                 DiscountAmount = 0,
                                 TotalCost = item.Procedure.Price,
-                                StartDate = appointment.AppointmentDate.AddDays(+next++)
+                                StartDate = date
                             }).Entity;
-
                             var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
                             {
                                 DoctorId = appointment.DentistId,
+                                PatientId = appointment.PatientId,
                                 AppointmentId = appointment.Id,
                                 PlanID = t.Id,
                                 Date = t.StartDate,
                                 StartTime = t.StartTime,
                                 EndTime = t.StartTime.Value.Add(TimeSpan.FromMinutes(30)),
-                                Status = Domain.Identity.CalendarStatus.Completed,
+                                Status = c ? Domain.Identity.CalendarStatus.Booked : CalendarStatus.Completed,
                                 Type = item.SP.StepOrder == 1 ? AppointmentType.Appointment : AppointmentType.FollowUp,
                             });
 
@@ -628,6 +703,8 @@ internal class ApplicationDbSeeder
             throw;
         }
     }
+
+
 
     private async Task SeedUserAsync()
     {

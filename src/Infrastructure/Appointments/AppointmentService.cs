@@ -322,6 +322,7 @@ internal class AppointmentService : IAppointmentService
             {
                 bool feedback = await _db.Feedbacks.AnyAsync(p => p.AppointmentId == a.Appointment.Id);
                 var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
+                var pUser = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
                 var r = new AppointmentResponse
                 {
                     AppointmentId = a.Appointment.Id,
@@ -339,7 +340,7 @@ internal class AppointmentService : IAppointmentService
                     DentistId = a.Appointment.DentistId,
                     DentistName = $"{dUser.FirstName} {dUser.LastName}",
                     PatientCode = a.Patient?.PatientCode,
-                    PatientName = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result.UserName,
+                    PatientName = $"{pUser.FirstName} {pUser.LastName}",
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
