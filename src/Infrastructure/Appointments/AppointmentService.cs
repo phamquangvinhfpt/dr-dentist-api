@@ -455,15 +455,14 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var user_role = _currentUserService.GetRole();
-            var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+            var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID && p.PatientId == request.UserID);
+            if (appoint == null) {
+                throw new Exception("Can not found appointment of this user.");
+            }
             if (user_role == FSHRoles.Patient)
             {
-                if (request.UserID != _currentUserService.GetUserId().ToString())
-                {
-                    throw new Exception("Only Patient can cancel their appointment");
-                }
-                var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId ==  request.UserID);
-                if(appoint.PatientId != pProfile.Id)
+                var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.UserID);
+                if (patient.UserId != _currentUserService.GetUserId().ToString())
                 {
                     throw new Exception("Only Patient can cancel their appointment");
                 }

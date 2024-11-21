@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Appointments;
 public class CancelAppointmentRequest : IRequest<string>
 {
-    public string? UserID { get; set; }
+    public Guid? UserID { get; set; }
     public Guid AppointmentID { get; set; }
 }
 
@@ -19,9 +19,7 @@ public class CancelAppointmentRequestValidator : CustomValidator<CancelAppointme
     {
         RuleFor(p => p.UserID)
             .NotEmpty()
-            .WithMessage("Patient Infomation should be include")
-            .MustAsync(async (id, _) => await userService.CheckUserInRoleAsync(id, FSHRoles.Patient))
-            .WithMessage((_, id) => "User Is Not Found or User Is Not A Patient");
+            .WithMessage("Patient Infomation should be include");
 
         RuleFor(p => p.AppointmentID)
             .NotEmpty()
