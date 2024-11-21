@@ -11,6 +11,7 @@ public class TreatmentPlanResponse
     public Guid TreatmentPlanID { get; set; }
     public Guid ProcedureID { get; set; }
     public string? ProcedureName { get; set; }
+    public DateOnly StartDate { get; set; }
     public string? DoctorID { get; set; }
     public string? DoctorName { get; set; }
     public double Price { get; set; }

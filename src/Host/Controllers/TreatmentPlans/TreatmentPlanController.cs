@@ -27,6 +27,18 @@ public class TreatmentPlanController : VersionNeutralApiController
         return _treatmentPlanService.GetTreamentPlanByAppointment(id, cancellationToken);
     }
 
+    [HttpGet("current/get/{id}")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Get Current Treatment Plan By Patient ID", "")]
+    public Task<List<TreatmentPlanResponse>> GetCurrentTreatmentPlanByPatientID(string id, CancellationToken cancellationToken)
+    {
+        if (id == null)
+        {
+            throw new ArgumentNullException("Patient identity is empty");
+        }
+        return _treatmentPlanService.GetCurrentTreamentPlanByPatientID(id, cancellationToken);
+    }
+
     [HttpPost("add-detail")]
     //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Add treatment date and note for next follow up appointment", "")]
@@ -69,5 +81,17 @@ public class TreatmentPlanController : VersionNeutralApiController
             throw new ArgumentNullException("Patient identity is empty");
         }
         return _treatmentPlanService.GetPrescriptionByPatient(id, cancellationToken);
+    }
+
+    [HttpGet("examination/{id}")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Examination and do Treatment Plan. Change Status Plan use treatment id", "")]
+    public Task<string> DoTreatmentPlan(Guid id, CancellationToken cancellationToken)
+    {
+        if (id == null || id == Guid.Empty)
+        {
+            throw new ArgumentNullException("Patient identity is empty");
+        }
+        return _treatmentPlanService.ExaminationAndChangeTreatmentStatus(id, cancellationToken);
     }
 }

@@ -70,10 +70,14 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             if (plan.SP.StepOrder == 1)
             {
-                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
-                calendar.Date = request.TreatmentDate;
-                calendar.StartTime = request.TreatmentTime;
-                calendar.EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30));
+                //if (plan.Plan.Status != Domain.Treatment.TreatmentPlanStatus.Active) {
+
+                //}
+                //var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
+                //calendar.Date = request.TreatmentDate;
+                //calendar.StartTime = request.TreatmentTime;
+                //calendar.EndTime = request.TreatmentTime.Add(TimeSpan.FromMinutes(30));
+                throw new Exception("Warning: the plan was set time line");
             }
             else
             {
@@ -141,16 +145,10 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 throw new Exception("The plan date is not available");
             }
 
-            if(plan.Status != Domain.Treatment.TreatmentPlanStatus.Active)
+            if(plan.Status != Domain.Treatment.TreatmentPlanStatus.Completed)
             {
-                throw new Exception("The plan is not schedule");
+                throw new Exception("The plan have not done yet!!!");
             }
-
-            var cal = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
-                ?? throw new Exception("Calendar is not found.");
-
-            plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
-            cal.Status = Domain.Identity.CalendarStatus.Completed;
 
             var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
             var entry = _db.Prescriptions
@@ -173,11 +171,6 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Dosage = item.Dosage,
                     Frequency = item.Frequency
                 });
-            }
-            var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed);
-
-            if (isCompleted == 0) {
-                appointment.canFeedback = true;
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -208,6 +201,113 @@ internal class TreatmentPlanService : ITreatmentPlanService
     {
         var result = await _db.TreatmentPlanProcedures.AnyAsync(p => p.Id == id);
         return result;
+    }
+
+    public async Task<string> ExaminationAndChangeTreatmentStatus(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var plan = await _db.TreatmentPlanProcedures
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+
+            if (plan.Status != Domain.Treatment.TreatmentPlanStatus.Active)
+            {
+                throw new Exception("The plan is not schedule or success");
+            }
+
+            if (plan.StartDate != DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new Exception("The plan date is not today");
+            }
+
+            var cal = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
+                ?? throw new Exception("Calendar is not found.");
+
+            plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
+            cal.Status = Domain.Identity.CalendarStatus.Completed;
+
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
+            var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed);
+
+            if (isCompleted == 0)
+            {
+                appointment.canFeedback = true;
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return _t["Success"];
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
+        }
+    }
+
+    public async Task<List<TreatmentPlanResponse>> GetCurrentTreamentPlanByPatientID(string id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            List<TreatmentPlanResponse> result = new List<TreatmentPlanResponse>();
+            var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id) ?? throw new Exception("Patient not found");
+            var newAppointment = await _db.Appointments.Where(p => p.PatientId == patient.Id && p.Status == AppointmentStatus.Success)
+                .OrderByDescending(p => p.AppointmentDate)
+                .FirstOrDefaultAsync();
+
+            var check = await _db.TreatmentPlanProcedures
+                .AnyAsync(p => p.AppointmentID == newAppointment.Id && (p.Status == Domain.Treatment.TreatmentPlanStatus.Active || p.Status == Domain.Treatment.TreatmentPlanStatus.Pending));
+
+            if (!check)
+            {
+                return result;
+            }
+
+            var tps = await _db.TreatmentPlanProcedures
+                .Where(p => p.AppointmentID == newAppointment.Id)
+                .ToListAsync(cancellationToken);
+
+            var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == tps[0].DoctorID);
+
+            var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
+            foreach (var item in tps)
+            {
+
+                var sp = await _db.ServiceProcedures
+                .Where(p => p.Id == item.ServiceProcedureId)
+                .Select(b => new
+                {
+                    SP = b,
+                    Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+                var r = new TreatmentPlanResponse
+                {
+                    TreatmentPlanID = item.Id,
+                    ProcedureID = sp.Procedure.Id,
+                    ProcedureName = sp.Procedure.Name,
+                    Price = sp.Procedure.Price,
+                    DoctorID = doctor.Id,
+                    DoctorName = doctor.UserName,
+                    DiscountAmount = 0.3,
+                    PlanCost = item.TotalCost,
+                    PlanDescription = item.Note,
+                    Step = sp.SP.StepOrder,
+                    Status = item.Status,
+                };
+                if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active)
+                {
+                    r.StartDate = item.StartDate.Value;
+                }
+                result.Add(r);
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
     }
 
     public async Task<List<PrescriptionResponse>> GetPrescriptionByPatient(string id, CancellationToken cancellationToken)
@@ -358,8 +458,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
-
-                result.Add(new TreatmentPlanResponse
+                var r = new TreatmentPlanResponse
                 {
                     TreatmentPlanID = item.Id,
                     ProcedureID = sp.Procedure.Id,
@@ -372,7 +471,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
-                });
+                };
+                if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active) {
+                    r.StartDate = item.StartDate.Value;
+                }
+                result.Add(r);
             }
         }
         catch (Exception ex) {

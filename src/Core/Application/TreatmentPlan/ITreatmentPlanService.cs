@@ -17,4 +17,6 @@ public interface ITreatmentPlanService : ITransientService
     Task AddPrescription(AddPrescriptionRequest request, CancellationToken cancellationToken);
     Task<PrescriptionResponse> GetPrescriptionByTreatment(Guid id, CancellationToken cancellationToken);
     Task<List<PrescriptionResponse>> GetPrescriptionByPatient(string id, CancellationToken cancellationToken);
+    Task<string> ExaminationAndChangeTreatmentStatus(DefaultIdType id, CancellationToken cancellationToken);
+    Task<List<TreatmentPlanResponse>> GetCurrentTreamentPlanByPatientID(string id, CancellationToken cancellationToken);
 }

@@ -1,5 +1,6 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Bibliography;
+using FluentValidation;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Exceptions;
@@ -698,7 +699,8 @@ internal class AppointmentService : IAppointmentService
                         PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
                     });
                     var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == appointment.ServiceId && p.ProcedureId == item);
-                    var entry = _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
+
+                    var t = new Domain.Treatment.TreatmentPlanProcedures
                     {
                         ServiceProcedureId = sp.Id,
                         AppointmentID = id,
@@ -707,7 +709,16 @@ internal class AppointmentService : IAppointmentService
                         Price = pro.Price,
                         DiscountAmount = 0.3,
                         TotalCost = pro.Price - (pro.Price * 0.3),
-                    }).Entity;
+                    };
+
+                    if (sp.StepOrder == 1)
+                    {
+                        t.StartDate = appointment.AppointmentDate;
+                        t.StartTime = appointment.StartTime;
+                        t.Status = Domain.Treatment.TreatmentPlanStatus.Active;
+                    }
+
+                    var entry = _db.TreatmentPlanProcedures.Add(t).Entity;
                     if(sp.StepOrder == 1)
                     {
                         var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == id);
@@ -716,7 +727,7 @@ internal class AppointmentService : IAppointmentService
                         entry.StartDate = appointment.AppointmentDate;
                         entry.StartTime = appointment.StartTime;
                     }
-                    result.Add(new TreatmentPlanResponse
+                    var r = new TreatmentPlanResponse
                     {
                         TreatmentPlanID = entry.Id,
                         ProcedureID = item.Value,
@@ -729,7 +740,12 @@ internal class AppointmentService : IAppointmentService
                         PlanDescription = null,
                         Step = sp.StepOrder,
                         Status = entry.Status,
-                    });
+                    };
+                    if(sp.StepOrder == 1)
+                    {
+                        r.StartDate = appointment.AppointmentDate;
+                    }
+                    result.Add(r);
                 }
                 await _db.SaveChangesAsync(cancellationToken);
             }
