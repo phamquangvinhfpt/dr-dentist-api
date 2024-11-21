@@ -302,10 +302,9 @@ internal class AppointmentService : IAppointmentService
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
+            var count = await appointmentsQuery.CountAsync(cancellationToken);
 
             appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty).WithSpecification(spec).OrderBy(p => p.AppointmentDate);
-
-            var count = await appointmentsQuery.CountAsync(cancellationToken);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new

@@ -511,6 +511,7 @@ internal class ApplicationDbSeeder
                             RemainingAmount = 0,
                             Method = Domain.Payments.PaymentMethod.BankTransfer,
                             Status = Domain.Payments.PaymentStatus.Completed,
+                            FinalPaymentDate = appointment.AppointmentDate,
                         }).Entity;
                         var payDetail = new List<Domain.Payments.PaymentDetail>();
                         var sps = _db.ServiceProcedures.Where(p => p.ServiceId == s.Id)
@@ -624,14 +625,16 @@ internal class ApplicationDbSeeder
                     else
                     {
                         var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
+                        var dAmount = 0.3;
                         var payment = _db.Payments.Add(new Domain.Payments.Payment
                         {
                             PatientProfileId = appointment.PatientId,
                             AppointmentId = appointment.Id,
                             ServiceId = appointment.ServiceId,
-                            DepositAmount = 0,
+                            DepositAmount = 0.3,
+                            DepositDate = DateOnly.FromDateTime(appointment.CreatedOn),
                             Amount = s.TotalPrice,
-                            RemainingAmount = 0,
+                            RemainingAmount = s.TotalPrice - (s.TotalPrice * dAmount),
                             Method = Domain.Payments.PaymentMethod.None,
                             Status = Domain.Payments.PaymentStatus.Incomplete,
                         }).Entity;
@@ -651,7 +654,7 @@ internal class ApplicationDbSeeder
                             {
                                 PaymentID = payment.Id,
                                 ProcedureID = item.Procedure.Id,
-                                PaymentAmount = item.Procedure.Price,
+                                PaymentAmount = item.Procedure.Price - (item.Procedure.Price * dAmount),
                                 PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
                             });
 
@@ -664,8 +667,8 @@ internal class ApplicationDbSeeder
                                 Status = item.SP.StepOrder == 1 ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Pending,
                                 Price = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
-                                DiscountAmount = 0,
-                                TotalCost = item.Procedure.Price,
+                                DiscountAmount = dAmount,
+                                TotalCost = item.Procedure.Price - (item.Procedure.Price * dAmount),
                             };
                             if (item.SP.StepOrder == 1)
                             {
