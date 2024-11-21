@@ -447,7 +447,7 @@ internal partial class UserService : IUserService
         })
         .FirstOrDefaultAsync();
 
-        return rating?.AverageRating ?? 0;
+        return Math.Round(rating.AverageRating, 0);
     }
 
     public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)
@@ -635,7 +635,7 @@ internal partial class UserService : IUserService
                             PhoneNumber = user.PhoneNumber,
                             UserName = user.UserName,
                             DoctorProfile = doctorProfile,
-                            Rating = item.AverageRating,
+                            Rating = Math.Round(item.AverageRating, 0),
                         });
                     }
                 }
@@ -742,7 +742,7 @@ internal partial class UserService : IUserService
             result.Email = user.Email;
             result.Gender = user.Gender;
             result.ImageUrl = user.ImageUrl;
-            result.Rating = totalRating?.AverageRating;
+            result.Rating = Math.Round(totalRating.AverageRating, 0);
             result.TotalFeedback = totalRating?.TotalFeedbacks;
             result.DoctorProfile = dProfile;
             result.DoctorFeedback = new List<FeedBackDoctorResponse>();

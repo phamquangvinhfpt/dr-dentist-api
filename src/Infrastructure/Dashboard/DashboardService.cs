@@ -87,7 +87,7 @@ internal class DashboardService : IDashboardService
                 {
                     DoctorId = d.Doctor.Id,
                     DoctorName = $"{d.Doctor.FirstName} {d.Doctor.LastName}",
-                    TotalRating = item.TotalRating,
+                    TotalRating = Math.Round(item.TotalRating, 0),
                 });
             }
             return result;
@@ -217,14 +217,14 @@ internal class DashboardService : IDashboardService
                     {
                         ServiceId = n.Key,
                         ServiceName = _db.Services.FirstOrDefault(p => p.Id == n.Key).ServiceName,
-                        TotalRating = _db.Feedbacks
+                        TotalRating = Math.Round(_db.Feedbacks
                                 .Where(f => f.ServiceId == n.Key)
                                 .GroupBy(f => f.ServiceId)
                                 .Select(group => new
                                 {
                                     AverageRating = group.Average(f => f.Rating)
                                 })
-                                .FirstOrDefault().AverageRating,
+                                .FirstOrDefault().AverageRating, 0),
                         TotalRevenue = _db.Payments
                                 .Where(p =>
                                     p.ServiceId == n.Key &&
