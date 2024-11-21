@@ -47,7 +47,6 @@ internal class ApplicationDbSeeder
         await SeedServiceAsync();
         await SeedAppointmentAsync();
         await SeedAppointmentInforAsync();
-        await SeedNonDoctorAppointmentAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -694,6 +693,7 @@ internal class ApplicationDbSeeder
                         }
                     }
                 }
+                await SeedNonDoctorAppointmentAsync();
 
                 _db.SaveChanges();
 
