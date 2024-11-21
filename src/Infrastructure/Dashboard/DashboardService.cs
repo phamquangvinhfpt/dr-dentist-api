@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.Appointments;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Dashboards;
@@ -131,6 +132,52 @@ internal class DashboardService : IDashboardService
                     {
                         Date = n.Key,
                         Total = n.Count(),
+                    })
+                    .ToListAsync(cancellationToken);
+            return chart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<ServiceAnalytic>> ServiceAnalytic(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Success);
+
+            if (startDate != default)
+            {
+                chartQuery = chartQuery.Where(p => startDate <= p.AppointmentDate);
+            }
+            if (endDate != default)
+            {
+                chartQuery = chartQuery.Where(p => p.AppointmentDate <= endDate);
+            }
+            var chart = await chartQuery
+                    .GroupBy(p => p.ServiceId)
+                    .Select(n => new ServiceAnalytic
+                    {
+                        ServiceId = n.Key,
+                        ServiceName = _db.Services.FirstOrDefault(p => p.Id == n.Key).ServiceName,
+                        TotalRating = _db.Feedbacks
+                                .Where(f => f.ServiceId == n.Key)
+                                .GroupBy(f => f.ServiceId)
+                                .Select(group => new
+                                {
+                                    AverageRating = group.Average(f => f.Rating)
+                                })
+                                .FirstOrDefault().AverageRating,
+                        TotalRevenue = _db.Payments
+                                .Where(p =>
+                                    p.ServiceId == n.Key &&
+                                    p.AppointmentId.HasValue &&
+                                    chartQuery.Any(a => a.Id == p.AppointmentId.Value)
+                                )
+                                .Sum(p => p.Amount ?? 0)
                     })
                     .ToListAsync(cancellationToken);
             return chart;

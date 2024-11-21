@@ -526,7 +526,7 @@ internal class ServiceService : IServiceService
                 .Where(p => p.DeletedBy != null)
                 .ToListAsync(cancellationToken);
 
-            int count = await _db.Services
+            int count = await _db.Services.Where(p => p.DeletedBy != null)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<Service>(services, count, request.PageNumber, request.PageSize);
         }
@@ -844,7 +844,7 @@ internal class ServiceService : IServiceService
             .Where(p => p.DeletedBy != null)
             .ToListAsync(cancellationToken);
 
-        int count = await _db.Services
+        int count = await _db.Services.Where(p => p.DeletedBy != null)
             .CountAsync(cancellationToken);
         return new PaginationResponse<Procedure>(procedures, count, request.PageNumber, request.PageSize);
     }

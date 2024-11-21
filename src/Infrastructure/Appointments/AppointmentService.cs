@@ -924,9 +924,10 @@ internal class AppointmentService : IAppointmentService
             if (time != default) {
                 appointmentsQuery = appointmentsQuery.Where(w => w.StartTime == time);
             }
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
 
             var count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -1067,9 +1068,9 @@ internal class AppointmentService : IAppointmentService
                 appointmentsQuery = appointmentsQuery.Where(w => w.Date == date);
             }
 
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
-
             var count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new

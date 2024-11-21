@@ -187,11 +187,9 @@ public class PaymentService : IPaymentService
             {
                 paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate == date);
             }
-
+            var count = paymentQuery.Count();
             var spec = new EntitiesByPaginationFilterSpec<Payment>(filter);
             paymentQuery = paymentQuery.WithSpecification(spec);
-
-            var count = paymentQuery.Count();
 
             var payments = await paymentQuery
                 .Select(p => new

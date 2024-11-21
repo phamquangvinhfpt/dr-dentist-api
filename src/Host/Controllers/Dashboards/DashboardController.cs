@@ -35,4 +35,12 @@ public class DashboardController : VersionedApiController
     {
         return _dashboardService.MemberShipGrowth(start, end, cancellationToken);
     }
+
+    //checked
+    [HttpGet("chart/revenue/service")]
+    [OpenApiOperation("Analytis Revenue of services follow by date", "")]
+    public Task<List<ServiceAnalytic>> ServiceAnalytic([FromQuery] DateOnly start, [FromQuery] DateOnly end, CancellationToken cancellationToken)
+    {
+        return _dashboardService.ServiceAnalytic(start, end, cancellationToken);
+    }
 }
