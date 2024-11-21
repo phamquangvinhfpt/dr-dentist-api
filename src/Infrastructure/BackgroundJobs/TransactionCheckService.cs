@@ -35,7 +35,7 @@ public class TransactionCheckService : BackgroundService
                 else if (_env.IsDevelopment())
                 {
                     _logger.LogInformation("Current environment: Development");
-                    TransactionsUtils.CallAPIChecking(_apiUrl);
+                    //TransactionsUtils.CallAPIChecking(_apiUrl);
                     _logger.LogInformation("Checked transactions at: {time}", DateTimeOffset.Now);
                 }
             }
