@@ -89,7 +89,7 @@ public static class FSHPermissions
         new("Upload files", FSHAction.Upload, FSHResource.Files, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // NOTIFICATIONS
-        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { STAFF, PATIENT }),
+        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, DENTIST, STAFF, PATIENT }),
 
         // AUDIT LOGS
         new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs),
@@ -129,11 +129,11 @@ public static class FSHPermissions
         new("Search Feedback", FSHAction.Search, FSHResource.Feedback, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Patient Messages
-        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { ROOT, PATIENT, STAFF }),
-        new("Create Patient Messages", FSHAction.Create, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Update Patient Messages", FSHAction.Update, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Delete Patient Messages", FSHAction.Delete, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Search Patient Messages", FSHAction.Search, FSHResource.PatientMessages, new[] { ROOT, PATIENT, STAFF }),
+        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Create Patient Messages", FSHAction.Create, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Update Patient Messages", FSHAction.Update, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Delete Patient Messages", FSHAction.Delete, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Search Patient Messages", FSHAction.Search, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
 
         // Diagnosis
         new("View Diagnosis", FSHAction.View, FSHResource.Diagnosis, new[] { ROOT, PATIENT, STAFF, DENTIST }),
