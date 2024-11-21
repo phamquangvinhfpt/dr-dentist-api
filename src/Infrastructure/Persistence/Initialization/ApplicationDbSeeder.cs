@@ -2,6 +2,7 @@
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
@@ -461,6 +462,16 @@ internal class ApplicationDbSeeder
                         Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
                     })
                     .ToList();
+                var val = _db.WorkingCalendars.Add(new WorkingCalendar
+                {
+                    PatientId = patientId.PatientID,
+                    AppointmentId = appointment.Id,
+                    Date = appointment.AppointmentDate,
+                    StartTime = appointment.StartTime,
+                    EndTime = appointment.StartTime.Add(appointment.Duration),
+                    Status = Domain.Identity.CalendarStatus.Booked,
+                    Type = AppointmentType.Appointment,
+                });
                 foreach (var item in sps)
                 {
                     payDetail.Add(new Domain.Payments.PaymentDetail

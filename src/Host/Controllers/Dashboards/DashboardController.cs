@@ -37,10 +37,18 @@ public class DashboardController : VersionedApiController
     }
 
     //checked
-    [HttpGet("chart/revenue/service")]
+    [HttpGet("revenue/service")]
     [OpenApiOperation("Analytis Revenue of services follow by date", "")]
     public Task<List<ServiceAnalytic>> ServiceAnalytic([FromQuery] DateOnly start, [FromQuery] DateOnly end, CancellationToken cancellationToken)
     {
         return _dashboardService.ServiceAnalytic(start, end, cancellationToken);
+    }
+
+    //checked
+    [HttpGet("rate/doctor")]
+    [OpenApiOperation("Analytis Rating of doctor follow by date", "")]
+    public Task<List<DoctorAnalytic>> DoctorAnalytic([FromQuery] DateOnly start, [FromQuery] DateOnly end, CancellationToken cancellationToken)
+    {
+        return _dashboardService.DoctorAnalytic(start, end, cancellationToken);
     }
 }

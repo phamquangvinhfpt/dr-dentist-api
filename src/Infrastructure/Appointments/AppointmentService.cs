@@ -302,13 +302,20 @@ internal class AppointmentService : IAppointmentService
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
-            
-
+            int count = 0;
             appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty);
 
-            var count = await appointmentsQuery.CountAsync(cancellationToken);
+            if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
+            {
+                count = appointmentsQuery.Count();
+            }
 
             appointmentsQuery = appointmentsQuery.WithSpecification(spec).OrderBy(p => p.AppointmentDate);
+
+            if (currentUser == FSHRoles.Dentist || currentUser == FSHRoles.Patient)
+            {
+                count = appointmentsQuery.Count();
+            }
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new

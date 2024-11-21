@@ -45,6 +45,60 @@ internal class DashboardService : IDashboardService
         _notificationService = notificationService;
     }
 
+    public async Task<List<DoctorAnalytic>> DoctorAnalytic(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Success);
+
+            if (startDate != default)
+            {
+                chartQuery = chartQuery.Where(p => startDate <= p.AppointmentDate);
+            }
+            if (endDate != default)
+            {
+                chartQuery = chartQuery.Where(p => p.AppointmentDate <= endDate);
+            }
+            var chart = await chartQuery
+                    .GroupBy(p => p.DentistId)
+                    .Select(n => new 
+                    {
+                        DoctorID = n.Key,
+                        TotalRating = _db.Feedbacks
+                                .Where(f => f.DoctorProfileId == n.Key)
+                                .GroupBy(f => f.ServiceId)
+                                .Select(group => new
+                                {
+                                    AverageRating = group.Average(f => f.Rating)
+                                })
+                                .FirstOrDefault().AverageRating,
+                    })
+                    .ToListAsync(cancellationToken);
+            List<DoctorAnalytic> result = new List<DoctorAnalytic>();
+            foreach (var item in chart) {
+                var d = await _db.DoctorProfiles.Where(p => p.Id == item.DoctorID)
+                    .Select(n => new
+                    {
+                        Doctor = _db.Users.FirstOrDefault(p => p.Id == n.DoctorId),
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                result.Add(new Application.Dashboards.DoctorAnalytic
+                {
+                    DoctorId = d.Doctor.Id,
+                    DoctorName = $"{d.Doctor.FirstName} {d.Doctor.LastName}",
+                    TotalRating = item.TotalRating,
+                });
+            }
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
     public async Task<List<AnalyticChart>> GetNewDepositBooking(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
     {
         try
