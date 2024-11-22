@@ -49,7 +49,7 @@ internal class DashboardService : IDashboardService
     {
         try
         {
-            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Success);
+            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Done);
 
             if (startDate != default)
             {

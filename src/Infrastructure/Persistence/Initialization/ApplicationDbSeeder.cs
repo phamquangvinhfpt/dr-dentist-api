@@ -629,16 +629,19 @@ internal class ApplicationDbSeeder
                             Description = "Sâu Răng"
                         });
 
-                        _db.Feedbacks.Add(new Feedback
+                        if(appointment.Status == AppointmentStatus.Done)
                         {
-                            PatientProfileId = appointment.PatientId,
-                            DoctorProfileId = appointment.DentistId,
-                            ServiceId = s.Id,
-                            AppointmentId = appointment.Id,
-                            Rating = random.Next(1, 5),
-                            Message = $"Feedback for appointment on {appointment.AppointmentDate}",
-                            CreatedBy = appointment.PatientId
-                        });
+                            _db.Feedbacks.Add(new Feedback
+                            {
+                                PatientProfileId = appointment.PatientId,
+                                DoctorProfileId = appointment.DentistId,
+                                ServiceId = s.Id,
+                                AppointmentId = appointment.Id,
+                                Rating = random.Next(1, 5),
+                                Message = $"Feedback for appointment on {appointment.AppointmentDate}",
+                                CreatedBy = appointment.PatientId
+                            });
+                        }
 
                     }
                     else
@@ -694,23 +697,18 @@ internal class ApplicationDbSeeder
                                 t.StartDate = appointment.AppointmentDate.AddDays(+next++);
                             }
                             t = _db.TreatmentPlanProcedures.Add(t).Entity;
-
-                            if (item.SP.StepOrder == 1)
-                            {
-                                var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
-                                {
-                                    DoctorId = appointment.DentistId,
-                                    AppointmentId = appointment.Id,
-                                    PlanID = t.Id,
-                                    Date = t.StartDate,
-                                    StartTime = t.StartTime,
-                                    EndTime = t.StartTime.Value.Add(TimeSpan.FromMinutes(30)),
-                                    Status = Domain.Identity.CalendarStatus.Booked,
-                                    Type = AppointmentType.Appointment,
-                                });
-                            }
-
                         }
+                        _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                        {
+                            PatientId = appointment.PatientId,
+                            DoctorId = appointment.DentistId,
+                            AppointmentId = appointment.Id,
+                            Date = appointment.AppointmentDate,
+                            StartTime = appointment.StartTime,
+                            EndTime = appointment.StartTime.Add(TimeSpan.FromMinutes(30)),
+                            Status = Domain.Identity.CalendarStatus.Booked,
+                            Type = AppointmentType.Appointment,
+                        });
                     }
                 }
                 await SeedNonDoctorAppointmentAsync();
