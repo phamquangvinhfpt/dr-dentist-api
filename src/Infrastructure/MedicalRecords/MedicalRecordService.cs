@@ -3,6 +3,7 @@ using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.MedicalRecords;
 using FSH.WebApi.Domain.Examination;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Treatment;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Numerics;
 
 namespace FSH.WebApi.Infrastructure.MedicalRecords;
 public class MedicalRecordService : IMedicalRecordService
@@ -150,7 +152,8 @@ public class MedicalRecordService : IMedicalRecordService
             {
                 throw new BadRequestException("Not found Medical Record");
             }
-
+            var patient = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId);
+            var doctor = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId);
             return new MedicalRecordResponse
             {
                 RecordId = medicalRecord.MedicalRecord.Id,
@@ -160,9 +163,9 @@ public class MedicalRecordService : IMedicalRecordService
                 Date = medicalRecord.MedicalRecord.Date,
 
                 PatientCode = medicalRecord.Patient?.PatientCode,
-                PatientName = _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId).Result.UserName,
-                DentistName = _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId).Result.UserName,
-                AppointmentNotes = _db.Appointments.FirstOrDefaultAsync(x => x.Id == medicalRecord.Appointment.Id).Result.Notes,
+                PatientName = $"{patient.FirstName} {patient.LastName}",
+                DentistName = $"{doctor.FirstName} {doctor.LastName}",
+                AppointmentNotes = medicalRecord.Appointment.Notes,
 
                 BasicExamination = medicalRecord.BasicExamination,
                 Diagnosis = medicalRecord.Diagnosis,
@@ -217,7 +220,8 @@ public class MedicalRecordService : IMedicalRecordService
             {
                 throw new BadRequestException("Not found Medical Record");
             }
-
+            var patient = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId);
+            var doctor = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId);
             return new MedicalRecordResponse
             {
                 RecordId = medicalRecord.MedicalRecord.Id,
@@ -227,8 +231,8 @@ public class MedicalRecordService : IMedicalRecordService
                 Date = medicalRecord.MedicalRecord.Date,
 
                 PatientCode = medicalRecord.Patient?.PatientCode,
-                PatientName = _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId).Result.UserName,
-                DentistName = _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId).Result.UserName,
+                PatientName = $"{patient.FirstName} {patient.LastName}",
+                DentistName = $"{doctor.FirstName} {doctor.LastName}",
                 AppointmentNotes = _db.Appointments.FirstOrDefaultAsync(x => x.Id == medicalRecord.Appointment.Id).Result.Notes,
 
                 BasicExamination = medicalRecord.BasicExamination,
@@ -283,11 +287,11 @@ public class MedicalRecordService : IMedicalRecordService
                         .FirstOrDefault(),
                     PatientName = _db.Users
                         .Where(x => x.Id == patient.UserId)
-                        .Select(x => x.UserName)
+                        .Select(x => $"{x.FirstName} {x.LastName}")
                         .FirstOrDefault(),
                     DentistName = _db.Users
                         .Where(x => x.Id == medical.DoctorProfile.DoctorId)
-                        .Select(x => x.UserName)
+                        .Select(x => $"{x.FirstName} {x.LastName}")
                         .FirstOrDefault(),
                     AppointmentNotes = _db.Appointments
                         .Where(x => x.Id == medical.Appointment.Id)

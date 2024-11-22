@@ -464,7 +464,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     ProcedureName = sp.Procedure.Name,
                     Price = sp.Procedure.Price,
                     DoctorID = doctor.Id,
-                    DoctorName = doctor.UserName,
+                    DoctorName = $"{doctor.FirstName} {doctor.LastName}",
                     DiscountAmount = 0.3,
                     PlanCost = item.TotalCost,
                     PlanDescription = item.Note,
@@ -476,6 +476,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 }
                 result.Add(r);
             }
+            result = result.OrderBy(result => result.Step).ToList();
         }
         catch (Exception ex) {
             _logger.LogError(ex.Message, ex);

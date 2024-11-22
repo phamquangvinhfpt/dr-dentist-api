@@ -519,7 +519,8 @@ internal class ApplicationDbSeeder
                             PatientProfileId = appointment.PatientId,
                             AppointmentId = appointment.Id,
                             ServiceId = appointment.ServiceId,
-                            DepositAmount = 0,
+                            DepositAmount = s.TotalPrice * 0.3,
+                            DepositDate = DateOnly.FromDateTime(appointment.CreatedOn),
                             Amount = s.TotalPrice,
                             RemainingAmount = 0,
                             Method = Domain.Payments.PaymentMethod.BankTransfer,
@@ -543,7 +544,7 @@ internal class ApplicationDbSeeder
                             {
                                 PaymentID = payment.Id,
                                 ProcedureID = item.Procedure.Id,
-                                PaymentAmount = item.Procedure.Price,
+                                PaymentAmount = item.Procedure.Price - item.Procedure.Price * 0.3,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Completed,
                             });
                             var date = d.AddDays(next++);
@@ -557,9 +558,9 @@ internal class ApplicationDbSeeder
                                 Status = c ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Completed,
                                 Price = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
-                                DiscountAmount = 0,
-                                TotalCost = item.Procedure.Price,
-                                StartDate = date
+                                DiscountAmount = 0.3,
+                                TotalCost = item.Procedure.Price - item.Procedure.Price * 0.3,
+                                StartDate = date,
                             }).Entity;
                             var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
                             {

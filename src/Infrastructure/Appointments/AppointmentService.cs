@@ -40,6 +40,12 @@ internal class AppointmentService : IAppointmentService
     private readonly IWorkingCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private static string KEY_STAFF = "STAFF";
+    private static string KEY_DENTIST = "DENTIST";
+    private static string KEY_ADMIN = "ADMIN";
+    private static string KEY_PATIENT = "PATIENT";
+    private static string APPOINTMENT = "APPOINTMENT";
+    private static string[] ACTION = { "Get", "GetbyID" };
     public AppointmentService(
         ApplicationDbContext db,
         ICacheService cacheService,
@@ -271,6 +277,44 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var currentUser = _currentUserService.GetRole();
+            //if (currentUser.Equals(FSHRoles.Admin))
+            //{
+            //    var key = APPOINTMENT + KEY_ADMIN + filter;
+            //    var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+            //    if (r != null)
+            //    {
+            //        return r;
+            //    }
+            //}
+            //else if (currentUser.Equals(FSHRoles.Staff))
+            //{
+            //    var key = APPOINTMENT + KEY_STAFF + filter;
+            //    var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+            //    if (r != null)
+            //    {
+            //        return r;
+            //    }
+            //}
+            //else if (currentUser.Equals(FSHRoles.Dentist))
+            //{
+            //    var id = _currentUserService.GetUserId();
+            //    var key = APPOINTMENT + KEY_DENTIST + id + filter;
+            //    var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+            //    if (r != null)
+            //    {
+            //        return r;
+            //    }
+            //}
+            //else if (currentUser.Equals(FSHRoles.Patient))
+            //{
+            //    var id = _currentUserService.GetUserId();
+            //    var key = APPOINTMENT + KEY_PATIENT + id + filter;
+            //    var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+            //    if (r != null)
+            //    {
+            //        return r;
+            //    }
+            //}
             if (currentUser.Equals(FSHRoles.Patient))
             {
                 if (filter.AdvancedSearch == null)
@@ -359,6 +403,35 @@ internal class AppointmentService : IAppointmentService
                 };
                 result.Add(r);
             }
+            //if (currentUser.Equals(FSHRoles.Admin))
+            //{
+            //    var key = APPOINTMENT + KEY_ADMIN + ACTION[0];
+            //    string[] KEY = _cacheService.Get<string[]>(APPOINTMENT);
+            //    if (KEY != null)
+            //    {
+            //        KEY.ad
+            //    }
+                
+            //    _cacheService.Set(key, result);
+            //    _cacheService.Set(APPOINTMENT, KEY);
+            //}
+            //else if (currentUser.Equals(FSHRoles.Staff))
+            //{
+            //    var key = APPOINTMENT + KEY_STAFF + filter;
+            //    _cacheService.Set(key, new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize));
+            //}
+            //else if (currentUser.Equals(FSHRoles.Dentist))
+            //{
+            //    var id = _currentUserService.GetUserId();
+            //    var key = APPOINTMENT + KEY_DENTIST + id + filter;
+            //    _cacheService.Set(key, new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize));
+            //}
+            //else if (currentUser.Equals(FSHRoles.Patient))
+            //{
+            //    var id = _currentUserService.GetUserId();
+            //    var key = APPOINTMENT + KEY_PATIENT + id + filter;
+            //    _cacheService.Set(key, new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize));
+            //}
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
@@ -752,6 +825,7 @@ internal class AppointmentService : IAppointmentService
                     result.Add(r);
                 }
                 await _db.SaveChangesAsync(cancellationToken);
+                result = result.OrderBy(p => p.Step).ToList();
             }
             else
             {

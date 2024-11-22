@@ -55,7 +55,7 @@ public class TreatmentPlanController : VersionNeutralApiController
         return _treatmentPlanService.UpdateTreamentPlan(request, cancellationToken);
     }
 
-    [HttpGet("precsription/add")]
+    [HttpPost("precsription/add")]
     [OpenApiOperation("Add Prescription", "")]
     public Task<string> AddPrescriptionTreatmentPlan(AddPrescriptionRequest request, CancellationToken cancellationToken)
     {
