@@ -532,7 +532,8 @@ internal class ApplicationDbSeeder
                                 Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
                             })
                             .ToList();
-                        var next = 5;
+                        var next = 4;
+                        var d = appointment.AppointmentDate;
                         foreach (var item in sps)
                         {
                             payDetail.Add(new Domain.Payments.PaymentDetail
@@ -542,7 +543,7 @@ internal class ApplicationDbSeeder
                                 PaymentAmount = item.Procedure.Price,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Completed,
                             });
-                            var date = appointment.AppointmentDate.AddDays(+next++);
+                            var date = d.AddDays(next++);
                             // seed treatment plan
                             bool c = date > currentDate;
                             var t = _db.TreatmentPlanProcedures.Add(new Domain.Treatment.TreatmentPlanProcedures
@@ -583,10 +584,18 @@ internal class ApplicationDbSeeder
                             var preItem = _db.PrescriptionItems.Add(new Domain.Treatment.PrescriptionItem
                             {
                                 PrescriptionId = pre.Id,
-                                MedicineName = "",
-                                Dosage = "",
-                                Frequency = "",
+                                MedicineName = "Chống viêm",
+                                Dosage = "1 viên 1 lần",
+                                Frequency = "1 lần 1 ngày",
                             });
+                            if (!c)
+                            {
+                                appointment.Status = AppointmentStatus.Done;
+                            }
+                            else
+                            {
+                                appointment.Status = AppointmentStatus.Success;
+                            }
                         }
 
                         // Seed medical record

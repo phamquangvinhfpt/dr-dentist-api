@@ -233,6 +233,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             if (isCompleted == 0)
             {
                 appointment.canFeedback = true;
+                appointment.Status = AppointmentStatus.Done;
             }
 
             await _db.SaveChangesAsync(cancellationToken);
