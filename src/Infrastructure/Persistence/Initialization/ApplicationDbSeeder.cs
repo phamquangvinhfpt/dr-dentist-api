@@ -309,7 +309,7 @@ internal class ApplicationDbSeeder
 
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
 
-                for (int dayOffset = -30; dayOffset <= 30; dayOffset++)
+                for (int dayOffset = -270; dayOffset <= 30; dayOffset++)
                 {
                     var appointmentDate = currentDate.AddDays(dayOffset);
 
@@ -319,63 +319,66 @@ internal class ApplicationDbSeeder
                         continue;
                     }
 
-                    var appointmentsPerDay = random.Next(5, 11);
-                    var startHour = random.Next(8, 17);
-                    var startTime = new TimeSpan(startHour, 0, 0);
-
-                    var duration = TimeSpan.FromMinutes(30);
-
-                    var patientId = patients[random.Next(patients.Count)];
-                    var doctorId = doctor[random.Next(doctor.Count)];
-                    var service = serviceProcedures[random.Next(serviceProcedures.Count)];
-
-                    AppointmentStatus status;
-                    bool canProvideFeeback = false;
-
-                    // Xác định status dựa vào ngày
-                    if (dayOffset < 0)
+                    var appointmentsPerDay = random.Next(4, 7);
+                    for(int i = 0; i < appointmentsPerDay; i++)
                     {
-                        status = AppointmentStatus.Success;
-                        canProvideFeeback = true;
-                    }
-                    else if (dayOffset == 0)
-                    {
-                        var currentTime = DateTime.Now.TimeOfDay;
-                        if (startTime < currentTime)
+                        var startHour = random.Next(8, 17);
+                        var startTime = new TimeSpan(startHour, 0, 0);
+
+                        var duration = TimeSpan.FromMinutes(30);
+
+                        var patientId = patients[random.Next(patients.Count)];
+                        var doctorId = doctor[random.Next(doctor.Count)];
+                        var service = serviceProcedures[random.Next(serviceProcedures.Count)];
+
+                        AppointmentStatus status;
+                        bool canProvideFeeback = false;
+
+                        // Xác định status dựa vào ngày
+                        if (dayOffset < 0)
                         {
                             status = AppointmentStatus.Success;
                             canProvideFeeback = true;
+                        }
+                        else if (dayOffset == 0)
+                        {
+                            var currentTime = DateTime.Now.TimeOfDay;
+                            if (startTime < currentTime)
+                            {
+                                status = AppointmentStatus.Success;
+                                canProvideFeeback = true;
+                            }
+                            else
+                            {
+                                status = AppointmentStatus.Confirmed;
+                            }
                         }
                         else
                         {
                             status = AppointmentStatus.Confirmed;
                         }
+
+                        var appointment = new Appointment
+                        {
+                            PatientId = patientId.PatientID,
+                            DentistId = doctorId.DoctorId,
+                            ServiceId = service.ServiceID.Value,
+                            AppointmentDate = appointmentDate,
+                            StartTime = startTime,
+                            Duration = duration,
+                            Status = status,
+                            SpamCount = 0,
+                            canFeedback = canProvideFeeback,
+                            CreatedOn = DateTime.Now.AddDays(dayOffset - random.Next(0, 3)),
+                            CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+                        };
+
+                        var entry = _db.Appointments.Add(appointment).Entity;
+
+                        await _db.SaveChangesAsync();
+
+                        _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
                     }
-                    else
-                    {
-                        status = AppointmentStatus.Confirmed;
-                    }
-
-                    var appointment = new Appointment
-                    {
-                        PatientId = patientId.PatientID,
-                        DentistId = doctorId.DoctorId,
-                        ServiceId = service.ServiceID.Value,
-                        AppointmentDate = appointmentDate,
-                        StartTime = startTime,
-                        Duration = duration,
-                        Status = status,
-                        SpamCount = 0,
-                        canFeedback = canProvideFeeback,
-                        CreatedOn = DateTime.Now.AddDays(dayOffset - random.Next(0, 3)),
-                        CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
-                    };
-
-                    var entry = _db.Appointments.Add(appointment).Entity;
-
-                    await _db.SaveChangesAsync();
-
-                    _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
                 }
             }
 

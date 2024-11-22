@@ -68,6 +68,7 @@ internal class DashboardService : IDashboardService
                         FailAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Failed).Distinct().ToList().Count(),
                         SuccessAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Success || p.Status == Domain.Appointments.AppointmentStatus.Done).Distinct().ToList().Count(),
                     })
+                    .OrderBy(p => p.Date)
                     .ToListAsync(cancellationToken);
             return chart;
         }
@@ -105,7 +106,7 @@ internal class DashboardService : IDashboardService
                                     AverageRating = group.Average(f => f.Rating)
                                 })
                                 .FirstOrDefault().AverageRating,
-                    })
+                    }).OrderByDescending(p => p.TotalRating)
                     .ToListAsync(cancellationToken);
             List<DoctorAnalytic> result = new List<DoctorAnalytic>();
             foreach (var item in chart) {
@@ -153,6 +154,7 @@ internal class DashboardService : IDashboardService
                         Date = n.Key.Value,
                         Total = n.Sum(p => p.Amount).Value,
                     })
+                    .OrderBy(p => p.Date)
                     .ToListAsync(cancellationToken);
             return chart;
         }
@@ -184,6 +186,7 @@ internal class DashboardService : IDashboardService
                         Date = n.Key.Value,
                         Total = n.Sum(p => p.Amount).Value,
                     })
+                    .OrderBy(p => p.Date)
                     .ToListAsync(cancellationToken);
             return chart;
         }
@@ -220,6 +223,7 @@ internal class DashboardService : IDashboardService
                         Date = n.Key,
                         Total = n.Count(),
                     })
+                    .OrderBy(p => p.Date)
                     .ToListAsync(cancellationToken);
             return chart;
         }
@@ -265,7 +269,7 @@ internal class DashboardService : IDashboardService
                                     chartQuery.Any(a => a.Id == p.AppointmentId.Value)
                                 )
                                 .Sum(p => p.Amount ?? 0)
-                    })
+                    }).OrderByDescending(p => p.TotalRevenue)
                     .ToListAsync(cancellationToken);
             return chart;
         }
