@@ -309,7 +309,7 @@ internal class AppointmentService : IAppointmentService
                 {
                     count = query.Count();
                 }
-                return new PaginationResponse<AppointmentResponse>(o, count, filter.PageNumber, filter.PageSize)
+                return new PaginationResponse<AppointmentResponse>(o, count, filter.PageNumber, filter.PageSize);
             }
             if (currentUser.Equals(FSHRoles.Patient))
             {
