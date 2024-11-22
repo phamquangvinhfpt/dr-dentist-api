@@ -269,6 +269,7 @@ public class MedicalRecordService : IMedicalRecordService
 
             var medicalRecords = await _db.MedicalRecords
                 .Where(x => x.PatientProfileId == patient.Id)
+                .OrderByDescending(x => x.Date)
                 .Select(medical => new MedicalRecordResponse
                 {
                     RecordId = medical.Id,

@@ -51,4 +51,12 @@ public class DashboardController : VersionedApiController
     {
         return _dashboardService.DoctorAnalytic(start, end, cancellationToken);
     }
+
+    //checked
+    [HttpGet("analytic/booking")]
+    [OpenApiOperation("Analytis booking status", "")]
+    public Task<List<BookingAnalytic>> BookingAnalytics([FromQuery] DateOnly start, [FromQuery] DateOnly end, CancellationToken cancellationToken)
+    {
+        return _dashboardService.BookingAnalytics(start, end, cancellationToken);
+    }
 }

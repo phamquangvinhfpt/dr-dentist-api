@@ -45,6 +45,39 @@ internal class DashboardService : IDashboardService
         _notificationService = notificationService;
     }
 
+    public async Task<List<BookingAnalytic>> BookingAnalytics(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var chartQuery = _db.Appointments.Where(p => p.Status != Domain.Appointments.AppointmentStatus.Pending);
+
+            if (startDate != default)
+            {
+                chartQuery = chartQuery.Where(p => startDate <= p.AppointmentDate);
+            }
+            if (endDate != default)
+            {
+                chartQuery = chartQuery.Where(p => p.AppointmentDate <= endDate);
+            }
+            var chart = await chartQuery
+                    .GroupBy(p => p.AppointmentDate)
+                    .Select(n => new BookingAnalytic
+                    {
+                        Date = n.Key,
+                        CancelAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Cancelled).Distinct().ToList().Count(),
+                        FailAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Failed).Distinct().ToList().Count(),
+                        SuccessAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Success || p.Status == Domain.Appointments.AppointmentStatus.Done).Distinct().ToList().Count(),
+                    })
+                    .ToListAsync(cancellationToken);
+            return chart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
     public async Task<List<DoctorAnalytic>> DoctorAnalytic(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
     {
         try

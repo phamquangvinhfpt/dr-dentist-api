@@ -63,7 +63,7 @@ public static class FSHPermissions
         new("View Hangfire", FSHAction.View, FSHResource.Hangfire),
 
         // USERS
-        new("View Users", FSHAction.View, FSHResource.Users),
+        new("View Users", FSHAction.View, FSHResource.Users, new[] { ROOT, PATIENT, STAFF, DENTIST }),
         new("Search Users", FSHAction.Search, FSHResource.Users),
         new("Create Users", FSHAction.Create, FSHResource.Users),
         new("Update Users", FSHAction.Update, FSHResource.Users),
