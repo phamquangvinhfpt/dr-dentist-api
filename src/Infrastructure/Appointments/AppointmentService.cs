@@ -372,7 +372,16 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var user_role = _currentUserService.GetRole();
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
+
+            if (user_role == FSHRoles.Patient)
+            {
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                if (appointment.PatientId != patientProfile.Id)
+                {
+                    throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
+                }
+            }
             if (user_role == FSHRoles.Patient)
             {
                 if (appointment.SpamCount < 3)
@@ -391,14 +400,6 @@ internal class AppointmentService : IAppointmentService
                     pay.Status = Domain.Payments.PaymentStatus.Canceled;
                     await _db.SaveChangesAsync(cancellationToken);
                     return;
-                }
-            }
-            if (user_role == FSHRoles.Patient)
-            {
-                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-                if (appointment.PatientId != patientProfile.Id)
-                {
-                    throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
                 }
             }
             if (appointment.DentistId != null)
@@ -485,18 +486,20 @@ internal class AppointmentService : IAppointmentService
             else if(appoint.Status == AppointmentStatus.Success)
             {
                 var query = await _db.TreatmentPlanProcedures
-                    .Where(p => p.AppointmentID == request.AppointmentID).ToListAsync();
+                    .Where(p => p.AppointmentID == request.AppointmentID && p.Status == Domain.Treatment.TreatmentPlanStatus.Active).OrderByDescending(p => p.StartDate).ToListAsync();
                 foreach (var item in query) {
-                    if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active) {
-                        item.Status = Domain.Treatment.TreatmentPlanStatus.Cancelled;
-                        var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == item.Id);
-                        calendar.Status = CalendarStatus.Canceled;
-                        _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
-                            appoint.DentistId,
-                            calendar.Date.Value,
-                            TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
-                    }
+                    item.Status = Domain.Treatment.TreatmentPlanStatus.Cancelled;
+                    var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == item.Id);
+                    calendar.Status = CalendarStatus.Canceled;
+                    _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
+                        appoint.DentistId,
+                        calendar.Date.Value,
+                        TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
                 }
+            }
+            else
+            {
+                throw new BadRequestException("The Appointment can not be cancel");
             }
             appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
