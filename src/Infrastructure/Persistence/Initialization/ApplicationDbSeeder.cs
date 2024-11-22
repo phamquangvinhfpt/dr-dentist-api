@@ -508,7 +508,7 @@ internal class ApplicationDbSeeder
 
                 foreach (var appointment in appointments)
                 {
-                    if (appointment.AppointmentDate < currentDate)
+                    if (appointment.Status == AppointmentStatus.Success)
                     {
                         var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
                         var payment = _db.Payments.Add(new Domain.Payments.Payment

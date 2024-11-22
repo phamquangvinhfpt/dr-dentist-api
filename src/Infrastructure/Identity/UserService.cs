@@ -414,6 +414,7 @@ internal partial class UserService : IUserService
             foreach (var user in users)
             {
                 var doctor = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
+                var rating = await GetDoctorRating(doctor.Id);
                 doctorResponses.Add(new GetDoctorResponse
                 {
                     Id = user.Id,
@@ -425,7 +426,7 @@ internal partial class UserService : IUserService
                     PhoneNumber = user.PhoneNumber,
                     UserName = user.UserName,
                     DoctorProfile = doctor,
-                    Rating = await GetDoctorRating(doctor.Id),
+                    Rating = Math.Round(rating, 0),
                 });
             }
         }catch(Exception ex)
@@ -447,7 +448,7 @@ internal partial class UserService : IUserService
         })
         .FirstOrDefaultAsync();
 
-        return Math.Round(rating.AverageRating, 0);
+        return rating?.AverageRating ?? 0;
     }
 
     public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)

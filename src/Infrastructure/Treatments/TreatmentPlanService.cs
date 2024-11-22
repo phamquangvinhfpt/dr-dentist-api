@@ -446,11 +446,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
             var tps = await _db.TreatmentPlanProcedures
                 .Where(p => p.AppointmentID == appointmentId)
                 .ToListAsync(cancellationToken);
-            var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == tps[0].DoctorID);
-
-            var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
             foreach (var item in tps) {
-
+                var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == tps[0].DoctorID);
+                var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
                 var sp = await _db.ServiceProcedures
                 .Where(p => p.Id == item.ServiceProcedureId)
                 .Select(b => new
