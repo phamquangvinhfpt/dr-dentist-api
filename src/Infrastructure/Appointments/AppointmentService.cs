@@ -336,6 +336,7 @@ internal class AppointmentService : IAppointmentService
                 var pUser = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
                 var r = new AppointmentResponse
                 {
+                    PatientUserID = pUser.Id,
                     AppointmentId = a.Appointment.Id,
                     PatientId = a.Appointment.PatientId,
                     ServiceId = a.Appointment.ServiceId,
@@ -625,6 +626,7 @@ internal class AppointmentService : IAppointmentService
             var patient = await _userManager.FindByIdAsync(appointments.Patient.UserId);
             var result = new AppointmentResponse
             {
+                PatientUserID = patient.Id,
                 AppointmentId = appointments.Appointment.Id,
                 PatientId = appointments.Appointment.PatientId,
                 ServiceId = appointments.Appointment.ServiceId,
@@ -969,6 +971,7 @@ internal class AppointmentService : IAppointmentService
                 var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
                 result.Add(new AppointmentResponse
                 {
+                    PatientUserID = patient.Id,
                     AppointmentId = a.Appointment.Id,
                     PatientId = a.Appointment.PatientId,
                     ServiceId = a.Appointment.ServiceId,
