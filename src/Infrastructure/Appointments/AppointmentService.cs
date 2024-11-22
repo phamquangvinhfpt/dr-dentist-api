@@ -292,25 +292,25 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
-            string key = APPOINTMENT + _currentUserService.GetUserId();
+            //string key = APPOINTMENT + _currentUserService.GetUserId();
             var currentUser = _currentUserService.GetRole();
             int count = 0;
-            var o = await _cacheService.GetAsync<List<AppointmentResponse>>(key);
+            //var o = await _cacheService.GetAsync<List<AppointmentResponse>>(key);
 
-            if (o != null) {
-                var query = _db.Appointments
-                        .IgnoreQueryFilters()
-                        .AsNoTracking();
-                if (currentUser == FSHRoles.Dentist || currentUser == FSHRoles.Patient)
-                {
-                    count = query.Count();
-                }
-                if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
-                {
-                    count = query.Count();
-                }
-                return new PaginationResponse<AppointmentResponse>(o, count, filter.PageNumber, filter.PageSize);
-            }
+            //if (o != null) {
+            //    var query = _db.Appointments
+            //            .IgnoreQueryFilters()
+            //            .AsNoTracking();
+            //    if (currentUser == FSHRoles.Dentist || currentUser == FSHRoles.Patient)
+            //    {
+            //        count = query.Count();
+            //    }
+            //    if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
+            //    {
+            //        count = query.Count();
+            //    }
+            //    return new PaginationResponse<AppointmentResponse>(o, count, filter.PageNumber, filter.PageSize);
+            //}
             if (currentUser.Equals(FSHRoles.Patient))
             {
                 if (filter.AdvancedSearch == null)
@@ -399,20 +399,20 @@ internal class AppointmentService : IAppointmentService
                 };
                 result.Add(r);
             }
-            key = APPOINTMENT + _currentUserService.GetUserId();
-            List<string> KEY = _cacheService.Get<List<string>>(APPOINTMENT);
-            if (KEY != null)
-            {
-                KEY.Add(key);
-                await _cacheService.RefreshAsync(APPOINTMENT);
-            }
-            else
-            {
-                List<string> r = new List<string>();
-                r.Add(key);
-                await _cacheService.SetAsync(APPOINTMENT, KEY);
-            }
-            await _cacheService.SetAsync(key, result);
+            //key = APPOINTMENT + _currentUserService.GetUserId();
+            //List<string> KEY = _cacheService.Get<List<string>>(APPOINTMENT);
+            //if (KEY != null)
+            //{
+            //    KEY.Add(key);
+            //    await _cacheService.RefreshAsync(APPOINTMENT);
+            //}
+            //else
+            //{
+            //    List<string> r = new List<string>();
+            //    r.Add(key);
+            //    await _cacheService.SetAsync(APPOINTMENT, KEY);
+            //}
+            //await _cacheService.SetAsync(key, result);
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
