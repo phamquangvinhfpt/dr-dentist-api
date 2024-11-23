@@ -641,7 +641,7 @@ internal class ApplicationDbSeeder
                                 DoctorProfileId = appointment.DentistId,
                                 ServiceId = s.Id,
                                 AppointmentId = appointment.Id,
-                                Rating = random.Next(1, 5),
+                                Rating = random.Next(3, 5),
                                 Message = $"Feedback for appointment on {appointment.AppointmentDate}",
                                 CreatedBy = appointment.PatientId
                             });

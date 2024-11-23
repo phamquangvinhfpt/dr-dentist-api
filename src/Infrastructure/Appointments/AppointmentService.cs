@@ -166,9 +166,6 @@ internal class AppointmentService : IAppointmentService
                 Amount = service.TotalPrice,
                 Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
             }).Entity;
-
-            await _db.SaveChangesAsync(cancellationToken);
-
             var result = new PayAppointmentRequest
             {
                 Key = isStaffOrAdmin ? null : _jobService.Schedule(
@@ -194,6 +191,7 @@ internal class AppointmentService : IAppointmentService
             _jobService.Schedule(
                     () => DeleteKeyRedisAppointment(),
                     TimeSpan.FromSeconds(2));
+            await _db.SaveChangesAsync(cancellationToken);
             return result;
         }
         catch (Exception ex)
