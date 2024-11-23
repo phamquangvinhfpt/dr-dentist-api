@@ -842,6 +842,7 @@ internal class AppointmentService : IAppointmentService
                         PlanDescription = null,
                         Step = sp.StepOrder,
                         Status = entry.Status,
+                        hasPrescription = false,
                     };
                     if(sp.StepOrder == 1)
                     {
