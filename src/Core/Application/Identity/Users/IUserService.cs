@@ -60,4 +60,5 @@ public interface IUserService : ITransientService
     Task<DoctorDetailResponse> GetDoctorDetail(string doctorId);
     Task<UserProfileResponse> GetUserDetailByID(string userId, CancellationToken cancellationToken);
     Task<PaginationResponse<ListUserDTO>> GetAllStaff(UserListFilter request, CancellationToken cancellationToken);
+    void TestSendMail();
 }

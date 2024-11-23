@@ -320,8 +320,8 @@ internal class ApplicationDbSeeder
                     }
 
                     var appointmentsPerDay = random.Next(4, 7);
-                    for(int i = 0; i < appointmentsPerDay; i++)
-                    {
+                    //for(int i = 0; i < appointmentsPerDay; i++)
+                    //{
                         var startHour = random.Next(8, 17);
                         var startTime = new TimeSpan(startHour, 0, 0);
 
@@ -378,7 +378,7 @@ internal class ApplicationDbSeeder
                         await _db.SaveChangesAsync();
 
                         _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
-                    }
+                    //}
                 }
             }
 

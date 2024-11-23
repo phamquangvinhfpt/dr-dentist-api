@@ -888,4 +888,19 @@ internal partial class UserService : IUserService
 
         return new PaginationResponse<ListUserDTO>(list_user, totalRecords, request.PageNumber, request.PageSize);
     }
+
+    public void TestSendMail()
+    {
+        RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+        {
+            Email = "toandoan2804@gmail.com",
+            UserName = "Toan",
+            BanReason = "Was Ban"
+        };
+        var mailRequest = new MailRequest(
+                    new List<string> { "toandoan2804@gmail.com" },
+                    "Ban",
+                    _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+        _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+    }
 }

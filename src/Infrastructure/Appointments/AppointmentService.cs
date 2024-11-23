@@ -5,6 +5,7 @@ using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
@@ -40,6 +41,8 @@ internal class AppointmentService : IAppointmentService
     private readonly IWorkingCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailTemplateService _templateService;
+    private readonly IMailService _mailService;
     private static string KEY_STAFF = "STAFF";
     private static string KEY_DENTIST = "DENTIST";
     private static string KEY_ADMIN = "ADMIN";
@@ -55,6 +58,8 @@ internal class AppointmentService : IAppointmentService
         IJobService jobService,
         ILogger<AppointmentService> logger,
         IWorkingCalendarService workingCalendarService,
+        IMailService mailService,
+        IEmailTemplateService templateService,
         INotificationService notificationService)
     {
         _db = db;
@@ -66,6 +71,8 @@ internal class AppointmentService : IAppointmentService
         _workingCalendarService = workingCalendarService;
         _cacheService = cacheService;
         _notificationService = notificationService;
+        _templateService = templateService;
+        _mailService = mailService;
     }
 
     public Task<bool> CheckAppointmentDateValid(DateOnly date)
@@ -265,10 +272,32 @@ internal class AppointmentService : IAppointmentService
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
                 // send mail to notify block action
+                RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                {
+                    Email = user.Email,
+                    UserName = $"{user.FirstName} {user.LastName}",
+                    BanReason = "Tài khoản của bạn gần đây có hành động spam booking nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
+                };
+                var mailRequest = new MailRequest(
+                            new List<string> { user.Email },
+                            "Tài khoản tạm khóa",
+                            _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
             }
             else
             {
                 user.AccessFailedCount += 1;
+                //RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                //{
+                //    Email = user.Email,
+                //    UserName = $"{user.FirstName} {user.LastName}",
+                //    BanReason = "Tài khoản của bạn gần đây có hành động spam booking nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
+                //};
+                //var mailRequest = new MailRequest(
+                //            new List<string> { user.Email },
+                //            "Tài khoản tạm khóa",
+                //            _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+                //_jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
             }
 
             var pay = await _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentID);
@@ -454,6 +483,17 @@ internal class AppointmentService : IAppointmentService
                     var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
                     pay.Status = Domain.Payments.PaymentStatus.Canceled;
                     await _db.SaveChangesAsync(cancellationToken);
+                    RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                    {
+                        Email = user.Email,
+                        UserName = $"{user.FirstName} {user.LastName}",
+                        BanReason = "Tài khoản của bạn gần đây có hành động bất thường nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
+                    };
+                    var mailRequest = new MailRequest(
+                                new List<string> { user.Email },
+                                "Tài khoản tạm khóa",
+                                _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+                    _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
                     return;
                 }
             }

@@ -1,8 +1,11 @@
+using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
+using FSH.WebApi.Infrastructure.Identity;
 using System.Security.Claims;
 
 namespace FSH.WebApi.Host.Controllers.Identity;
@@ -215,7 +218,13 @@ public class UsersController : VersionNeutralApiController
     {
         return _userService.GetAllStaff(request, cancellationToken);
     }
-
+    [HttpGet("test")]
+    [OpenApiOperation("Test send mail.", "")]
+    [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
+    public async Task TestSendmail()
+    {
+        _userService.TestSendMail();
+    }
     private string GetOriginFromRequest()
     {
         if (Request.Headers.TryGetValue("x-from-host", out var values))

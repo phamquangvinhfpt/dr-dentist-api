@@ -572,7 +572,7 @@ internal class ServiceService : IServiceService
 
     public async Task<bool> CheckExistingService(Guid serviceId)
     {
-        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == serviceId && p.IsActive);
+        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == serviceId);
         return service is not null;
     }
 
@@ -596,11 +596,11 @@ internal class ServiceService : IServiceService
             {
                 if (!wasUsed)
                 {
-                    foreach(var item in request.ProcedureID)
+                    var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+                    foreach (var item in request.ProcedureID)
                     {
                         var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == request.ServiceID && p.ProcedureId == item)
                             ?? throw new BadRequestException("This Procedure is not in this Service");
-                        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
                         var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
                         service.TotalPrice -= procedure.Price;
                         _db.ServiceProcedures.Remove(sp);
