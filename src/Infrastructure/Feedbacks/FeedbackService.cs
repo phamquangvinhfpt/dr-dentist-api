@@ -33,6 +33,7 @@ internal class FeedbackService : IFeedbackService
 
     public async Task<string> CreateFeedback(CreateFeedbackRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
@@ -61,9 +62,11 @@ internal class FeedbackService : IFeedbackService
                 CreatedOn = DateTime.UtcNow,
             });
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return _t["Success"];
         }
         catch (Exception ex) {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
         }
@@ -93,6 +96,7 @@ internal class FeedbackService : IFeedbackService
 
     public async Task<string> UpdateFeedback(CreateFeedbackRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
@@ -118,10 +122,12 @@ internal class FeedbackService : IFeedbackService
 
             appointment.canFeedback = false;
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return _t["Success"];
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
         }

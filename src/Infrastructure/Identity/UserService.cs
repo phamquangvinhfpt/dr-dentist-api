@@ -307,6 +307,11 @@ internal partial class UserService : IUserService
             {
                 throw new BadRequestException("Doctor Information should be include");
             }
+            var user = await _userManager.FindByIdAsync(request.DoctorID);
+            if(user == null)
+            {
+                throw new NotFoundException("Warning: Error when find user");
+            }
             var profile = _db.DoctorProfiles.Where(p => p.DoctorId == request.DoctorID).FirstOrDefault();
             if (profile != null)
             {
@@ -453,6 +458,7 @@ internal partial class UserService : IUserService
 
     public async Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             if (request.IsUpdateProfile)
@@ -523,9 +529,11 @@ internal partial class UserService : IUserService
                 }
                 await _db.SaveChangesAsync(cancellationToken);
             }
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }

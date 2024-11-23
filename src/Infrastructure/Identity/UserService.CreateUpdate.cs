@@ -107,6 +107,7 @@ internal partial class UserService
     //checked
     public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
@@ -192,11 +193,12 @@ internal partial class UserService
             }
 
             await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
-
+            await transaction.CommitAsync(cancellationToken);
             return string.Join(Environment.NewLine, messages);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw;
         }

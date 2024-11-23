@@ -70,6 +70,7 @@ internal class ServiceService : IServiceService
 
     public async Task ModifyProcedureAsync(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var existingProcedure = await _db.Procedures
@@ -239,10 +240,11 @@ internal class ServiceService : IServiceService
                     await _db.SaveChangesAsync();
                 }
             }
-
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }
@@ -275,6 +277,7 @@ internal class ServiceService : IServiceService
 
     public async Task ModifyServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var existing = await _db.Services.Where(p => p.Id == request.ServiceID).FirstOrDefaultAsync(cancellationToken) ?? throw new BadRequestException("Service not found.");
@@ -333,9 +336,11 @@ internal class ServiceService : IServiceService
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }
@@ -584,6 +589,7 @@ internal class ServiceService : IServiceService
 
     public async Task<ServiceDTO> AddOrDeleteProcedureToService(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var currentServiceProcedures = await _db.ServiceProcedures
@@ -649,7 +655,6 @@ internal class ServiceService : IServiceService
                     current_service.DeletedBy = _currentUserService.GetUserId();
                     id = entry.Id;
                 }
-                await _db.SaveChangesAsync(cancellationToken);
             }
             else
             {
@@ -748,10 +753,12 @@ internal class ServiceService : IServiceService
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return await GetServiceByID(id, cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }
@@ -759,6 +766,7 @@ internal class ServiceService : IServiceService
 
     public async Task<string> DeleteProcedureAsync(Guid id, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == id) ?? throw new BadRequestException("Procedure Not Found");
@@ -825,10 +833,12 @@ internal class ServiceService : IServiceService
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return _t["Sucessfully"];
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }
@@ -862,6 +872,7 @@ internal class ServiceService : IServiceService
 
     private async Task UpdateServiceProcedure(Guid serviceId, Guid oldProcedureId, Guid newProcedureId, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var service = await _db.Services
@@ -922,9 +933,11 @@ internal class ServiceService : IServiceService
                 oldProcedure.DeletedOn = DateTime.UtcNow;
             }
             await _db.SaveChangesAsync();
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }

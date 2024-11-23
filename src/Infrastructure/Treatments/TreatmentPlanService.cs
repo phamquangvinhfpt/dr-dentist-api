@@ -51,6 +51,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
@@ -121,9 +122,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 });
             }
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }
@@ -131,6 +134,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
     public async Task AddPrescription(AddPrescriptionRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var existing = await _db.Prescriptions.AnyAsync(p => p.TreatmentID == request.TreatmentID);
@@ -174,9 +178,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
 
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }
@@ -205,6 +211,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
     public async Task<string> ExaminationAndChangeTreatmentStatus(Guid id, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var plan = await _db.TreatmentPlanProcedures
@@ -237,10 +244,12 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
 
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return _t["Success"];
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }

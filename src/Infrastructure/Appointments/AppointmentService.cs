@@ -98,6 +98,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             bool hasDoctor = request.DentistId == null;
@@ -166,6 +167,7 @@ internal class AppointmentService : IAppointmentService
                 Amount = service.TotalPrice,
                 Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
             }).Entity;
+            await _db.SaveChangesAsync(cancellationToken);
             var result = new PayAppointmentRequest
             {
                 Key = isStaffOrAdmin ? null : _jobService.Schedule(
@@ -191,29 +193,32 @@ internal class AppointmentService : IAppointmentService
             //_jobService.Schedule(
             //        () => DeleteKeyRedisAppointment(),
             //        TimeSpan.FromSeconds(2));
-            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return result;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new ApplicationException("An error occurred while creating the appointment", ex);
         }
     }
 
-    //public async void DeleteKeyRedisAppointment()
-    //{
-    //    try
-    //    {
-    //        List<string> KEY = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
-    //        if(KEY.Count() > 0)
-    //        {
-    //            await _cacheService.RemoveAsync(APPOINTMENT);
-    //        }
-    //    } catch (Exception ex) {
-    //        _logger.LogError(ex.Message);
-    //    }
-    //}
+    public async void DeleteKeyRedisAppointment()
+    {
+        try
+        {
+            List<string> KEY = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+            if (KEY.Count() > 0)
+            {
+                await _cacheService.RemoveAsync(APPOINTMENT);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+        }
+    }
 
     public async Task VerifyAndFinishBooking(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
@@ -285,17 +290,6 @@ internal class AppointmentService : IAppointmentService
             else
             {
                 user.AccessFailedCount += 1;
-                //RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
-                //{
-                //    Email = user.Email,
-                //    UserName = $"{user.FirstName} {user.LastName}",
-                //    BanReason = "Tài khoản của bạn gần đây có hành động spam booking nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
-                //};
-                //var mailRequest = new MailRequest(
-                //            new List<string> { user.Email },
-                //            "Tài khoản tạm khóa",
-                //            _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
-                //_jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
             }
 
             var pay = await _db.Payments.FirstOrDefaultAsync(p => p.Id == paymentID);
@@ -451,6 +445,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task RescheduleAppointment(RescheduleRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user_role = _currentUserService.GetRole();
@@ -481,6 +476,9 @@ internal class AppointmentService : IAppointmentService
                     var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
                     pay.Status = Domain.Payments.PaymentStatus.Canceled;
                     await _db.SaveChangesAsync(cancellationToken);
+
+                    await transaction.CommitAsync(cancellationToken);
+
                     RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
                     {
                         Email = user.Email,
@@ -517,6 +515,8 @@ internal class AppointmentService : IAppointmentService
             cal.Date = request.AppointmentDate;
             await _db.SaveChangesAsync(cancellationToken);
 
+            await transaction.CommitAsync(cancellationToken);
+
             if (appointment.DentistId != null)
             {
                 _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
@@ -527,6 +527,7 @@ internal class AppointmentService : IAppointmentService
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }
@@ -550,6 +551,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task CancelAppointment(CancelAppointmentRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user_role = _currentUserService.GetRole();
@@ -600,15 +602,18 @@ internal class AppointmentService : IAppointmentService
             }
             appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }
 
     public async Task ScheduleAppointment(ScheduleAppointmentRequest request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var currentUserRole = _currentUserService.GetRole();
@@ -647,9 +652,11 @@ internal class AppointmentService : IAppointmentService
             appointment.DentistId = dprofile.Id;
             calendar.DoctorId = dprofile.Id;
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
         }
     }
@@ -761,6 +768,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task<List<TreatmentPlanResponse>> ToggleAppointment(Guid id, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         var result = new List<TreatmentPlanResponse>();
         try
         {
@@ -850,6 +858,7 @@ internal class AppointmentService : IAppointmentService
                 }
                 await _db.SaveChangesAsync(cancellationToken);
                 result = result.OrderBy(p => p.Step).ToList();
+                await transaction.CommitAsync(cancellationToken);
             }
             else
             {
@@ -858,6 +867,7 @@ internal class AppointmentService : IAppointmentService
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message);
         }
         return result;
@@ -1097,6 +1107,7 @@ internal class AppointmentService : IAppointmentService
 
     public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             if(request.DoctorID == default || request.AppointmentID == default)
@@ -1146,10 +1157,12 @@ internal class AppointmentService : IAppointmentService
             calendar.DoctorId = request.DoctorID;
 
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return _t["Success"];
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
         }
