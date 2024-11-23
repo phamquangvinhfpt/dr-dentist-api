@@ -98,7 +98,9 @@ internal class CustomerInformationService : ICustomerInformationService
             var spec = new EntitiesByPaginationFilterSpec<ContactInfor>(request);
             var contacts = await _db.ContactInfor
                 .AsNoTracking()
+                .Where(p => p.StaffId != null)
                 .WithSpecification(spec)
+                .OrderByDescending(p => p.CreatedOn)
                 .ToListAsync(cancellationToken);
 
             var list = new List<ContactResponse>();
@@ -121,9 +123,48 @@ internal class CustomerInformationService : ICustomerInformationService
                     var user = await _userManager.FindByIdAsync(contact.StaffId);
                     if (user != null)
                     {
-                        contactResponse.StaffName = user.UserName;
+                        contactResponse.StaffName = $"{user.FirstName} {user.LastName}";
                     }
                 }
+
+                list.Add(contactResponse);
+            }
+
+            int count = await _db.ContactInfor
+                .CountAsync(cancellationToken);
+            return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<ContactResponse>> GetAllContactRequestNonStaff(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var spec = new EntitiesByPaginationFilterSpec<ContactInfor>(request);
+            var contacts = await _db.ContactInfor
+                .AsNoTracking()
+                .Where(p => p.StaffId == null)
+                .WithSpecification(spec)
+                .OrderByDescending(p => p.CreatedOn)
+                .ToListAsync(cancellationToken);
+
+            var list = new List<ContactResponse>();
+            foreach (var contact in contacts)
+            {
+                var contactResponse = new ContactResponse
+                {
+                    ContactId = contact.Id,
+                    Content = contact.Content,
+                    CreateDate = contact.CreatedOn,
+                    Email = contact.Email,
+                    Phone = contact.Phone,
+                    Title = contact.Title,
+                };
 
                 list.Add(contactResponse);
             }

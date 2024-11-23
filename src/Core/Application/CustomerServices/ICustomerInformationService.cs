@@ -12,4 +12,5 @@ public interface ICustomerInformationService : ITransientService
     Task AddCustomerInformation(ContactInformationRequest request);
     Task<PaginationResponse<ContactResponse>> GetAllContactRequest(PaginationFilter request, CancellationToken cancellationToken);
     Task AddStaffForContact(AddStaffForContactRequest request, CancellationToken cancellationToken);
+    Task<PaginationResponse<ContactResponse>> GetAllContactRequestNonStaff(PaginationFilter request, CancellationToken cancellationToken);
 }

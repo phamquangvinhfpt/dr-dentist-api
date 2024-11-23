@@ -17,10 +17,17 @@ public class CustomerContactController : VersionNeutralApiController
     }
     [HttpPost("get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.ContactInformation)]
-    [OpenApiOperation("Get all Contact request with pagination.", "")]
+    [OpenApiOperation("Get all Contact request with pagination has staff.", "")]
     public async Task<PaginationResponse<ContactResponse>> GetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         return await _customerInformationService.GetAllContactRequest(request, cancellationToken);
+    }
+    [HttpPost("non-staff/get-all")]
+    [MustHavePermission(FSHAction.View, FSHResource.ContactInformation)]
+    [OpenApiOperation("Get all Contact request with pagination that do not have staff.", "")]
+    public async Task<PaginationResponse<ContactResponse>> NonStaffGetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return await _customerInformationService.GetAllContactRequestNonStaff(request, cancellationToken);
     }
     [HttpPost("add")]
     [TenantIdHeader]
