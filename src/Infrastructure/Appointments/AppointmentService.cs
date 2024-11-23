@@ -188,9 +188,9 @@ internal class AppointmentService : IAppointmentService
                         TimeSpan.FromMinutes(11),
                         cancellationToken);
             }
-            _jobService.Schedule(
-                    () => DeleteKeyRedisAppointment(),
-                    TimeSpan.FromSeconds(2));
+            //_jobService.Schedule(
+            //        () => DeleteKeyRedisAppointment(),
+            //        TimeSpan.FromSeconds(2));
             await _db.SaveChangesAsync(cancellationToken);
             return result;
         }
@@ -201,19 +201,19 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async void DeleteKeyRedisAppointment()
-    {
-        try
-        {
-            List<string> KEY = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
-            if(KEY.Count() > 0)
-            {
-                await _cacheService.RemoveAsync(APPOINTMENT);
-            }
-        } catch (Exception ex) {
-            _logger.LogError(ex.Message);
-        }
-    }
+    //public async void DeleteKeyRedisAppointment()
+    //{
+    //    try
+    //    {
+    //        List<string> KEY = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+    //        if(KEY.Count() > 0)
+    //        {
+    //            await _cacheService.RemoveAsync(APPOINTMENT);
+    //        }
+    //    } catch (Exception ex) {
+    //        _logger.LogError(ex.Message);
+    //    }
+    //}
 
     public async Task VerifyAndFinishBooking(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
