@@ -82,7 +82,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             else
             {
                 var past_procedure = await _db.ServiceProcedures
-                    .Where(p => p.ServiceId == plan.SP.ServiceId && p.StepOrder == plan.SP.StepOrder - 1)
+                    .Where(p => p.ServiceId == plan.SP.ServiceId && p.StepOrder == (plan.SP.StepOrder - 1))
                     .FirstOrDefaultAsync();
 
                 var past_plan = await _db.TreatmentPlanProcedures

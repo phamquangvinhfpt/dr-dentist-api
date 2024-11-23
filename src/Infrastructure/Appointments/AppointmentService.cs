@@ -473,6 +473,10 @@ internal class AppointmentService : IAppointmentService
             appointment.Duration = request.Duration;
             appointment.LastModifiedBy = _currentUserService.GetUserId();
             appointment.LastModifiedOn = DateTime.Now;
+            var cal = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+            cal.StartTime = request.StartTime;
+            cal.EndTime = request.StartTime.Add(request.Duration);
+            cal.Date = request.AppointmentDate;
             await _db.SaveChangesAsync(cancellationToken);
 
             if (appointment.DentistId != null)
