@@ -201,7 +201,7 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    private async void DeleteKeyRedisAppointment()
+    public async void DeleteKeyRedisAppointment()
     {
         try
         {
