@@ -9,6 +9,7 @@ using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Payments;
+using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Payments;
@@ -288,6 +289,29 @@ public class PaymentService : IPaymentService
                 });
             }
             return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<Transaction>> GetAllTransactions(PaginationFilter filter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var spec = new EntitiesByPaginationFilterSpec<Transaction>(filter);
+            var result = await _context.Transactions
+                .AsNoTracking()
+                .WithSpecification(spec)
+                .OrderByDescending(x => x.TransactionDate)
+                .ToListAsync(cancellationToken);
+
+            var count = await _context.Transactions.CountAsync();
+
+            return new PaginationResponse<Transaction>(result, count, filter.PageNumber, filter.PageSize);
+
         }
         catch (Exception ex)
         {

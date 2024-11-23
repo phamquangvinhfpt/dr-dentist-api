@@ -20,4 +20,5 @@ public class TreatmentPlanResponse
     public string? PlanDescription { get; set; }
     public int Step { get; set; }
     public TreatmentPlanStatus Status { get; set; }
+    public bool hasPrescription { get; set; } = false;
 }

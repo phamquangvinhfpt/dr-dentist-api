@@ -40,4 +40,11 @@ public class PaymentController : VersionedApiController
     {
         return _paymentService.GetPaymentDetail(id, cancellationToken);
     }
+
+    [HttpGet("transaction/get-all")]
+    [OpenApiOperation("Get transactions", "")]
+    public Task<PaginationResponse<Transaction>> GetTransactions(PaginationFilter filter, CancellationToken cancellationToken)
+    {
+        return _paymentService.GetAllTransactions(filter, cancellationToken);
+    }
 }

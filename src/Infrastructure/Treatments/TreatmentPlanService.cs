@@ -282,6 +282,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+                var hasPre = await _db.Prescriptions.AnyAsync(p => p.TreatmentID == item.Id);
                 var r = new TreatmentPlanResponse
                 {
                     TreatmentPlanID = item.Id,
@@ -295,6 +296,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
+                    hasPrescription = hasPre,
                 };
                 if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active)
                 {
@@ -457,6 +459,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+                var hasPre = await _db.Prescriptions.AnyAsync(p => p.TreatmentID == item.Id);
                 var r = new TreatmentPlanResponse
                 {
                     TreatmentPlanID = item.Id,
@@ -470,6 +473,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
+                    hasPrescription = hasPre,
                 };
                 if (item.Status != Domain.Treatment.TreatmentPlanStatus.Pending) {
                     r.StartDate = item.StartDate.Value;
