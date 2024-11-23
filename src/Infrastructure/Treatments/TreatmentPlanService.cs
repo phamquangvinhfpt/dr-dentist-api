@@ -471,7 +471,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
                 };
-                if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active) {
+                if (item.Status != Domain.Treatment.TreatmentPlanStatus.Pending) {
                     r.StartDate = item.StartDate.Value;
                 }
                 result.Add(r);
