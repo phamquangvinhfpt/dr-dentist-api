@@ -61,7 +61,7 @@ public class AddTreatmentDetailValidator : CustomValidator<AddTreatmentDetail>
             })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
+                if (startTime < TimeSpan.FromHours(8) || startTime >= TimeSpan.FromHours(20))
                 {
                     return "Start time must be between 8:00 AM and 8:00 PM";
                 }

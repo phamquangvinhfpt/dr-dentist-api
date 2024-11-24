@@ -97,8 +97,8 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
             .Must(duration => duration >= TimeSpan.FromMinutes(30) && duration <= TimeSpan.FromHours(1))
             .WithMessage("Duration must be between 30 minutes and 1 hours")
             .Must((request, duration) =>
-                (request.StartTime + duration) <= TimeSpan.FromHours(17))
-            .WithMessage("Appointment must end before 5:00 PM");
+                (request.StartTime + duration) <= TimeSpan.FromHours(20))
+            .WithMessage("Appointment must end before 8:00 PM");
 
         //RuleFor(p => p.Type)
         //    .IsInEnum()
