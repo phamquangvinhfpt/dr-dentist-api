@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static QRCoder.PayloadGenerator.SwissQrCode;
 
 namespace FSH.WebApi.Infrastructure.CustomerInformations;
 internal class CustomerInformationService : ICustomerInformationService
@@ -130,7 +131,50 @@ internal class CustomerInformationService : ICustomerInformationService
                 list.Add(contactResponse);
             }
 
-            int count = await _db.ContactInfor
+            int count = await _db.ContactInfor.Where(p => p.StaffId != null)
+                .CountAsync(cancellationToken);
+            return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<ContactResponse>> GetAllContactRequestForStaff(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var staffID = _currentUserService.GetUserId().ToString();
+            var user = await _userManager.FindByIdAsync(staffID) ?? throw new Exception("Warning: Error when find staff.");
+            var spec = new EntitiesByPaginationFilterSpec<ContactInfor>(request);
+            var contacts = await _db.ContactInfor
+                .AsNoTracking()
+                .Where(p => p.StaffId == staffID)
+                .WithSpecification(spec)
+                .OrderByDescending(p => p.CreatedOn)
+                .ToListAsync(cancellationToken);
+
+            var list = new List<ContactResponse>();
+            foreach (var contact in contacts)
+            {
+                var contactResponse = new ContactResponse
+                {
+                    StaffId = contact.StaffId,
+                    ContactId = contact.Id,
+                    Content = contact.Content,
+                    CreateDate = contact.CreatedOn,
+                    Email = contact.Email,
+                    Phone = contact.Phone,
+                    Title = contact.Title,
+                    StaffName = $"{user.FirstName} {user.LastName}"
+                };
+
+                list.Add(contactResponse);
+            }
+
+            int count = await _db.ContactInfor.Where(p => p.StaffId == staffID)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
         }
@@ -169,7 +213,7 @@ internal class CustomerInformationService : ICustomerInformationService
                 list.Add(contactResponse);
             }
 
-            int count = await _db.ContactInfor
+            int count = await _db.ContactInfor.Where(p => p.StaffId == null)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
         }
