@@ -22,6 +22,15 @@ public class CustomerContactController : VersionNeutralApiController
     {
         return await _customerInformationService.GetAllContactRequest(request, cancellationToken);
     }
+
+    [HttpPost("staff/get-all")]
+    [MustHavePermission(FSHAction.View, FSHResource.ContactInformation)]
+    [OpenApiOperation("Get all Contact request with pagination of staff.", "")]
+    public async Task<PaginationResponse<ContactResponse>> GetAllServiceForStaffAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return await _customerInformationService.GetAllContactRequestForStaff(request, cancellationToken);
+    }
+
     [HttpPost("non-staff/get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.ContactInformation)]
     [OpenApiOperation("Get all Contact request with pagination that do not have staff.", "")]
