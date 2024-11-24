@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.Common.Interfaces;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
@@ -212,11 +213,33 @@ internal class ApplicationDbSeeder
                 NormalizedUserName = staffUserName.ToUpperInvariant(),
                 IsActive = true
             };
-
             _logger.LogInformation("Seeding Default Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
             var password = new PasswordHasher<ApplicationUser>();
             staffUser.PasswordHash = password.HashPassword(staffUser, MultitenancyConstants.DefaultPassword);
             await _userManager.CreateAsync(staffUser);
+        }
+
+        if (await _userManager.Users.FirstOrDefaultAsync(u => u.Email == "staff@root.com")
+                          is not ApplicationUser staffUser2)
+        {
+            string staffUserName = $"{_currentTenant.Id.Trim()}.{FSHRoles.Staff}".ToLowerInvariant();
+            
+            staffUser2 = new ApplicationUser
+            {
+                FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+                LastName = $"{FSHRoles.Staff} 2",
+                Email = "staff2@root.com",
+                UserName = "Staff 2",
+                EmailConfirmed = true,
+                PhoneNumberConfirmed = true,
+                NormalizedEmail = "staff2@root.com"?.ToUpperInvariant(),
+                NormalizedUserName = "Staff 2".ToUpperInvariant(),
+                IsActive = true
+            };
+            _logger.LogInformation("Seeding Default Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
+            var password = new PasswordHasher<ApplicationUser>();
+            staffUser2.PasswordHash = password.HashPassword(staffUser2, MultitenancyConstants.DefaultPassword);
+            await _userManager.CreateAsync(staffUser2);
         }
 
         // Assign role to user
@@ -224,6 +247,11 @@ internal class ApplicationDbSeeder
         {
             _logger.LogInformation("Assigning Staff Role to Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
             await _userManager.AddToRoleAsync(staffUser, FSHRoles.Staff);
+        }
+        if (!await _userManager.IsInRoleAsync(staffUser2, FSHRoles.Staff))
+        {
+            _logger.LogInformation("Assigning Staff Role to Staff User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(staffUser2, FSHRoles.Staff);
         }
     }
     private async Task SeedServiceAsync()
@@ -236,6 +264,7 @@ internal class ApplicationDbSeeder
             _logger.LogInformation("Started to Seed Service.");
             string proceData = await File.ReadAllTextAsync(dataPath);
             var procedures = _serializerService.Deserialize<List<Procedure>>(proceData);
+
             await _db.Procedures.AddRangeAsync(procedures);
             await _db.SaveChangesAsync();
 
@@ -246,6 +275,7 @@ internal class ApplicationDbSeeder
             foreach (var service in services)
             {
                 service.TotalPrice = totalPrice;
+                service.CreatedOn = DateTime.Now;
             }
             await _db.Services.AddRangeAsync(services);
             await _db.SaveChangesAsync();
@@ -258,7 +288,9 @@ internal class ApplicationDbSeeder
                     {
                         ServiceId = service.Id,
                         ProcedureId = procedures[i].Id,
-                        StepOrder = i + 1
+                        StepOrder = i + 1,
+                        CreatedOn = DateTime.Now,
+                        CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
                     });
                 }
             }
@@ -266,6 +298,7 @@ internal class ApplicationDbSeeder
             var pros = await _db.Procedures.ToListAsync();
             foreach (var pro in pros)
             {
+                pro.CreatedOn = DateTime.Now;
                 pro.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
             }
             await _db.SaveChangesAsync();
@@ -715,10 +748,9 @@ internal class ApplicationDbSeeder
                         });
                     }
                 }
-                await SeedNonDoctorAppointmentAsync();
-
                 _db.SaveChanges();
-
+                await SeedNonDoctorAppointmentAsync();
+                await SeedPatientDemoAsync();
             }
             _logger.LogInformation($"Seeded Payment");
         }
@@ -748,7 +780,6 @@ internal class ApplicationDbSeeder
             var patients = _serializerService.Deserialize<List<PatientProfile>>(patientData);
             var doctors = _serializerService.Deserialize<List<DoctorProfile>>(doctorData);
             List<ApplicationUser> doctor = new List<ApplicationUser>();
-            List<ApplicationUser> staff = new List<ApplicationUser>();
             List<ApplicationUser> patient = new List<ApplicationUser>();
             int flash = 0;
             int d_profile_index = 0;
@@ -756,17 +787,12 @@ internal class ApplicationDbSeeder
             foreach (var user in users)
             {
                 var entry = _db.Users.Add(user).Entity;
-                if (flash < 5)
+                if (flash < 10)
                 {
                     doctors[d_profile_index].DoctorId = entry.Id;
                     doctor.Add(entry);
                     flash++;
                     d_profile_index++;
-                }
-                else if (flash >= 5 && flash < 10)
-                {
-                    staff.Add(entry);
-                    flash++;
                 }
                 else
                 {
@@ -789,14 +815,6 @@ internal class ApplicationDbSeeder
                 profile.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
             }
             await _db.SaveChangesAsync();
-            foreach (var user in staff)
-            {
-                if (!await _userManager.IsInRoleAsync(user, FSHRoles.Staff))
-                {
-                    _logger.LogInformation("Assigning Staff Role to User for '{tenantId}' Tenant.", _currentTenant.Id);
-                    await _userManager.AddToRoleAsync(user, FSHRoles.Staff);
-                }
-            }
             foreach (var user in patient)
             {
                 if (!await _userManager.IsInRoleAsync(user, FSHRoles.Patient))
@@ -817,6 +835,236 @@ internal class ApplicationDbSeeder
             }
             await _db.SaveChangesAsync();
             _logger.LogInformation("Seeded Users.");
+        }
+    }
+
+    private async Task SeedPatientDemoAsync()
+    {
+        //patient demo 1
+        var patientDemo1 = new ApplicationUser
+        {
+            FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+            LastName = FSHRoles.Admin,
+            Email = "patient1@demo.com",
+            UserName = "patient1.demo",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            NormalizedEmail = "patient1@demo.com"?.ToUpperInvariant(),
+            NormalizedUserName = "patient1.demo".ToUpperInvariant(),
+            IsActive = true
+        };
+
+        _logger.LogInformation("Seeding Default patient User for '{tenantId}' Tenant.", _currentTenant.Id);
+        var password = new PasswordHasher<ApplicationUser>();
+        patientDemo1.PasswordHash = password.HashPassword(patientDemo1, MultitenancyConstants.DefaultPassword);
+        await _userManager.CreateAsync(patientDemo1);
+
+        //patient demo 2
+        var patientDemo2 = new ApplicationUser
+        {
+            FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+            LastName = FSHRoles.Admin,
+            Email = "patient2@demo.com",
+            UserName = "patient2.demo",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            NormalizedEmail = "patient2@demo.com"?.ToUpperInvariant(),
+            NormalizedUserName = "patient2.demo".ToUpperInvariant(),
+            IsActive = true
+        };
+
+        _logger.LogInformation("Seeding Default patient User for '{tenantId}' Tenant.", _currentTenant.Id);
+        patientDemo2.PasswordHash = password.HashPassword(patientDemo2, MultitenancyConstants.DefaultPassword);
+        await _userManager.CreateAsync(patientDemo2);
+
+        //patient demo 3
+        var patientDemo3 = new ApplicationUser
+        {
+            FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+            LastName = FSHRoles.Admin,
+            Email = "patient3@demo.com",
+            UserName = "patient3.demo",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            NormalizedEmail = "patient3@demo.com"?.ToUpperInvariant(),
+            NormalizedUserName = "patient3.demo".ToUpperInvariant(),
+            IsActive = true
+        };
+
+        _logger.LogInformation("Seeding Default patient User for '{tenantId}' Tenant.", _currentTenant.Id);
+        patientDemo3.PasswordHash = password.HashPassword(patientDemo3, MultitenancyConstants.DefaultPassword);
+        await _userManager.CreateAsync(patientDemo3);
+
+        //patient demo 4
+        var patientDemo4 = new ApplicationUser
+        {
+            FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+            LastName = FSHRoles.Admin,
+            Email = "patient4@demo.com",
+            UserName = "patient4.demo",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            NormalizedEmail = "patient4@demo.com"?.ToUpperInvariant(),
+            NormalizedUserName = "patient4.demo".ToUpperInvariant(),
+            IsActive = true
+        };
+
+        _logger.LogInformation("Seeding Default patient User for '{tenantId}' Tenant.", _currentTenant.Id);
+        patientDemo4.PasswordHash = password.HashPassword(patientDemo4, MultitenancyConstants.DefaultPassword);
+        await _userManager.CreateAsync(patientDemo4);
+
+        //patient demo 5
+        var patientDemo5 = new ApplicationUser
+        {
+            FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
+            LastName = FSHRoles.Admin,
+            Email = "patient5@demo.com",
+            UserName = "patient5.demo",
+            EmailConfirmed = true,
+            PhoneNumberConfirmed = true,
+            NormalizedEmail = "patient5@demo.com"?.ToUpperInvariant(),
+            NormalizedUserName = "patient5.demo".ToUpperInvariant(),
+            IsActive = true
+        };
+
+        _logger.LogInformation("Seeding Default patient User for '{tenantId}' Tenant.", _currentTenant.Id);
+        patientDemo5.PasswordHash = password.HashPassword(patientDemo5, MultitenancyConstants.DefaultPassword);
+        await _userManager.CreateAsync(patientDemo5);
+        // Assign role to user
+        if (!await _userManager.IsInRoleAsync(patientDemo1, FSHRoles.Patient))
+        {
+            _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(patientDemo1, FSHRoles.Patient);
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            var pa = await _userManager.FindByEmailAsync(patientDemo1.Email);
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = pa.Id,
+                PatientCode = code,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+            });
+            _db.SaveChanges();
+        }
+        if (!await _userManager.IsInRoleAsync(patientDemo2, FSHRoles.Patient))
+        {
+            _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(patientDemo2, FSHRoles.Patient);
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            var pa = await _userManager.FindByEmailAsync(patientDemo2.Email);
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = pa.Id,
+                PatientCode = code,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+            });
+            _db.SaveChanges();
+        }
+        if (!await _userManager.IsInRoleAsync(patientDemo3, FSHRoles.Patient))
+        {
+            _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(patientDemo3, FSHRoles.Patient);
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            var pa = await _userManager.FindByEmailAsync(patientDemo3.Email);
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = pa.Id,
+                PatientCode = code,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+            });
+            _db.SaveChanges();
+        }
+        if (!await _userManager.IsInRoleAsync(patientDemo4, FSHRoles.Patient))
+        {
+            _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(patientDemo4, FSHRoles.Patient);
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            var pa = await _userManager.FindByEmailAsync(patientDemo4.Email);
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = pa.Id,
+                PatientCode = code,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+            });
+            _db.SaveChanges();
+        }
+        if (!await _userManager.IsInRoleAsync(patientDemo5, FSHRoles.Patient))
+        {
+            _logger.LogInformation("Assigning Basic Role to Admin 2 User for '{tenantId}' Tenant.", _currentTenant.Id);
+            await _userManager.AddToRoleAsync(patientDemo5, FSHRoles.Patient);
+            var amountP = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+            string code = "BN";
+            if (amountP.Count() < 10)
+            {
+                code += $"00{amountP.Count()}";
+            }
+            else if (amountP.Count() < 100)
+            {
+                code += $"0{amountP.Count()}";
+            }
+            else
+            {
+                code += $"{amountP.Count()}";
+            }
+            var pa = await _userManager.FindByEmailAsync(patientDemo5.Email);
+            await _db.PatientProfiles.AddAsync(new PatientProfile
+            {
+                UserId = pa.Id,
+                PatientCode = code,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
+            });
+            _db.SaveChanges();
         }
     }
     private double GetToltalPrice(List<Procedure> procedures)

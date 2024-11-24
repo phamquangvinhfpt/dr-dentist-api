@@ -44,7 +44,7 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
                 {
                     return false;
                 }
@@ -52,9 +52,9 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
             })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
                 {
-                     return "Start time must be between 8:00 AM and 5:00 PM";
+                     return "Start time must be between 8:00 AM and 8:00 PM";
                 }
                 return "Start time must be greater than current time";
             });

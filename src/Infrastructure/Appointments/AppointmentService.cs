@@ -567,7 +567,13 @@ internal class AppointmentService : IAppointmentService
                     throw new Exception("Only Patient can cancel their appointment");
                 }
             }
-            
+            if(appoint.Status == AppointmentStatus.Done ||
+                appoint.Status == AppointmentStatus.Failed ||
+                appoint.Status == AppointmentStatus.Pending ||
+                appoint.Status == AppointmentStatus.Cancelled)
+            {
+                throw new BadRequestException("Appointment can not be cancel. Check Status");
+            }
             if (appoint.Status == AppointmentStatus.Confirmed) {
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
 

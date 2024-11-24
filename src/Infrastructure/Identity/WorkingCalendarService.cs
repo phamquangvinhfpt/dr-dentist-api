@@ -177,7 +177,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             .OrderBy(a => a.StartTime).ToListAsync();
 
         var startOfDay = new TimeSpan(8, 0, 0);
-        var endOfDay = new TimeSpan(17, 0, 0);
+        var endOfDay = new TimeSpan(20, 0, 0);
         //var lunchStart = new TimeSpan(12, 0, 0);
         //var lunchEnd = new TimeSpan(14, 0, 0);
 
