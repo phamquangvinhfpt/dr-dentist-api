@@ -844,7 +844,7 @@ internal class ApplicationDbSeeder
         var patientDemo1 = new ApplicationUser
         {
             FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-            LastName = FSHRoles.Staff,
+            LastName = FSHRoles.Patient,
             Email = "patient1@demo.com",
             UserName = "patient1.demo",
             EmailConfirmed = true,
@@ -863,7 +863,7 @@ internal class ApplicationDbSeeder
         var patientDemo2 = new ApplicationUser
         {
             FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-            LastName = FSHRoles.Staff,
+            LastName = FSHRoles.Patient,
             Email = "patient2@demo.com",
             UserName = "patient2.demo",
             EmailConfirmed = true,
@@ -881,7 +881,7 @@ internal class ApplicationDbSeeder
         var patientDemo3 = new ApplicationUser
         {
             FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-            LastName = FSHRoles.Staff,
+            LastName = FSHRoles.Patient,
             Email = "patient3@demo.com",
             UserName = "patient3.demo",
             EmailConfirmed = true,
@@ -899,7 +899,7 @@ internal class ApplicationDbSeeder
         var patientDemo4 = new ApplicationUser
         {
             FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-            LastName = FSHRoles.Staff,
+            LastName = FSHRoles.Patient,
             Email = "patient4@demo.com",
             UserName = "patient4.demo",
             EmailConfirmed = true,
@@ -917,7 +917,7 @@ internal class ApplicationDbSeeder
         var patientDemo5 = new ApplicationUser
         {
             FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
-            LastName = FSHRoles.Staff,
+            LastName = FSHRoles.Patient,
             Email = "patient5@demo.com",
             UserName = "patient5.demo",
             EmailConfirmed = true,
