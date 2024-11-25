@@ -211,6 +211,10 @@ public class AppointmentController : VersionNeutralApiController
         try
         {
             var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+            if(keys == null)
+            {
+                return;
+            }
             foreach (string key in keys) {
                 _cacheService.Remove(key);
             }

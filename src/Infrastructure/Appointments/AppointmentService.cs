@@ -292,17 +292,6 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
-            //string key = RedisKeyGenerator.GenerateAppointmentKey(
-            //    _currentUserService.GetUserId().ToString(),
-            //    filter,
-            //    date,
-            //    APPOINTMENT
-            //);
-            //var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
-            //if (r != null)
-            //{
-            //    return r;
-            //}
             var currentUser = _currentUserService.GetRole();
             int count = 0;
             if (currentUser.Equals(FSHRoles.Patient))
@@ -337,7 +326,7 @@ internal class AppointmentService : IAppointmentService
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
-            
+
             appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty);
 
             if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
