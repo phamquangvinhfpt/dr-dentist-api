@@ -202,7 +202,7 @@ public class PaymentService : IPaymentService
                     Payment = p,
                     Patient = _context.PatientProfiles.FirstOrDefault(patient => patient.Id == p.PatientProfileId),
                     Service = _context.Services.IgnoreQueryFilters().FirstOrDefault(service => service.Id == p.ServiceId),
-                    Appointment = _context.Appointments.FirstOrDefault(appointment => appointment.Id == p.AppointmentId),
+                    Appointment = _context.Appointments.IgnoreQueryFilters().FirstOrDefault(appointment => appointment.Id == p.AppointmentId),
                 }).ToListAsync(cancellationToken);
 
             foreach ( var payment in payments)
