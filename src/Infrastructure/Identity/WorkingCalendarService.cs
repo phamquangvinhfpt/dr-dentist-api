@@ -291,14 +291,6 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == currentUserId);
                 filter.AdvancedSearch.Fields.Add("DoctorId");
                 filter.AdvancedSearch.Keyword = profile.Id.ToString();
-                //if (filter.AdvancedSearch?.Keyword != null &&
-                //    filter.AdvancedSearch.Fields.Contains("Date"))
-                //{
-                //    if (DateOnly.TryParse(filter.AdvancedSearch.Keyword, out var parsedDate))
-                //    {
-                //        searchDate = parsedDate;
-                //    }
-                //}
             }
 
             var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);

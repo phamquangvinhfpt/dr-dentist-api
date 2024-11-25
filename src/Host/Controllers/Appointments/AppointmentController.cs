@@ -190,7 +190,7 @@ public class AppointmentController : VersionNeutralApiController
         {
             return r;
         }
-        var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
+        var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
         await _cacheService.SetAsync(key, result);
         var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
         if (keys != null)

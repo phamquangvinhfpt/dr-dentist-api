@@ -1177,7 +1177,6 @@ internal class AppointmentService : IAppointmentService
             var result = new List<GetWorkingDetailResponse>();
             var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
             var appointmentsQuery = _db.WorkingCalendars
-                .IgnoreQueryFilters()
                 .AsNoTracking()
                 .Where(p => p.Type == AppointmentType.FollowUp);
 
