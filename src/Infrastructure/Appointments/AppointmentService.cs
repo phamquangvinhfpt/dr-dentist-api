@@ -294,29 +294,6 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var currentUser = _currentUserService.GetRole();
-            int count = 0;
-            if (currentUser.Equals(FSHRoles.Patient))
-            {
-                if (filter.AdvancedSearch == null)
-                {
-                    filter.AdvancedSearch = new Search();
-                    filter.AdvancedSearch.Fields = new List<string>();
-                }
-                filter.AdvancedSearch.Fields.Add("PatientId");
-                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-                filter.AdvancedSearch.Keyword = patientProfile.Id.ToString();
-            }
-            else if (currentUser.Equals(FSHRoles.Dentist))
-            {
-                if (filter.AdvancedSearch == null)
-                {
-                    filter.AdvancedSearch = new Search();
-                    filter.AdvancedSearch.Fields = new List<string>();
-                }
-                filter.AdvancedSearch.Fields.Add("DentistId");
-                var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
-                filter.AdvancedSearch.Keyword = dProfile.Id.ToString();
-            }
             var result = new List<AppointmentResponse>();
             var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
             var appointmentsQuery = _db.Appointments
@@ -329,18 +306,21 @@ internal class AppointmentService : IAppointmentService
             }
 
             appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty);
-
-            if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
+            if(currentUser == FSHRoles.Dentist)
             {
-                count = appointmentsQuery.Count();
+                var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
+                appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id);
             }
-
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec).OrderBy(p => p.AppointmentDate);
-
-            if (currentUser == FSHRoles.Dentist || currentUser == FSHRoles.Patient)
+            else if (currentUser == FSHRoles.Patient)
             {
-                count = appointmentsQuery.Count();
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                appointmentsQuery = appointmentsQuery.Where(p => p.PatientId == patientProfile.Id);
             }
+            if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Dentist) {
+                appointmentsQuery = appointmentsQuery.Where(w => w.Status == AppointmentStatus.Success || w.Status == AppointmentStatus.Confirmed);
+            }
+            int count = appointmentsQuery.Count();
+            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.AppointmentDate).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -852,7 +832,7 @@ internal class AppointmentService : IAppointmentService
                 {
                     Payment = a,
                     pProfile = _db.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId),
-                    Service = _db.Services.FirstOrDefault(p => p.Id == a.ServiceId),
+                    Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(p => p.Id == a.ServiceId),
                     Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList()
                 })
                 .FirstOrDefaultAsync();
@@ -1041,7 +1021,7 @@ internal class AppointmentService : IAppointmentService
 
             var count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.AppointmentDate).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -1185,9 +1165,24 @@ internal class AppointmentService : IAppointmentService
                 appointmentsQuery = appointmentsQuery.Where(w => w.Date == date);
             }
 
+            if (currentUser == FSHRoles.Dentist)
+            {
+                var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
+                appointmentsQuery = appointmentsQuery.Where(p => p.DoctorId == dProfile.Id);
+            }
+            else if (currentUser == FSHRoles.Patient)
+            {
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                appointmentsQuery = appointmentsQuery.Where(p => p.PatientId == patientProfile.Id);
+            }
+            if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Dentist)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.Status == CalendarStatus.Booked);
+            }
+
             var count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            appointmentsQuery = appointmentsQuery.WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.Date).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
