@@ -18,6 +18,7 @@ using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Configuration;
 using FSH.WebApi.Infrastructure.Persistence.Context;
+using FSH.WebApi.Infrastructure.Redis;
 using FSH.WebApi.Shared.Authorization;
 using FSH.WebApi.Shared.Notifications;
 using Microsoft.AspNetCore.Identity;
@@ -43,12 +44,9 @@ internal class AppointmentService : IAppointmentService
     private readonly INotificationService _notificationService;
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
-    private static string KEY_STAFF = "STAFF";
-    private static string KEY_DENTIST = "DENTIST";
-    private static string KEY_ADMIN = "ADMIN";
-    private static string KEY_PATIENT = "PATIENT";
     private static string APPOINTMENT = "APPOINTMENT";
-    private static string[] ACTION = { "Get", "GetbyID" };
+    private static string FOLLOW = "FOLLOW";
+    private static string NON = "NON";
     public AppointmentService(
         ApplicationDbContext db,
         ICacheService cacheService,
@@ -190,9 +188,6 @@ internal class AppointmentService : IAppointmentService
                         TimeSpan.FromMinutes(11),
                         cancellationToken);
             }
-            //_jobService.Schedule(
-            //        () => DeleteKeyRedisAppointment(),
-            //        TimeSpan.FromSeconds(2));
             await transaction.CommitAsync(cancellationToken);
             return result;
         }
@@ -201,22 +196,6 @@ internal class AppointmentService : IAppointmentService
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new ApplicationException("An error occurred while creating the appointment", ex);
-        }
-    }
-
-    public async void DeleteKeyRedisAppointment()
-    {
-        try
-        {
-            List<string> KEY = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
-            if (KEY.Count() > 0)
-            {
-                await _cacheService.RemoveAsync(APPOINTMENT);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex.Message);
         }
     }
 
@@ -313,25 +292,19 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
-            //string key = APPOINTMENT + _currentUserService.GetUserId();
+            //string key = RedisKeyGenerator.GenerateAppointmentKey(
+            //    _currentUserService.GetUserId().ToString(),
+            //    filter,
+            //    date,
+            //    APPOINTMENT
+            //);
+            //var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
+            //if (r != null)
+            //{
+            //    return r;
+            //}
             var currentUser = _currentUserService.GetRole();
             int count = 0;
-            //var o = await _cacheService.GetAsync<List<AppointmentResponse>>(key);
-
-            //if (o != null) {
-            //    var query = _db.Appointments
-            //            .IgnoreQueryFilters()
-            //            .AsNoTracking();
-            //    if (currentUser == FSHRoles.Dentist || currentUser == FSHRoles.Patient)
-            //    {
-            //        count = query.Count();
-            //    }
-            //    if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Admin)
-            //    {
-            //        count = query.Count();
-            //    }
-            //    return new PaginationResponse<AppointmentResponse>(o, count, filter.PageNumber, filter.PageSize);
-            //}
             if (currentUser.Equals(FSHRoles.Patient))
             {
                 if (filter.AdvancedSearch == null)

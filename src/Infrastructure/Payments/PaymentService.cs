@@ -162,7 +162,7 @@ public class PaymentService : IPaymentService
         }
     }
 
-    public async Task<PaginationResponse<PaymentResponse>> GetALlPayment(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<PaymentResponse>> GetALlPayment(PaginationFilter filter, DateOnly Sdate, DateOnly Edate, CancellationToken cancellationToken)
     {
         try
         {
@@ -184,13 +184,17 @@ public class PaymentService : IPaymentService
             var paymentQuery = _context.Payments
                     .AsNoTracking();
 
-            if(date != default)
+            if(Sdate != default)
             {
-                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate == date);
+                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate > Sdate || p.CreatedOn > DateTime.Parse(Sdate.ToString()));
+            }
+            if (Edate != default)
+            {
+                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate < Edate || p.CreatedOn < DateTime.Parse(Edate.ToString()));
             }
             var count = paymentQuery.Count();
             var spec = new EntitiesByPaginationFilterSpec<Payment>(filter);
-            paymentQuery = paymentQuery.WithSpecification(spec);
+            paymentQuery = paymentQuery.OrderByDescending(p => p.CreatedOn).WithSpecification(spec);
 
             var payments = await paymentQuery
                 .Select(p => new
@@ -213,12 +217,12 @@ public class PaymentService : IPaymentService
                     PaymentId = payment.Payment.Id,
                     PatientProfileId = payment.Patient.Id,
                     PatientCode = payment.Patient.PatientCode,
-                    PatientName = patient.UserName,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
                     DepositAmount = payment.Payment.DepositAmount!.Value,
                     DepositDate = payment.Payment.DepositAmount.Value == 0 ? payment.Payment.DepositDate : default,
                     RemainingAmount = payment.Payment.RemainingAmount!.Value,
                     TotalAmount = payment.Payment.Amount!.Value,
-                    Method = Domain.Payments.PaymentMethod.None,
+                    Method = payment.Payment.Method,
                     Status = payment.Payment.Status,
                 };
                 result.Add(response);

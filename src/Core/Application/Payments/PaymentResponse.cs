@@ -21,4 +21,5 @@ public class PaymentResponse
     public double TotalAmount { get; set; }
     public PaymentMethod Method { get; set; }
     public PaymentStatus Status { get; set; }
+
 }

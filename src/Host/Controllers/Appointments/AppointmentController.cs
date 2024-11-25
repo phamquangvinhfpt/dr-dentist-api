@@ -1,8 +1,11 @@
 ﻿using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.Common.Caching;
+using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
+using FSH.WebApi.Infrastructure.Redis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +13,16 @@ namespace FSH.WebApi.Host.Controllers.Appointments;
 public class AppointmentController : VersionNeutralApiController
 {
     private readonly IAppointmentService _appointmentService;
-
-    public AppointmentController(IAppointmentService appointmentService)
+    private readonly ICacheService _cacheService;
+    private readonly ICurrentUser _currentUserService;
+    private static string APPOINTMENT = "APPOINTMENT";
+    private static string FOLLOW = "FOLLOW";
+    private static string NON = "NON";
+    public AppointmentController(ICacheService cacheService, IAppointmentService appointmentService, ICurrentUser currentUserService)
     {
         _appointmentService = appointmentService;
+        _cacheService = cacheService;
+        _currentUserService = currentUserService;
     }
     //checked
     [HttpPost("create")]
@@ -21,6 +30,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Create Appointment", "")]
     public Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request)
     {
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -29,6 +39,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Cancel Appointment", "")]
     public Task<string> CancelAppointment(CancelAppointmentRequest request)
     {
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -37,6 +48,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Reschedule Appointment", "")]
     public Task<string> RescheduleAppointment(RescheduleRequest request)
     {
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
     //checked
@@ -45,7 +57,30 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Appointments", "")]
     public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
-        return await _appointmentService.GetAppointments(filter, date, cancellationToken);
+        string key = RedisKeyGenerator.GenerateAppointmentKey(
+        _currentUserService.GetUserId().ToString(),
+        filter,
+        date,
+        APPOINTMENT
+    );
+        var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
+        if (r != null) {
+            return r;
+        }
+        var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
+        await _cacheService.SetAsync(key, result);
+        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        if (keys != null) {
+            keys.Add(key);
+            await _cacheService.RemoveAsync(APPOINTMENT);
+            await _cacheService.SetAsync(APPOINTMENT, keys);
+        }
+        else
+        {
+            List<string> list = new List<string> { key };
+            await _cacheService.SetAsync(APPOINTMENT, list);
+        }
+        return result;
     }
 
     //[HttpPost("schedule")]
@@ -58,7 +93,7 @@ public class AppointmentController : VersionNeutralApiController
     [HttpGet("get/{id}")]
     [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
     [OpenApiOperation("Get Appointment by ID", "")]
-    public Task<AppointmentResponse> ScheduleAppointment(Guid id, CancellationToken cancellationToken)
+    public Task<AppointmentResponse> GetAppointmentByID(Guid id, CancellationToken cancellationToken)
     {
         return _appointmentService.GetAppointmentByID(id, cancellationToken);
     }
@@ -68,6 +103,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Toggle Appointment Status, Use for Doctor Click and verify patient who came to clinic", "")]
     public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
     {
+        DeleteRedisCode();
         return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 
@@ -83,6 +119,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Send request for payment method", "")]
     public Task<string> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -90,6 +127,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Cancel request for payment", "")]
     public async Task<string> CancelPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
+        await DeleteRedisCode();
         return await _appointmentService.CancelPayment(request, cancellationToken);
     }
 
@@ -98,7 +136,32 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Appointments that have non-doctor", "")]
     public async Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, [FromQuery] DateOnly date, TimeSpan time, CancellationToken cancellationToken)
     {
-        return await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
+        string key = RedisKeyGenerator.GenerateAppointmentKey(
+        _currentUserService.GetUserId().ToString(),
+        filter,
+        date,
+        NON
+    );
+        var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
+        if (r != null)
+        {
+            return r;
+        }
+        var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
+        await _cacheService.SetAsync(key, result);
+        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        if (keys != null)
+        {
+            keys.Add(key);
+            await _cacheService.RemoveAsync(APPOINTMENT);
+            await _cacheService.SetAsync(APPOINTMENT, keys);
+        }
+        else
+        {
+            List<string> list = new List<string> { key };
+            await _cacheService.SetAsync(APPOINTMENT, list);
+        }
+        return result;
     }
 
     [HttpPost("non-doctor/add-doctor")]
@@ -106,6 +169,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Add Doctor to Appointments that have non-doctor", "")]
     public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
     {
+        await DeleteRedisCode();
         return await _appointmentService.AddDoctorToAppointments(request, cancellationToken);
     }
 
@@ -115,6 +179,46 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Follow up Appointments", "")]
     public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
+        string key = RedisKeyGenerator.GenerateAppointmentKey(
+            _currentUserService.GetUserId().ToString(),
+            filter,
+            date,
+            FOLLOW
+        );
+        var r = await _cacheService.GetAsync<PaginationResponse<GetWorkingDetailResponse>>(key);
+        if (r != null)
+        {
+            return r;
+        }
+        var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
+        await _cacheService.SetAsync(key, result);
+        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        if (keys != null)
+        {
+            keys.Add(key);
+            await _cacheService.RemoveAsync(APPOINTMENT);
+            await _cacheService.SetAsync(APPOINTMENT, keys);
+        }
+        else
+        {
+            List<string> list = new List<string> { key };
+            await _cacheService.SetAsync(APPOINTMENT, list);
+        }
         return await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
+    }
+    public async Task DeleteRedisCode()
+    {
+        try
+        {
+            var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+            foreach (string key in keys) {
+                _cacheService.Remove(key);
+            }
+            _cacheService.Remove(APPOINTMENT);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
     }
 }

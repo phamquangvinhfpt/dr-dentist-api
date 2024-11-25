@@ -27,11 +27,11 @@ public class PaymentController : VersionedApiController
     //     await _paymentService.CheckTransactionsAsync(cancellationToken);
     // }
 
-    [HttpGet("get-all")]
+    [HttpPost("get-all")]
     [OpenApiOperation("Get All payment", "")]
-    public Task<PaginationResponse<PaymentResponse>> GetAllPayment(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken)
+    public Task<PaginationResponse<PaymentResponse>> GetAllPayment(PaginationFilter filter, DateOnly Sdate, DateOnly EDate, CancellationToken cancellationToken)
     {
-        return _paymentService.GetALlPayment(filter, date, cancellationToken);
+        return _paymentService.GetALlPayment(filter, Sdate, EDate, cancellationToken);
     }
 
     [HttpGet("get/{id}")]
@@ -41,7 +41,7 @@ public class PaymentController : VersionedApiController
         return _paymentService.GetPaymentDetail(id, cancellationToken);
     }
 
-    [HttpGet("transaction/get-all")]
+    [HttpPost("transaction/get-all")]
     [OpenApiOperation("Get transactions", "")]
     public Task<PaginationResponse<Transaction>> GetTransactions(PaginationFilter filter, CancellationToken cancellationToken)
     {
