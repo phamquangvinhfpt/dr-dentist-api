@@ -181,7 +181,7 @@ public class PaymentService : IPaymentService
 
             var result = new List<PaymentResponse>();
 
-            var paymentQuery = _context.Payments
+            var paymentQuery = _context.Payments.IgnoreQueryFilters()
                     .AsNoTracking();
 
             if(Sdate != default)
@@ -201,7 +201,7 @@ public class PaymentService : IPaymentService
                 {
                     Payment = p,
                     Patient = _context.PatientProfiles.FirstOrDefault(patient => patient.Id == p.PatientProfileId),
-                    Service = _context.Services.FirstOrDefault(service => service.Id == p.ServiceId),
+                    Service = _context.Services.IgnoreQueryFilters().FirstOrDefault(service => service.Id == p.ServiceId),
                     Appointment = _context.Appointments.FirstOrDefault(appointment => appointment.Id == p.AppointmentId),
                 }).ToListAsync(cancellationToken);
 
@@ -242,13 +242,13 @@ public class PaymentService : IPaymentService
     {
         try
         {
-            var query = await _context.Payments
+            var query = await _context.Payments.IgnoreQueryFilters()
                 .Where(p => p.Id == id)
                 .Select(a => new
                 {
                     Payment = a,
                     pProfile = _context.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId),
-                    Service = _context.Services.FirstOrDefault(p => p.Id == a.ServiceId),
+                    Service = _context.Services.IgnoreQueryFilters().FirstOrDefault(p => p.Id == a.ServiceId),
                     Detail = _context.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList()
                 })
                 .FirstOrDefaultAsync();

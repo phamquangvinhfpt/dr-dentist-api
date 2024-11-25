@@ -160,7 +160,7 @@ internal class AppointmentService : IAppointmentService
                 ServiceId = service.Id,
                 AppointmentId = appointment.Id,
                 DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
-                DepositDate = isStaffOrAdmin ? null : DateOnly.FromDateTime(DateTime.Now),
+                DepositDate = isStaffOrAdmin ? DateOnly.FromDateTime(DateTime.Now) : null,
                 RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - (service.TotalPrice * 0.3),
                 Amount = service.TotalPrice,
                 Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
@@ -216,6 +216,7 @@ internal class AppointmentService : IAppointmentService
 
             appointment.Status = AppointmentStatus.Confirmed;
             calendar.Status = Domain.Identity.CalendarStatus.Booked;
+            payment.DepositDate = DateOnly.FromDateTime(DateTime.Now);
             payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -989,6 +990,16 @@ internal class AppointmentService : IAppointmentService
 
             await _db.SaveChangesAsync(cancellationToken);
             _cacheService.Remove(request.PatientCode);
+            var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+            if (keys == null)
+            {
+                return;
+            }
+            foreach (string key in keys)
+            {
+                _cacheService.Remove(key);
+            }
+            _cacheService.Remove(APPOINTMENT);
         }
         catch (Exception ex)
         {
