@@ -60,16 +60,17 @@ internal class DashboardService : IDashboardService
                 chartQuery = chartQuery.Where(p => p.AppointmentDate <= endDate);
             }
             var chart = await chartQuery
-                    .GroupBy(p => p.AppointmentDate)
-                    .Select(n => new BookingAnalytic
-                    {
-                        Date = n.Key,
-                        CancelAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Cancelled).Distinct().ToList().Count(),
-                        FailAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Failed).Distinct().ToList().Count(),
-                        SuccessAnalytic = n.Select(p => p.Status == Domain.Appointments.AppointmentStatus.Success || p.Status == Domain.Appointments.AppointmentStatus.Done).Distinct().ToList().Count(),
-                    })
-                    .OrderBy(p => p.Date)
-                    .ToListAsync(cancellationToken);
+            .GroupBy(p => p.AppointmentDate)
+            .Select(n => new BookingAnalytic
+            {
+                Date = n.Key,
+                CancelAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Cancelled),
+                FailAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Failed),
+                SuccessAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Success ||
+                                             p.Status == Domain.Appointments.AppointmentStatus.Done)
+            })
+            .OrderBy(p => p.Date)
+            .ToListAsync(cancellationToken);
             return chart;
         }
         catch (Exception ex)
