@@ -92,7 +92,7 @@ public static class FSHPermissions
         new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, DENTIST, STAFF, PATIENT }),
 
         // AUDIT LOGS
-        new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs),
+        new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs, new[] { ROOT }),
 
         // Appointment
         new("View Appointment", FSHAction.View, FSHResource.Appointment, new[] { ROOT, PATIENT, STAFF, DENTIST }),
@@ -227,7 +227,6 @@ public static class FSHPermissions
     public static IReadOnlyList<FSHPermission> Staff { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(STAFF)).ToArray());
     public static IReadOnlyList<FSHPermission> Patient { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(PATIENT)).ToArray());
     public static IReadOnlyList<FSHPermission> Guest { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(GUEST)).ToArray());
-
 }
 
 public record FSHPermission(string Description, string Action, string Resource, string[] role)

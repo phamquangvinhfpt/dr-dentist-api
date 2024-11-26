@@ -72,12 +72,12 @@ internal class ApplicationDbSeeder
             }
             else if (roleName == FSHRoles.Admin)
             {
-                await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Admin, role);
+                await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
 
-                if (_currentTenant.Id == MultitenancyConstants.Root.Id)
-                {
-                   await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
-                }
+                // if (_currentTenant.Id == MultitenancyConstants.Root.Id)
+                // {
+                //    await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
+                // }
             }
             else if (roleName == FSHRoles.Staff)
             {
@@ -223,7 +223,7 @@ internal class ApplicationDbSeeder
                           is not ApplicationUser staffUser2)
         {
             string staffUserName = $"{_currentTenant.Id.Trim()}.{FSHRoles.Staff}".ToLowerInvariant();
-            
+
             staffUser2 = new ApplicationUser
             {
                 FirstName = _currentTenant.Id.Trim().ToLowerInvariant(),
