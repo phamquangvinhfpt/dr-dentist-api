@@ -974,8 +974,8 @@ internal class ApplicationDbSeeder
                                 Status = c ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Completed,
                                 Price = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
-                                DiscountAmount = 0.3,
-                                TotalCost = item.Procedure.Price - item.Procedure.Price * 0.3,
+                                DiscountAmount = 0,
+                                TotalCost = item.Procedure.Price,
                                 StartDate = date,
                             }).Entity;
                             var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
@@ -1109,8 +1109,8 @@ internal class ApplicationDbSeeder
                                 Status = item.SP.StepOrder == 1 ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Pending,
                                 Price = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
-                                DiscountAmount = dAmount,
-                                TotalCost = item.Procedure.Price - (item.Procedure.Price * dAmount),
+                                DiscountAmount = 0,
+                                TotalCost = item.Procedure.Price,
                             };
                             if (item.SP.StepOrder == 1)
                             {

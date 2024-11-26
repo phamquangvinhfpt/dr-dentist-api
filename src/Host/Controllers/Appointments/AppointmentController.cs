@@ -28,27 +28,27 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
     [OpenApiOperation("Create Appointment", "")]
-    public Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request)
+    public async Task<Task<PayAppointmentRequest>> CreateAppointment(CreateAppointmentRequest request)
     {
-        DeleteRedisCode();
+        await DeleteRedisCode();
         return Mediator.Send(request);
     }
 
     [HttpPost("cancel")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Cancel Appointment", "")]
-    public Task<string> CancelAppointment(CancelAppointmentRequest request)
+    public async Task<Task<string>> CancelAppointment(CancelAppointmentRequest request)
     {
-        DeleteRedisCode();
+        await DeleteRedisCode();
         return Mediator.Send(request);
     }
 
     [HttpPost("reschedule")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Reschedule Appointment", "")]
-    public Task<string> RescheduleAppointment(RescheduleRequest request)
+    public async Task<Task<string>> RescheduleAppointment(RescheduleRequest request)
     {
-        DeleteRedisCode();
+        await DeleteRedisCode();
         return Mediator.Send(request);
     }
     //checked
@@ -101,9 +101,9 @@ public class AppointmentController : VersionNeutralApiController
     [HttpGet("examination/{id}")]
     //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Toggle Appointment Status, Use for Doctor Click and verify patient who came to clinic", "")]
-    public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
+    public async Task<Task<List<TreatmentPlanResponse>>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
+        await DeleteRedisCode();
         return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 
@@ -117,9 +117,9 @@ public class AppointmentController : VersionNeutralApiController
 
     [HttpPost("payment/do")]
     [OpenApiOperation("Send request for payment method", "")]
-    public Task<string> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    public async Task<Task<string>> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
+        await DeleteRedisCode();
         return Mediator.Send(request);
     }
 
