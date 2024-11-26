@@ -951,6 +951,7 @@ internal class AppointmentService : IAppointmentService
                     {
                         Payment = a,
                         Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList(),
+                        Patient = _db.PatientProfiles.FirstOrDefault(e => e.Id == a.PatientProfileId),
                     })
                     .FirstOrDefaultAsync();
 
@@ -979,6 +980,17 @@ internal class AppointmentService : IAppointmentService
                 _cacheService.Remove(key);
             }
             _cacheService.Remove(APPOINTMENT);
+            var notification = new BasicNotification
+            {
+                Message = "Payment has been completed!",
+                Label = BasicNotification.LabelType.Success,
+                Title = "Payment Successfully!",
+                Url = "/appointment",
+            };
+
+            // get user from query.Patient
+            var user = await _userManager.FindByIdAsync(query.Patient.UserId);
+            await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
         }
         catch (Exception ex)
         {

@@ -323,4 +323,54 @@ public class PaymentService : IPaymentService
             throw new Exception(ex.Message);
         }
     }
+
+    public async Task SeedTransactions(List<TransactionDto> list, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (list == null || list.Count == 0)
+            {
+                _logger.LogWarning("No transactions to seed");
+                return;
+            }
+            var transactions = list.Select(dto => new Transaction
+            {
+                TransactionID = dto.TransactionID,
+                Amount = dto.Amount,
+                Description = dto.Description,
+                TransactionDate = DateOnly.Parse(dto.TransactionDate),
+                Type = dto.Type == "IN" ? TransactionType.IN : TransactionType.OUT,
+                IsSuccess = true,
+                ErrorMessage = null
+            }).ToList();
+            _context.Transactions.AddRange(transactions);
+            await _context.SaveChangesAsync(cancellationToken);
+            foreach (var transaction in list)
+            {
+                var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
+                if (check_context != null)
+                {
+                    var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                    if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
+                    {
+                        if (info.IsVerify)
+                        {
+                            await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                        }
+                        else
+                        {
+                            await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+                        }
+                        await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
+                    }
+                }
+            }
+            _logger.LogInformation($"Seeded {transactions.Count} transactions successfully");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message, e);
+            throw new Exception(e.Message);
+        }
+    }
 }

@@ -11,4 +11,5 @@ public interface IPaymentService : ITransientService
     Task<PaginationResponse<PaymentResponse>> GetALlPayment(PaginationFilter filter, DateOnly date, DateOnly eDate, CancellationToken cancellationToken);
     Task<PaymentDetailResponse> GetPaymentDetail(Guid id, CancellationToken cancellationToken);
     Task<PaginationResponse<Transaction>> GetAllTransactions(PaginationFilter filter, CancellationToken cancellationToken);
+    public Task SeedTransactions(List<TransactionDto> list, CancellationToken cancellationToken);
 }

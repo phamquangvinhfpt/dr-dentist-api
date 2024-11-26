@@ -47,4 +47,13 @@ public class PaymentController : VersionedApiController
     {
         return _paymentService.GetAllTransactions(filter, cancellationToken);
     }
+
+    [HttpPost("transaction/seed")]
+    [OpenApiOperation("Seed a transaction", "")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    public Task SeedTransaction(List<TransactionDto> list, CancellationToken cancellationToken)
+    {
+        return _paymentService.SeedTransactions(list, cancellationToken);
+    }
 }
