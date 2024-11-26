@@ -152,7 +152,7 @@ internal class AppointmentService : IAppointmentService
             }
 
             var calendar = _db.WorkingCalendars.Add(cal).Entity;
-
+            var deposit = Math.Round(service.TotalPrice * 0.3, 0);
             var pay = _db.Payments.Add(new Domain.Payments.Payment
             {
                 CreatedBy = _currentUserService.GetUserId(),
@@ -160,9 +160,9 @@ internal class AppointmentService : IAppointmentService
                 PatientProfileId = appointment.PatientId,
                 ServiceId = service.Id,
                 AppointmentId = appointment.Id,
-                DepositAmount = isStaffOrAdmin ? 0 : service.TotalPrice * 0.3,
+                DepositAmount = isStaffOrAdmin ? 0 : deposit,
                 DepositDate = isStaffOrAdmin ? DateOnly.FromDateTime(DateTime.Now) : null,
-                RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - (service.TotalPrice * 0.3),
+                RemainingAmount = isStaffOrAdmin ? service.TotalPrice : service.TotalPrice - deposit,
                 Amount = service.TotalPrice,
                 Status = isStaffOrAdmin ? Domain.Payments.PaymentStatus.Incomplete : Domain.Payments.PaymentStatus.Waiting,
             }).Entity;
@@ -175,7 +175,7 @@ internal class AppointmentService : IAppointmentService
                 AppointmentId = appointment.Id,
                 PaymentID = pay.Id,
                 PatientCode = patient.PatientCode,
-                Amount = 10000,
+                Amount = deposit,
                 Time = isStaffOrAdmin ? TimeSpan.FromMinutes(0) : TimeSpan.FromMinutes(10),
                 IsPay = isStaffOrAdmin,
                 IsVerify = true,
@@ -752,8 +752,7 @@ internal class AppointmentService : IAppointmentService
                     {
                         ProcedureID = item!.Value,
                         PaymentID = payment.Id,
-                        PaymentDay = DateOnly.FromDateTime(DateTime.Now),
-                        PaymentAmount = pro.Price - (pro.Price * 0.3),
+                        PaymentAmount = pro.Price,
                         PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
                     });
                     var sp = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.ServiceId == appointment.ServiceId && p.ProcedureId == item);
@@ -765,8 +764,8 @@ internal class AppointmentService : IAppointmentService
                         DoctorID = appointment.DentistId,
                         Status = Domain.Treatment.TreatmentPlanStatus.Pending,
                         Price = pro.Price,
-                        DiscountAmount = 0.3,
-                        TotalCost = pro.Price - (pro.Price * 0.3),
+                        DiscountAmount = 0,
+                        TotalCost = pro.Price,
                     };
 
                     if (sp.StepOrder == 1)
@@ -793,7 +792,6 @@ internal class AppointmentService : IAppointmentService
                         Price = pro.Price,
                         DoctorID = doctor.Id,
                         DoctorName = $"{doctor.FirstName} {doctor.LastName}",
-                        DiscountAmount = 0.3,
                         PlanCost = entry.TotalCost,
                         PlanDescription = null,
                         Step = sp.StepOrder,
@@ -904,7 +902,7 @@ internal class AppointmentService : IAppointmentService
                 {
                     throw new Exception("Warning: Amount is not equal");
                 }
-
+                query.Payment.RemainingAmount -= request.Amount;
                 query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
                 query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
 
@@ -963,7 +961,7 @@ internal class AppointmentService : IAppointmentService
 
             query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
             query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
-            query.Payment.RemainingAmount = 0;
+            query.Payment.RemainingAmount -= request.Amount;
             foreach (var item in query.Detail)
             {
                 item.PaymentStatus = Domain.Payments.PaymentStatus.Completed;

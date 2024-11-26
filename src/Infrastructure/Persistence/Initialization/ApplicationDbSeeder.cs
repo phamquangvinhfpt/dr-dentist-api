@@ -260,63 +260,445 @@ internal class ApplicationDbSeeder
         if (_db.Services.Count() < 1)
         {
             string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string dataPath = Path.Combine(path!, "Services", "ProcedureData.json");
+            string dataPath = Path.Combine(path!, "Services", "ServiceData.json");
             _logger.LogInformation("Started to Seed Service.");
-            string proceData = await File.ReadAllTextAsync(dataPath);
-            var procedures = _serializerService.Deserialize<List<Procedure>>(proceData);
 
-            await _db.Procedures.AddRangeAsync(procedures);
-            await _db.SaveChangesAsync();
-
-            dataPath = Path.Combine(path!, "Services", "ServiceData.json");
             string serviceData = await File.ReadAllTextAsync(dataPath);
             var services = _serializerService.Deserialize<List<Service>>(serviceData);
-            var totalPrice = GetToltalPrice(procedures);
-            foreach (var service in services)
-            {
-                service.TotalPrice = totalPrice;
-                service.CreatedOn = DateTime.Now;
-            }
             await _db.Services.AddRangeAsync(services);
             await _db.SaveChangesAsync();
 
-            foreach (var service in services)
-            {
-                for (int i = 0; i < procedures.Count(); i++)
-                {
-                    _db.ServiceProcedures.Add(new ServiceProcedures
-                    {
-                        ServiceId = service.Id,
-                        ProcedureId = procedures[i].Id,
-                        StepOrder = i + 1,
-                        CreatedOn = DateTime.Now,
-                        CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
-                    });
-                }
-            }
-            await _db.SaveChangesAsync();
-            var pros = await _db.Procedures.ToListAsync();
-            foreach (var pro in pros)
-            {
-                pro.CreatedOn = DateTime.Now;
-                pro.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
-            }
-            await _db.SaveChangesAsync();
             var sers = await _db.Services.ToListAsync();
             foreach (var i in sers)
             {
                 i.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
-            }
-            var sps = await _db.ServiceProcedures.ToListAsync();
-            foreach (var i in sps)
-            {
-                i.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+                i.CreatedOn = DateTime.Now;
             }
             await _db.SaveChangesAsync();
             _logger.LogInformation("Seeded Services.");
+            await SeedServiceProcedure1Async();
+            await SeedServiceProcedure2Async();
+            await SeedServiceProcedure3Async();
+            await SeedServiceProcedure4Async();
+            await SeedServiceProcedure5Async();
+            await SeedServiceProcedure6Async();
+            await SeedServiceProcedure7Async();
+            await SeedServiceProcedure8Async();
+            await SeedServiceProcedure9Async();
+            await SeedServiceProcedure10Async();
+            await SeedProcedureInforAsync();
         }
     }
+    private async Task SeedServiceProcedure1Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 1.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure1.json");
+        _logger.LogInformation("Started to Seed Service Procedure 1.");
 
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Khám Răng Tổng Quát Cơ Bản");
+        int step = 1;
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if(ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 1.");
+    }
+
+    private async Task SeedServiceProcedure2Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 2.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure2.json");
+        _logger.LogInformation("Started to Seed Service Procedure 2.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Tầm Soát Ung Thư Khoang Miệng");
+        int step = 1;
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 2.");
+    }
+    private async Task SeedServiceProcedure3Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 3.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure3.json");
+        _logger.LogInformation("Started to Seed Service Procedure 3.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Điều Trị Nha Chu");
+        int step = 1;
+        var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Name == "Khám và Tư Vấn Răng Miệng");
+        if (pro != null)
+        {
+            ser.TotalPrice += pro.Price;
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = ser.Id,
+                ProcedureId = pro.Id,
+                StepOrder = step++,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                CreatedOn = DateTime.Now,
+            });
+        }
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 3.");
+    }
+    private async Task SeedServiceProcedure4Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 4.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure4.json");
+        _logger.LogInformation("Started to Seed Service Procedure 4.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Chỉnh Nha Cơ Bản");
+        int step = 1;
+        var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Name == "Khám và Tư Vấn Răng Miệng");
+        if (pro != null)
+        {
+            ser.TotalPrice += pro.Price;
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = ser.Id,
+                ProcedureId = pro.Id,
+                StepOrder = step++,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                CreatedOn = DateTime.Now,
+            });
+        }
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 4.");
+    }
+    private async Task SeedServiceProcedure5Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 5.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure5.json");
+        _logger.LogInformation("Started to Seed Service Procedure 5.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Implant Nha Khoa");
+        int step = 1;
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 5.");
+    }
+    private async Task SeedServiceProcedure6Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 6.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure6.json");
+        _logger.LogInformation("Started to Seed Service Procedure 6.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Tẩy Trắng Răng");
+        int step = 1;
+        var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Name == "Vệ Sinh Răng Miệng Chuyên Sâu");
+        if (pro != null)
+        {
+            ser.TotalPrice += pro.Price;
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = ser.Id,
+                ProcedureId = pro.Id,
+                StepOrder = 3,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                CreatedOn = DateTime.Now,
+            });
+        }
+        foreach (var i in services)
+        {
+            if (step == 3)
+            {
+                step += 1;
+            }
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 6.");
+    }
+    private async Task SeedServiceProcedure7Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 7.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure7.json");
+        _logger.LogInformation("Started to Seed Service Procedure 7.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Phục Hình Răng Sứ");
+        int step = 1;
+        var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Name == "Khám và Tư Vấn Răng Miệng");
+        if (pro != null)
+        {
+            ser.TotalPrice += pro.Price;
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = ser.Id,
+                ProcedureId = pro.Id,
+                StepOrder = step++,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                CreatedOn = DateTime.Now,
+            });
+        }
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 7.");
+    }
+    private async Task SeedServiceProcedure8Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 8.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure8.json");
+        _logger.LogInformation("Started to Seed Service Procedure 8.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Nha Khoa Trẻ Em");
+        int step = 1;
+        var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Name == "Vệ Sinh Răng Miệng Chuyên Sâu");
+        if (pro != null)
+        {
+            ser.TotalPrice += pro.Price;
+            _db.ServiceProcedures.Add(new ServiceProcedures
+            {
+                ServiceId = ser.Id,
+                ProcedureId = pro.Id,
+                StepOrder = 3,
+                CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                CreatedOn = DateTime.Now,
+            });
+        }
+        foreach (var i in services)
+        {
+            if (step == 3)
+            {
+                step += 1;
+            }
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 8.");
+    }
+
+    private async Task SeedServiceProcedure9Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 9.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "Procedure9.json");
+        _logger.LogInformation("Started to Seed Service Procedure 9.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Điều Trị Tủy Răng");
+        int step = 1;
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 9.");
+    }
+
+    private async Task SeedServiceProcedure10Async()
+    {
+        _logger.LogInformation("Seeding Service Procedure 10.");
+        string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string dataPath = Path.Combine(path!, "Services", "procedure10.json");
+        _logger.LogInformation("Started to Seed Service Procedure 10.");
+
+        string serviceData = await File.ReadAllTextAsync(dataPath);
+        var services = _serializerService.Deserialize<List<Procedure>>(serviceData);
+
+        var ser = await _db.Services.FirstOrDefaultAsync(p => p.ServiceName == "Gói Niềng Răng Thẩm Mỹ");
+        int step = 1;
+        foreach (var i in services)
+        {
+            var procedure = _db.Procedures.Add(i).Entity;
+            if (ser != null)
+            {
+                ser.TotalPrice += procedure.Price;
+                _db.ServiceProcedures.Add(new ServiceProcedures
+                {
+                    ServiceId = ser.Id,
+                    ProcedureId = procedure.Id,
+                    StepOrder = step++,
+                    CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff"),
+                    CreatedOn = DateTime.Now,
+                });
+            }
+        }
+        ser.IsActive = true;
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Services Procedure 10.");
+    }
+
+    private async Task SeedProcedureInforAsync()
+    {
+        _logger.LogInformation("Seeding Procedure Information.");
+        var procedures = _db.Procedures.ToList(); 
+
+        foreach (var procedure in procedures)
+        {
+            procedure.CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff");
+            procedure.CreatedOn = DateTime.Now;
+        }
+        await _db.SaveChangesAsync();
+        _logger.LogInformation("Seeded Procedure Information.");
+    }
     private async Task SeedAppointmentAsync()
     {
         _logger.LogInformation("Seeded Appointment.");
@@ -483,9 +865,10 @@ internal class ApplicationDbSeeder
                     PatientProfileId = appointment.PatientId,
                     AppointmentId = appointment.Id,
                     ServiceId = appointment.ServiceId,
-                    DepositAmount = 0,
+                    DepositAmount = (s.TotalPrice * 0.3),
+                    DepositDate = DateOnly.FromDateTime(DateTime.Now),
                     Amount = s.TotalPrice,
-                    RemainingAmount = 0,
+                    RemainingAmount = s.TotalPrice - (s.TotalPrice * 0.3),
                     Method = Domain.Payments.PaymentMethod.None,
                     Status = Domain.Payments.PaymentStatus.Incomplete,
                 }).Entity;
@@ -577,7 +960,7 @@ internal class ApplicationDbSeeder
                             {
                                 PaymentID = payment.Id,
                                 ProcedureID = item.Procedure.Id,
-                                PaymentAmount = item.Procedure.Price - item.Procedure.Price * 0.3,
+                                PaymentAmount = item.Procedure.Price,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Completed,
                             });
                             var date = d.AddDays(next++);
@@ -690,7 +1073,7 @@ internal class ApplicationDbSeeder
                             PatientProfileId = appointment.PatientId,
                             AppointmentId = appointment.Id,
                             ServiceId = appointment.ServiceId,
-                            DepositAmount = 0.3,
+                            DepositAmount = (s.TotalPrice * dAmount),
                             DepositDate = DateOnly.FromDateTime(appointment.CreatedOn),
                             Amount = s.TotalPrice,
                             RemainingAmount = s.TotalPrice - (s.TotalPrice * dAmount),
@@ -713,7 +1096,7 @@ internal class ApplicationDbSeeder
                             {
                                 PaymentID = payment.Id,
                                 ProcedureID = item.Procedure.Id,
-                                PaymentAmount = item.Procedure.Price - (item.Procedure.Price * dAmount),
+                                PaymentAmount = item.Procedure.Price,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Incomplete,
                             });
 

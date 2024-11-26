@@ -1,0 +1,30 @@
+[
+  {
+    "id": "981d99ba-d8b7-4e0a-bef9-4b5fd3b5d92f",
+    "name": "Khám và Tư Vấn Răng Miệng",
+    "description": "Bác sĩ khám kiểm tra tình trạng răng, nướu, khớp cắn và các vấn đề về khoang miệng. Tư vấn chi tiết về tình trạng và phương pháp điều trị",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "a1b2c3d4-e5f6-4a5b-8c7d-9e8f7a6b5c4d",
+    "name": "Chụp X-quang Toàn Hàm",
+    "description": "Chụp X-quang toàn cảnh răng hàm mặt để đánh giá tổng thể tình trạng răng, xương hàm và các cấu trúc liên quan",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  },
+  {
+    "id": "5c2a3b41-b4cd-4f3f-a612-c5689111d11d",
+    "name": "Vệ Sinh Răng Miệng Chuyên Sâu",
+    "description": "Làm sạch cao răng bằng máy siêu âm, loại bỏ các mảng bám và cao răng trên bề mặt răng và dưới nướu",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 500000.00
+  },
+  {
+    "id": "7c2b4d3f-d5a1-45b6-a0e7-42e6c85f2c22",
+    "name": "Đánh Bóng Răng",
+    "description": "Sử dụng các dụng cụ và kem đánh bóng chuyên dụng để làm sạch và làm mịn bề mặt răng sau khi lấy cao răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "9f8e7d6c-1122-3344-5566-778899aabbcc",
+    "name": "Khám và Chẩn Đoán Tủy Răng",
+    "description": "Bác sĩ thăm khám, test tủy răng, chụp X-quang để đánh giá tình trạng tủy răng, xác định mức độ viêm/hoại tử và lên kế hoạch điều trị chi tiết",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  },
+  {
+    "id": "8e7d6c5b-6677-8899-aabb-ccddeeff0011",
+    "name": "Chụp X-quang Chẩn Đoán",
+    "description": "Chụp X-quang từ nhiều góc độ để xác định chính xác độ dài, độ cong của ống tủy và phát hiện các bất thường về giải phẫu chân răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "7d6c5b4a-1122-3344-5566-778899aabbcc",
+    "name": "Gây Tê và Cách Ly Răng, Mở Tủy và Lấy Tủy Buồng",
+    "description": "Thực hiện gây tê tại chỗ, đặt đê cao su cách ly răng để đảm bảo vô trùng trong suốt quá trình điều trị tủy. Mở tủy răng, làm sạch buồng tủy, xác định vị trí các ống tủy bằng kính hiển vi nha khoa, đảm bảo lấy sạch toàn bộ mô tủy bị bệnh",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1100000.00
+  },
+  {
+    "id": "5b4a3d2c-3344-5566-7788-99aabbccddeeff",
+    "name": "Tạo Hình và Làm Sạch Ống Tủy",
+    "description": "Sử dụng trâm máy chuyên dụng để tạo hình và làm sạch hệ thống ống tủy, kết hợp với dung dịch bơm rửa để diệt khuẩn triệt để",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1200000.00
+  },
+  {
+    "id": "4a3d2c1b-4455-6677-8899-aabbccddeeff00",
+    "name": "Điều Trị Viêm Nhiễm Tủy",
+    "description": "Đặt thuốc kháng sinh và kháng viêm trong ống tủy trong trường hợp nhiễm trùng nặng, có thể yêu cầu nhiều lần hẹn",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 500000.00
+  },
+  {
+    "id": "3d2c1b0a-5566-7788-99aa-bbccddeeff1122",
+    "name": "Chụp X-quang Kiểm Tra Độ Dài",
+    "description": "Chụp X-quang để kiểm tra độ dài làm việc của từng ống tủy, đảm bảo độ chính xác trong quá trình tạo hình và trám bít",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "2c1b0a9z-6677-8899-aabb-ccddeeff2233",
+    "name": "Trám Bít Ống Tủy",
+    "description": "Trám bít kín hệ thống ống tủy bằng gutta-percha và cement sinh học, sử dụng kỹ thuật trám bít 3 chiều để đảm bảo độ kín",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1000000.00
+  },
+  {
+    "id": "1b0a9z8y-7788-99aa-bbcc-ddeeff334455",
+    "name": "Chụp X-quang Sau Trám Bít",
+    "description": "Chụp X-quang kiểm tra kết quả trám bít ống tủy, đánh giá độ kín, độ dài và chất lượng của quá trình điều trị",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "0a9z8y7x-8899-aabb-ccdd-eeff44556677",
+    "name": "Trám Phục Hồi Thân Răng",
+    "description": "Trám phục hồi thân răng bằng composite hoặc chuẩn bị cho làm mão trong trường hợp mất nhiều thân răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  }
+]

@@ -39,34 +39,34 @@
     "ServiceName": "Gói Tẩy Trắng Răng",
     "ServiceDescription": "Bao gồm vệ sinh răng miệng, tẩy trắng răng chuyên nghiệp và tư vấn chăm sóc sau tẩy trắng",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
-    "IsActive": true
+    "IsActive": false
   },
   {
     "Id": "a9b3c5d7-6f8e-7a9b-2b4d-3c5e7a9b1d3d",
     "ServiceName": "Gói Phục Hình Răng Sứ",
     "ServiceDescription": "Bao gồm tư vấn, chụp X-quang, lấy dấu và quy trình bọc răng sứ thẩm mỹ",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
-    "IsActive": true
+    "IsActive": false
   },
   {
     "Id": "b0c4d6e8-7a9b-8b0a-3b5e-4d6f8b0c2e4d",
     "ServiceName": "Gói Nha Khoa Trẻ Em",
     "ServiceDescription": "Bao gồm khám, vệ sinh răng, điều trị sâu răng và tư vấn chăm sóc răng cho trẻ",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
-    "IsActive": true
+    "IsActive": false
   },
   {
     "Id": "c1d5e7f9-8b0a-9b1a-4a6f-5e7a9b1d3f5e",
     "ServiceName": "Gói Điều Trị Tủy Răng",
     "ServiceDescription": "Bao gồm chụp X-quang, điều trị tủy răng và phục hình sau điều trị",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
-    "IsActive": true
+    "IsActive": false
   },
   {
     "Id": "d2e6f8a0-9b1a-0b2a-5a7f-6f8a0b2e4a6f",
     "ServiceName": "Gói Niềng Răng Thẩm Mỹ",
     "ServiceDescription": "Bao gồm tư vấn, chụp X-quang, scan 3D và lập kế hoạch niềng răng chi tiết",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
-    "IsActive": true
+    "IsActive": false
   }
 ]

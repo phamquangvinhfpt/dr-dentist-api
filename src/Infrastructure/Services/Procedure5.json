@@ -1,0 +1,30 @@
+[
+  {
+    "id": "7c4f1b19-3e6f-4c3e-81f2-9b8d7e2a63c1",
+    "name": "Chẩn Đoán Tổng Quát",
+    "description": "Bác sĩ thăm khám tổng quát, chụp X-quang toàn hàm, CT Cone Beam để đánh giá tình trạng xương hàm và lên kế hoạch đặt Implant",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "f8472d93-512a-4b29-b13f-0c8d9b7425a1",
+    "name": "Phẫu Thuật Cấy Ghép Implant",
+    "description": "Thực hiện phẫu thuật cấy ghép Implant theo kế hoạch, bao gồm gây tê, đặt trụ Implant và khâu đóng vết mổ",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 15000000.00
+  },
+  {
+    "id": "3c725bd8-4f6a-42d9-a01f-8925c8f13d7a",
+    "name": "Lấy Dấu và Thiết Kế Mão Sứ",
+    "description": "Sau thời gian lành thương, tiến hành lấy dấu, scan 3D và thiết kế mão sứ trên Implant phù hợp về màu sắc, hình dáng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1500000.00
+  },
+  {
+    "id": "9f63b1d2-3a74-4985-802f-d5c1729a4f6e",
+    "name": "Gắn Mão Sứ Implant",
+    "description": "Gắn mão sứ vĩnh viễn lên Implant, kiểm tra khớp cắn và hướng dẫn vệ sinh, chăm sóc răng Implant",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 12000000.00
+  }
+]

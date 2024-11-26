@@ -15,7 +15,6 @@ public class TreatmentPlanResponse
     public string? DoctorID { get; set; }
     public string? DoctorName { get; set; }
     public double Price { get; set; }
-    public double DiscountAmount { get; set; }
     public double PlanCost { get; set; }
     public string? PlanDescription { get; set; }
     public int Step { get; set; }

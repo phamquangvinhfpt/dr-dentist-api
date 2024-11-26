@@ -1,0 +1,23 @@
+[
+  {
+    "id": "5b96b5f3-7a2a-4fd0-97a9-6cf1f19ed12d",
+    "name": "Tư Vấn và Khám Chuyên Sâu Chỉnh Nha",
+    "description": "Bác sĩ chuyên khoa chỉnh nha đánh giá tổng quát tình trạng răng, khớp cắn, xương hàm và tư vấn phương pháp niềng răng phù hợp nhất",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 500000.00
+  },
+  {
+    "id": "e1e436ff-5577-4f34-8469-e21f9e5c4be3",
+    "name": "Chụp X-quang và Phân Tích Sọ Mặt",
+    "description": "Chụp X-quang toàn hàm, X-quang sọ nghiêng và phân tích các chỉ số sọ mặt để lập kế hoạch điều trị chi tiết",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "2465c66e-bdef-496d-b7b4-cd70538b6bb6",
+    "name": "Gắn Mắc Cài và Dây Cung",
+    "description": "Gắn mắc cài (kim loại/sứ/sapphire) lên răng theo đúng vị trí đã thiết kế, lắp dây cung đầu tiên và elastic",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 15800000.00
+  }
+]

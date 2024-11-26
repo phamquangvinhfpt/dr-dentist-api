@@ -457,7 +457,7 @@ internal class ServiceService : IServiceService
         result.ServiceID = existing.Id;
         result.Name = existing.ServiceName;
         result.CreateDate = existing.CreatedOn;
-        result.CreateBy = user.UserName;
+        result.CreateBy = $"{user.FirstName} {user.LastName}";
         result.TotalPrice = existing.TotalPrice;
         result.Description = existing.ServiceDescription;
         var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == serviceID).ToListAsync(cancellationToken);
@@ -472,7 +472,7 @@ internal class ServiceService : IServiceService
                     Name = pro.Name,
                     Price = pro.Price,
                     ProcedureID = pro.Id,
-                    CreateBy = u.UserName,
+                    CreateBy = $"{u.FirstName} {u.LastName}",
                     CreateDate = pro.CreatedOn,
                 });
             }
