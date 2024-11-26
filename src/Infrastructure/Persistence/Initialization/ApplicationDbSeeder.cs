@@ -74,10 +74,10 @@ internal class ApplicationDbSeeder
             {
                 await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
 
-                // if (_currentTenant.Id == MultitenancyConstants.Root.Id)
-                // {
-                //    await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.Root, role);
-                // }
+                if (_currentTenant.Id == MultitenancyConstants.Root.Id)
+                {
+                   await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.All, role);
+                }
             }
             else if (roleName == FSHRoles.Staff)
             {
@@ -689,7 +689,7 @@ internal class ApplicationDbSeeder
     private async Task SeedProcedureInforAsync()
     {
         _logger.LogInformation("Seeding Procedure Information.");
-        var procedures = _db.Procedures.ToList(); 
+        var procedures = _db.Procedures.ToList();
 
         foreach (var procedure in procedures)
         {
