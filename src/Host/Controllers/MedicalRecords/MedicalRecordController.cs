@@ -38,8 +38,8 @@ public class MedicalRecordController : VersionNeutralApiController
     [HttpGet("patient/{id}")]
     [MustHavePermission(FSHAction.View, FSHResource.MedicalRecord)]
     [OpenApiOperation("Get Medical records by patient ID", "")]
-    public Task<List<MedicalRecordResponse>> GetMedicalRecordsByPatientID(string id, CancellationToken cancellationToken)
+    public Task<List<MedicalRecordResponse>> GetMedicalRecordsByPatientID(string id, DateOnly SDate, DateOnly EDate, CancellationToken cancellationToken)
     {
-        return _mediicalRecordService.GetMedicalRecordsByPatientId(id, cancellationToken);
+        return _mediicalRecordService.GetMedicalRecordsByPatientId(id, SDate, EDate, cancellationToken);
     }
 }

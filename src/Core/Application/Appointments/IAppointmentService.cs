@@ -25,7 +25,7 @@ public interface IAppointmentService : ITransientService
     Task<PaymentDetailResponse> GetRemainingAmountOfAppointment(DefaultIdType id, CancellationToken cancellationToken);
     Task HandlePaymentRequest(PayAppointmentRequest request, CancellationToken cancellationToken);
     Task DoPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken);
-    Task<string> CancelPayment(PayAppointmentRequest request, CancellationToken cancellationToken);
+    Task<string> CancelPayment(string code, CancellationToken cancellationToken);
     Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, DateOnly date, TimeSpan time, CancellationToken cancellationToken);
     Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken);
     Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);

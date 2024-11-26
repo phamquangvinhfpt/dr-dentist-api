@@ -1,5 +1,6 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Drawing;
 using FluentValidation;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
@@ -988,11 +989,16 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async Task<string> CancelPayment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    public async Task<string> CancelPayment(string code, CancellationToken cancellationToken)
     {
         try
         {
-            await _cacheService.RemoveAsync(request.PatientCode);
+            var c = _cacheService.Get<PayAppointmentRequest>(code);
+            if(c != null)
+            {
+                await _cacheService.RemoveAsync(code);
+                return _t["Success"];
+            }
             return _t["Success"];
         }
         catch (Exception ex)

@@ -123,12 +123,12 @@ public class AppointmentController : VersionNeutralApiController
         return Mediator.Send(request);
     }
 
-    [HttpPost("payment/cancel")]
+    [HttpDelete("payment/cancel/{code}")]
     [OpenApiOperation("Cancel request for payment", "")]
-    public async Task<string> CancelPaymentForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    public async Task<string> CancelPaymentForAppointment(string code, CancellationToken cancellationToken)
     {
         await DeleteRedisCode();
-        return await _appointmentService.CancelPayment(request, cancellationToken);
+        return await _appointmentService.CancelPayment(code, cancellationToken);
     }
 
     [HttpPost("non-doctor/get-all")]

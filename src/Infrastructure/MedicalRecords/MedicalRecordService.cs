@@ -247,32 +247,24 @@ public class MedicalRecordService : IMedicalRecordService
         }
     }
 
-    public async Task<List<MedicalRecordResponse>> GetMedicalRecordsByPatientId(string id, CancellationToken cancellationToken)
+    public async Task<List<MedicalRecordResponse>> GetMedicalRecordsByPatientId(string id, DateOnly sDate, DateOnly eDate, CancellationToken cancellationToken)
     {
         try
         {
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id)
                 ?? throw new NotFoundException($"Patient with ID {id} not found");
 
-            //var patient = await _db.PatientProfiles
-            //.Where(p => p.UserId == id)
-            //.Select(p => new
-            //{
-            //    Profile = p,
-            //    PatientName = _db.Users
-            //        .Where(u => u.Id == p.UserId)
-            //        .Select(u => u.UserName)
-            //        .FirstOrDefault()
-            //})
-            //.FirstOrDefaultAsync(cancellationToken);
+            var medicalRecords = _db.MedicalRecords.Where(x => x.PatientProfileId == patient.Id);
 
-            //if (patient == null)
-            //{
-            //    throw new BadRequestException("Patient not found");
-            //}
-
-            var medicalRecords = await _db.MedicalRecords
-                .Where(x => x.PatientProfileId == patient.Id)
+            if(sDate != default)
+            {
+                medicalRecords = medicalRecords.Where(p => p.Date >= DateTime.Parse(sDate.ToString()));
+            }
+            if (sDate != default)
+            {
+                medicalRecords = medicalRecords.Where(p => p.Date <= DateTime.Parse(eDate.ToString()));
+            }
+            var result = await medicalRecords
                 .OrderByDescending(x => x.Date)
                 .Select(medical => new MedicalRecordResponse
                 {
@@ -323,9 +315,7 @@ public class MedicalRecordService : IMedicalRecordService
                 })
                 .ToListAsync(cancellationToken);
 
-            if (medicalRecords.Count() < 1) throw new NotFoundException("Patient don't have Medical Record");
-
-            return medicalRecords;
+            return result;
 
         }
         catch (Exception ex)

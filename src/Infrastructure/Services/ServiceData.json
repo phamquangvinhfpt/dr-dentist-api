@@ -1,71 +1,71 @@
 [
   {
     "Id": "8a1c5e3d-9b4f-4d2e-8c7b-6f5a2d4e3b1a",
-    "ServiceName": "Gói Khám Sức Khỏe Tổng Quát Cơ Bản",
-    "ServiceDescription": "Bao gồm khám tổng quát, xét nghiệm máu cơ bản và chụp X-quang ngực",
+    "ServiceName": "Gói Khám Răng Tổng Quát Cơ Bản",
+    "ServiceDescription": "Bao gồm khám tổng quát răng miệng, chụp X-quang răng toàn hàm, vệ sinh răng chuyên sâu",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "b4d2e6f8-1a3c-4e5d-9f7b-8c2d4e6a1b3c",
-    "ServiceName": "Gói Tầm Soát Ung Thư",
-    "ServiceDescription": "Bao gồm các xét nghiệm máu chuyên sâu, siêu âm ổ bụng và chụp CT toàn thân",
+    "ServiceName": "Gói Tầm Soát Ung Thư Khoang Miệng",
+    "ServiceDescription": "Bao gồm kiểm tra, chụp X-quang và soi tổn thương khoang miệng để phát hiện sớm ung thư",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "c5f7e9d1-2b4a-4c6e-8d0f-9e3b5a7c4d1e",
-    "ServiceName": "Gói Khám Tim Mạch",
-    "ServiceDescription": "Bao gồm điện tâm đồ, siêu âm tim và các xét nghiệm tim mạch chuyên sâu",
+    "ServiceName": "Gói Điều Trị Nha Chu",
+    "ServiceDescription": "Bao gồm điều trị viêm nha chu, lấy cao răng chuyên sâu và điều trị túi nha chu",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "d6e8f0a2-3c5b-4d7f-9e1a-0f4b6c8d2e4a",
-    "ServiceName": "Gói Khám Tiền Hôn Nhân",
-    "ServiceDescription": "Bao gồm các xét nghiệm cơ bản và tư vấn sức khỏe sinh sản",
+    "ServiceName": "Gói Chỉnh Nha Cơ Bản",
+    "ServiceDescription": "Bao gồm tư vấn, chụp X-quang, lấy dấu hàm và lập kế hoạch điều trị chỉnh nha",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "e7f9a1b3-4d6c-5e8a-0f2b-1a3c5e7d9f1b",
-    "ServiceName": "Gói Khám Sức Khỏe Người Cao Tuổi",
-    "ServiceDescription": "Bao gồm đo mật độ xương, khám mắt và các xét nghiệm dành cho người cao tuổi",
+    "ServiceName": "Gói Implant Nha Khoa",
+    "ServiceDescription": "Bao gồm tư vấn, chụp CT 3D, lập kế hoạch và quy trình cấy ghép implant",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "f8a2b4c6-5e7d-6f8a-1a3c-2b4d6f8a0c2c",
-    "ServiceName": "Gói Khám Thai Định Kỳ",
-    "ServiceDescription": "Bao gồm siêu âm thai, xét nghiệm máu và tư vấn dinh dưỡng cho thai phụ",
+    "ServiceName": "Gói Tẩy Trắng Răng",
+    "ServiceDescription": "Bao gồm vệ sinh răng miệng, tẩy trắng răng chuyên nghiệp và tư vấn chăm sóc sau tẩy trắng",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "a9b3c5d7-6f8e-7a9b-2b4d-3c5e7a9b1d3d",
-    "ServiceName": "Gói Tầm Soát Đái Tháo Đường",
-    "ServiceDescription": "Bao gồm xét nghiệm đường huyết và tư vấn chế độ ăn uống",
+    "ServiceName": "Gói Phục Hình Răng Sứ",
+    "ServiceDescription": "Bao gồm tư vấn, chụp X-quang, lấy dấu và quy trình bọc răng sứ thẩm mỹ",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "b0c4d6e8-7a9b-8b0a-3b5e-4d6f8b0c2e4d",
-    "ServiceName": "Gói Khám Nhi Khoa Tổng Quát",
-    "ServiceDescription": "Bao gồm khám tổng quát, đánh giá phát triển và tư vấn dinh dưỡng cho trẻ",
+    "ServiceName": "Gói Nha Khoa Trẻ Em",
+    "ServiceDescription": "Bao gồm khám, vệ sinh răng, điều trị sâu răng và tư vấn chăm sóc răng cho trẻ",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "c1d5e7f9-8b0a-9b1a-4a6f-5e7a9b1d3f5e",
-    "ServiceName": "Gói Tầm Soát Gan",
-    "ServiceDescription": "Bao gồm siêu âm gan và các xét nghiệm chức năng gan",
+    "ServiceName": "Gói Điều Trị Tủy Răng",
+    "ServiceDescription": "Bao gồm chụp X-quang, điều trị tủy răng và phục hình sau điều trị",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   },
   {
     "Id": "d2e6f8a0-9b1a-0b2a-5a7f-6f8a0b2e4a6f",
-    "ServiceName": "Gói Khám Răng Hàm Mặt",
-    "ServiceDescription": "Bao gồm khám tổng quát răng miệng, chụp X-quang và vệ sinh răng",
+    "ServiceName": "Gói Niềng Răng Thẩm Mỹ",
+    "ServiceDescription": "Bao gồm tư vấn, chụp X-quang, scan 3D và lập kế hoạch niềng răng chi tiết",
     "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
     "IsActive": true
   }
