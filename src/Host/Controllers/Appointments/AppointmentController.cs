@@ -28,27 +28,27 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
     [OpenApiOperation("Create Appointment", "")]
-    public async Task<Task<PayAppointmentRequest>> CreateAppointment(CreateAppointmentRequest request)
+    public Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request)
     {
-        await DeleteRedisCode();
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
     [HttpPost("cancel")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Cancel Appointment", "")]
-    public async Task<Task<string>> CancelAppointment(CancelAppointmentRequest request)
+    public Task<string> CancelAppointment(CancelAppointmentRequest request)
     {
-        await DeleteRedisCode();
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
     [HttpPost("reschedule")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Reschedule Appointment", "")]
-    public async Task<Task<string>> RescheduleAppointment(RescheduleRequest request)
+    public Task<string> RescheduleAppointment(RescheduleRequest request)
     {
-        await DeleteRedisCode();
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
     //checked
@@ -63,22 +63,22 @@ public class AppointmentController : VersionNeutralApiController
         date,
         APPOINTMENT
     );
-        var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
+        var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
         if (r != null) {
             return r;
         }
         var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
-        await _cacheService.SetAsync(key, result);
-        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        _cacheService.Set(key, result);
+        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
         if (keys != null) {
             keys.Add(key);
-            await _cacheService.RemoveAsync(APPOINTMENT);
-            await _cacheService.SetAsync(APPOINTMENT, keys);
+            _cacheService.Remove(APPOINTMENT);
+            _cacheService.Set(APPOINTMENT, keys);
         }
         else
         {
             List<string> list = new List<string> { key };
-            await _cacheService.SetAsync(APPOINTMENT, list);
+            _cacheService.Set(APPOINTMENT, list);
         }
         return result;
     }
@@ -101,9 +101,9 @@ public class AppointmentController : VersionNeutralApiController
     [HttpGet("examination/{id}")]
     //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Toggle Appointment Status, Use for Doctor Click and verify patient who came to clinic", "")]
-    public async Task<Task<List<TreatmentPlanResponse>>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
+    public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
     {
-        await DeleteRedisCode();
+        DeleteRedisCode();
         return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 
@@ -117,9 +117,9 @@ public class AppointmentController : VersionNeutralApiController
 
     [HttpPost("payment/do")]
     [OpenApiOperation("Send request for payment method", "")]
-    public async Task<Task<string>> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
+    public Task<string> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
-        await DeleteRedisCode();
+        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -142,24 +142,24 @@ public class AppointmentController : VersionNeutralApiController
         date,
         NON
     );
-        var r = await _cacheService.GetAsync<PaginationResponse<AppointmentResponse>>(key);
+        var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
         if (r != null)
         {
             return r;
         }
         var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
-        await _cacheService.SetAsync(key, result);
-        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        _cacheService.Set(key, result);
+        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
         if (keys != null)
         {
             keys.Add(key);
-            await _cacheService.RemoveAsync(APPOINTMENT);
-            await _cacheService.SetAsync(APPOINTMENT, keys);
+            _cacheService.Remove(APPOINTMENT);
+            _cacheService.Set(APPOINTMENT, keys);
         }
         else
         {
             List<string> list = new List<string> { key };
-            await _cacheService.SetAsync(APPOINTMENT, list);
+            _cacheService.Set(APPOINTMENT, list);
         }
         return result;
     }
@@ -185,24 +185,24 @@ public class AppointmentController : VersionNeutralApiController
             date,
             FOLLOW
         );
-        var r = await _cacheService.GetAsync<PaginationResponse<GetWorkingDetailResponse>>(key);
+        var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
         if (r != null)
         {
             return r;
         }
         var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
-        await _cacheService.SetAsync(key, result);
-        var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+        _cacheService.SetAsync(key, result);
+        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
         if (keys != null)
         {
             keys.Add(key);
-            await _cacheService.RemoveAsync(APPOINTMENT);
-            await _cacheService.SetAsync(APPOINTMENT, keys);
+            _cacheService.Remove(APPOINTMENT);
+            _cacheService.Set(APPOINTMENT, keys);
         }
         else
         {
             List<string> list = new List<string> { key };
-            await _cacheService.SetAsync(APPOINTMENT, list);
+            _cacheService.Set(APPOINTMENT, list);
         }
         return await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
     }
@@ -210,7 +210,7 @@ public class AppointmentController : VersionNeutralApiController
     {
         try
         {
-            var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
+            var keys = _cacheService.Get<List<string>>(APPOINTMENT);
             if(keys == null)
             {
                 return;
