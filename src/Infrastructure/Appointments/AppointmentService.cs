@@ -1101,9 +1101,9 @@ internal class AppointmentService : IAppointmentService
             if (appoitment == null) {
                 throw new Exception("Appointment can not be found or be cancel.");
             }
-            if(appoitment.Appointment.AppointmentDate < DateOnly.FromDateTime(DateTime.Now))
+            if(appoitment.Appointment.Status != AppointmentStatus.Confirmed)
             {
-                throw new Exception("Appointment invalid.");
+                throw new Exception("Appointment is unavailable to reschedule.");
             }
 
             var check = await _workingCalendarService.CheckAvailableTimeSlot(
@@ -1121,6 +1121,9 @@ internal class AppointmentService : IAppointmentService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            _jobService.Schedule(
+                () => SendAppointmentActionNotification(appoitment.Appointment.PatientId, request.DoctorID, appoitment.Appointment.AppointmentDate, TypeRequest.Verify, cancellationToken),
+                TimeSpan.FromSeconds(5));
             return _t["Success"];
         }
         catch (Exception ex)

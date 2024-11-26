@@ -13,14 +13,11 @@ public static class RedisKeyGenerator
 
     public static string GenerateAppointmentKey(string userId, PaginationFilter filter, DateOnly date, string prefix)
     {
-        // Tạo một StringBuilder để xây dựng key hiệu quả
         var keyBuilder = new StringBuilder();
 
-        // Thêm prefix
         keyBuilder.Append(prefix.ToLower());
         keyBuilder.Append(Separator);
 
-        // Thêm userId
         if (!string.IsNullOrEmpty(userId))
         {
             keyBuilder.Append("user");
@@ -29,16 +26,13 @@ public static class RedisKeyGenerator
             keyBuilder.Append(Separator);
         }
 
-        // Thêm date
         keyBuilder.Append("date");
         keyBuilder.Append(Separator);
         keyBuilder.Append(date.ToString("yyyyMMdd"));
         keyBuilder.Append(Separator);
 
-        // Thêm pagination info
         if (filter != null)
         {
-            // Thêm basic pagination
             keyBuilder.Append("page");
             keyBuilder.Append(Separator);
             keyBuilder.Append(filter.PageNumber);
@@ -48,7 +42,6 @@ public static class RedisKeyGenerator
             keyBuilder.Append(filter.PageSize);
             keyBuilder.Append(Separator);
 
-            // Thêm order by
             if (filter.OrderBy?.Any() == true)
             {
                 keyBuilder.Append("order");
@@ -57,7 +50,6 @@ public static class RedisKeyGenerator
                 keyBuilder.Append(Separator);
             }
 
-            // Thêm keyword
             if (!string.IsNullOrEmpty(filter.Keyword))
             {
                 keyBuilder.Append("keyword");
@@ -65,8 +57,6 @@ public static class RedisKeyGenerator
                 keyBuilder.Append(filter.Keyword);
                 keyBuilder.Append(Separator);
             }
-
-            // Thêm advanced search
             if (filter.AdvancedSearch != null)
             {
                 keyBuilder.Append("advsearch");
@@ -83,7 +73,6 @@ public static class RedisKeyGenerator
                 }
             }
 
-            // Thêm advanced filter
             if (filter.AdvancedFilter != null)
             {
                 keyBuilder.Append("advfilter");
@@ -93,14 +82,12 @@ public static class RedisKeyGenerator
             }
         }
 
-        // Tạo hash từ key để đảm bảo độ dài phù hợp và tránh ký tự đặc biệt
         using (var sha256 = SHA256.Create())
         {
             var bytes = Encoding.UTF8.GetBytes(keyBuilder.ToString());
             var hash = sha256.ComputeHash(bytes);
             var hashString = BitConverter.ToString(hash).Replace("-", "").ToLower();
 
-            // Trả về key cuối cùng với format: prefix:hash
             return $"{prefix}{Separator}{hashString}";
         }
     }
@@ -109,13 +96,11 @@ public static class RedisKeyGenerator
     {
         var components = new List<string>();
 
-        // Thêm logic operator nếu có
         if (!string.IsNullOrEmpty(filter.Logic))
         {
             components.Add($"l:{filter.Logic}");
         }
 
-        // Thêm field, operator và value nếu có
         if (!string.IsNullOrEmpty(filter.Field))
         {
             components.Add($"f:{filter.Field}");
@@ -129,7 +114,6 @@ public static class RedisKeyGenerator
             components.Add($"v:{filter.Value}");
         }
 
-        // Đệ quy serialize các filter con
         if (filter.Filters?.Any() == true)
         {
             var subFilters = filter.Filters.Select(SerializeFilter);
