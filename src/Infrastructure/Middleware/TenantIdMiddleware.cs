@@ -12,7 +12,7 @@ public class TenantIdMiddleware : IMiddleware
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
-        if (context.Request.Path.StartsWithSegments("/api/v1/webhook"))
+        if (context.Request.Path.StartsWithSegments("/api/v1/payment/webhook") && context.Request.Headers["Secure-Token"] == "phamquangvinh")
         {
             context.Request.Headers.Add("tenant", "root");
         } else if (context.Request.Path.StartsWithSegments("/api/v1/payment/check-new-transactions"))

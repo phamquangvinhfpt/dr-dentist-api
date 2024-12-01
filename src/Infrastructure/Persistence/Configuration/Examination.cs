@@ -272,7 +272,7 @@ public class PatientMessagesConfig : IEntityTypeConfiguration<PatientMessages>
         builder
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(b => b.receiverId)
+            .HasForeignKey(b => b.ReceiverId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder

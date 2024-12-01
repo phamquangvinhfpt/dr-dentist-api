@@ -44,41 +44,41 @@ public class PaymentService : IPaymentService
         _userManager = userManager;
     }
 
-    public async Task CheckNewTransactions(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("Syncing new transactions...");
-        List<Transaction> newTransactions = await GetNewTransaction(cancellationToken);
-        if (newTransactions.Count == 0)
-        {
-            _logger.LogInformation("No new transactions.");
-            return;
-        }
-
-        foreach (var transaction in newTransactions)
-        {
-            await _context.AddAsync(transaction);
-            await _context.SaveChangesAsync();
-            var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
-            if (check_context != null)
-            {
-                var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
-                if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
-                {
-                    if (info.IsVerify)
-                    {
-                        await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
-                    }
-                    else
-                    {
-                        await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
-                    }
-                    await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
-                }
-            }
-        }
-
-        _logger.LogInformation("Added {count} new transactions.", newTransactions.Count);
-    }
+    // public async Task CheckNewTransactions(CancellationToken cancellationToken)
+    // {
+    //     _logger.LogInformation("Syncing new transactions...");
+    //     List<Transaction> newTransactions = await GetNewTransaction(cancellationToken);
+    //     if (newTransactions.Count == 0)
+    //     {
+    //         _logger.LogInformation("No new transactions.");
+    //         return;
+    //     }
+    //
+    //     foreach (var transaction in newTransactions)
+    //     {
+    //         await _context.AddAsync(transaction);
+    //         await _context.SaveChangesAsync();
+    //         var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
+    //         if (check_context != null)
+    //         {
+    //             var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+    //             if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
+    //             {
+    //                 if (info.IsVerify)
+    //                 {
+    //                     await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+    //                 }
+    //                 else
+    //                 {
+    //                     await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+    //                 }
+    //                 await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
+    //             }
+    //         }
+    //     }
+    //
+    //     _logger.LogInformation("Added {count} new transactions.", newTransactions.Count);
+    // }
 
     public async Task CheckTransactionsAsync(CancellationToken cancellationToken)
     {
@@ -112,43 +112,43 @@ public class PaymentService : IPaymentService
         _logger.LogInformation("Checked {count} transactions.", transactions.Count);
     }
 
-    private async Task<List<Transaction>> SyncTransactions()
-    {
-        HttpClient client = new HttpClient();
-        var response = await client.GetAsync(_settings.Value.TransactionsURL);
+    // private async Task<List<Transaction>> SyncTransactions()
+    // {
+    //     HttpClient client = new HttpClient();
+    //     var response = await client.GetAsync(_settings.Value.TransactionsURL);
+    //
+    //     if (response.IsSuccessStatusCode)
+    //     {
+    //         var content = await response.Content.ReadFromJsonAsync<TransactionAPIResponse>();
+    //         if (content.Status && content.Transactions.Count > 0)
+    //         {
+    //
+    //             return content.Transactions.Select(t => new Transaction
+    //             {
+    //                 TransactionID = t.TransactionID,
+    //                 Amount = t.Amount,
+    //                 Description = t.Description,
+    //                 TransactionDate = DateOnly.ParseExact(t.TransactionDate, "dd/MM/yyyy"),
+    //                 Type = t.Type == "IN" ? TransactionType.IN : TransactionType.OUT,
+    //                 IsSuccess = true
+    //             }).Where(t => t.Type.Equals(TransactionType.IN)).ToList();
+    //         }
+    //     }
+    //     else
+    //     {
+    //         _logger.LogError("Failed to get new transactions from banking.");
+    //     }
+    //
+    //     return new List<Transaction>();
+    // }
 
-        if (response.IsSuccessStatusCode)
-        {
-            var content = await response.Content.ReadFromJsonAsync<TransactionAPIResponse>();
-            if (content.Status && content.Transactions.Count > 0)
-            {
-
-                return content.Transactions.Select(t => new Transaction
-                {
-                    TransactionID = t.TransactionID,
-                    Amount = t.Amount,
-                    Description = t.Description,
-                    TransactionDate = DateOnly.ParseExact(t.TransactionDate, "dd/MM/yyyy"),
-                    Type = t.Type == "IN" ? TransactionType.IN : TransactionType.OUT,
-                    IsSuccess = true
-                }).Where(t => t.Type.Equals(TransactionType.IN)).ToList();
-            }
-        }
-        else
-        {
-            _logger.LogError("Failed to get new transactions from banking.");
-        }
-
-        return new List<Transaction>();
-    }
-
-    private async Task<List<Transaction>> GetNewTransaction(CancellationToken cancellationToken)
-    {
-        List<Transaction> syncTransactions = await SyncTransactions();
-        if (syncTransactions.Count == 0) return syncTransactions;
-        List<Transaction> todayTransaction = await _context.Transactions.ToListAsync(cancellationToken);
-        return syncTransactions.Where(t => !todayTransaction.Any(tt => tt.TransactionID == t.TransactionID)).ToList();
-    }
+    // private async Task<List<Transaction>> GetNewTransaction(CancellationToken cancellationToken)
+    // {
+    //     List<Transaction> syncTransactions = await SyncTransactions();
+    //     if (syncTransactions.Count == 0) return syncTransactions;
+    //     List<Transaction> todayTransaction = await _context.Transactions.ToListAsync(cancellationToken);
+    //     return syncTransactions.Where(t => !todayTransaction.Any(tt => tt.TransactionID == t.TransactionID)).ToList();
+    // }
 
     public async Task<bool> CheckPaymentExisting(Guid id)
     {
@@ -156,7 +156,8 @@ public class PaymentService : IPaymentService
         {
             return await _context.Payments.AnyAsync(t => t.Id == id);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
@@ -184,7 +185,7 @@ public class PaymentService : IPaymentService
             var paymentQuery = _context.Payments.IgnoreQueryFilters()
                     .AsNoTracking();
 
-            if(Sdate != default)
+            if (Sdate != default)
             {
                 paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate > Sdate || p.CreatedOn > DateTime.Parse(Sdate.ToString()));
             }
@@ -205,7 +206,7 @@ public class PaymentService : IPaymentService
                     Appointment = _context.Appointments.IgnoreQueryFilters().FirstOrDefault(appointment => appointment.Id == p.AppointmentId),
                 }).ToListAsync(cancellationToken);
 
-            foreach ( var payment in payments)
+            foreach (var payment in payments)
             {
                 var patient = await _userManager.FindByIdAsync(payment.Patient.UserId);
 
@@ -309,7 +310,7 @@ public class PaymentService : IPaymentService
             var result = await _context.Transactions
                 .AsNoTracking()
                 .WithSpecification(spec)
-                .OrderByDescending(x => x.TransactionDate)
+                .OrderByDescending(x => x.When)
                 .ToListAsync(cancellationToken);
 
             var count = await _context.Transactions.CountAsync();
@@ -324,53 +325,120 @@ public class PaymentService : IPaymentService
         }
     }
 
-    public async Task SeedTransactions(List<TransactionDto> list, CancellationToken cancellationToken)
+    // public async Task SeedTransactions(List<TransactionDto> list, CancellationToken cancellationToken)
+    // {
+    //     try
+    //     {
+    //         if (list == null || list.Count == 0)
+    //         {
+    //             _logger.LogWarning("No transactions to seed");
+    //             return;
+    //         }
+    //         var transactions = list.Select(dto => new Transaction
+    //         {
+    //             TransactionID = dto.TransactionID,
+    //             Amount = dto.Amount,
+    //             Description = dto.Description,
+    //             TransactionDate = DateOnly.Parse(dto.TransactionDate),
+    //             Type = dto.Type == "IN" ? TransactionType.IN : TransactionType.OUT,
+    //             IsSuccess = true,
+    //             ErrorMessage = null
+    //         }).ToList();
+    //         _context.Transactions.AddRange(transactions);
+    //         await _context.SaveChangesAsync(cancellationToken);
+    //         foreach (var transaction in list)
+    //         {
+    //             var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
+    //             if (check_context != null)
+    //             {
+    //                 var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+    //                 if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
+    //                 {
+    //                     if (info.IsVerify)
+    //                     {
+    //                         await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+    //                     }
+    //                     else
+    //                     {
+    //                         await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+    //                     }
+    //                     await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
+    //                 }
+    //             }
+    //         }
+    //         _logger.LogInformation($"Seeded {transactions.Count} transactions successfully");
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         _logger.LogError(e.Message, e);
+    //         throw new Exception(e.Message);
+    //     }
+    // }
+
+    public async Task GetTransactionFromWebhook(TransactionAPIResponse transaction, CancellationToken cancellationToken)
     {
+        if (transaction.data.Count == 0)
+        {
+            _logger.LogInformation("No new transactions.");
+            return;
+        }
+
+        List<Transaction> transactions = await _context.Transactions.ToListAsync(cancellationToken);
+
         try
         {
-            if (list == null || list.Count == 0)
+            foreach (var trans in transaction.data)
             {
-                _logger.LogWarning("No transactions to seed");
-                return;
-            }
-            var transactions = list.Select(dto => new Transaction
-            {
-                TransactionID = dto.TransactionID,
-                Amount = dto.Amount,
-                Description = dto.Description,
-                TransactionDate = DateOnly.Parse(dto.TransactionDate),
-                Type = dto.Type == "IN" ? TransactionType.IN : TransactionType.OUT,
-                IsSuccess = true,
-                ErrorMessage = null
-            }).ToList();
-            _context.Transactions.AddRange(transactions);
-            await _context.SaveChangesAsync(cancellationToken);
-            foreach (var transaction in list)
-            {
-                var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => transaction.Description.Contains(p.PatientCode), cancellationToken);
-                if (check_context != null)
+                var add_transaction = new Transaction
                 {
-                    var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
-                    if (info != null && info.Amount == decimal.ToDouble(transaction.Amount))
+                    Id = trans.Id,
+                    Tid = trans.Tid,
+                    Description = trans.Description,
+                    Amount = trans.Amount,
+                    CusumBalance = trans.cusum_balance,
+                    When = trans.When,
+                    BankSubAccId = trans.bank_sub_acc_id,
+                    SubAccId = trans.SubAccId,
+                    BankName = trans.BankName,
+                    BankAbbreviation = trans.BankAbbreviation,
+                    VirtualAccount = trans.VirtualAccount,
+                    VirtualAccountName = trans.VirtualAccountName,
+                    CorresponsiveName = trans.CorresponsiveName,
+                    CorresponsiveAccount = trans.CorresponsiveAccount,
+                    CorresponsiveBankId = trans.CorresponsiveBankId,
+                    CorresponsiveBankName = trans.CorresponsiveBankName,
+                };
+                if (!transactions.Any(t => t.Tid == add_transaction.Tid))
+                {
+                    await _context.AddAsync(add_transaction);
+                    await _context.SaveChangesAsync();
+                    var check_context = await _context.PatientProfiles.FirstOrDefaultAsync(p => trans.Description.Contains(p.PatientCode), cancellationToken);
+                    if (check_context != null)
                     {
-                        if (info.IsVerify)
+                        var info = await _cacheService.GetAsync<PayAppointmentRequest>(check_context.PatientCode, cancellationToken);
+                        if (info != null && info.Amount == decimal.ToDouble(trans.Amount))
                         {
-                            await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                            if (info.IsVerify)
+                            {
+                                await _appointmentService.VerifyAndFinishBooking(info, cancellationToken);
+                            }
+                            else
+                            {
+                                await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
+                            }
+                            await _cacheService.RemoveAsync(trans.Description, cancellationToken);
                         }
-                        else
-                        {
-                            await _appointmentService.DoPaymentForAppointment(info, cancellationToken);
-                        }
-                        await _cacheService.RemoveAsync(transaction.Description, cancellationToken);
                     }
                 }
             }
-            _logger.LogInformation($"Seeded {transactions.Count} transactions successfully");
+
         }
         catch (Exception e)
         {
             _logger.LogError(e.Message, e);
             throw new Exception(e.Message);
         }
+
+        _logger.LogInformation("Added {count} new transactions.", transaction.data.Count);
     }
 }

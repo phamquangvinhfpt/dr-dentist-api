@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using DocumentFormat.OpenXml.InkML;
 using FSH.WebApi.Application.Chat;
+using FSH.WebApi.Application.Common.FileStorage;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Infrastructure.Notifications;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,76 +15,91 @@ using Microsoft.EntityFrameworkCore;
 namespace FSH.WebApi.Infrastructure.Chat;
 public class ChatService : IChatService
 {
-    private readonly IHubContext<ChatHub> _chatHubContext;
+    private readonly IHubContext<NotificationHub> _chatHubContext;
     private readonly ApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IJobService _jobService;
+    private readonly IFileStorageService _fileStorageService;
 
     public ChatService(
-        IHubContext<ChatHub> chatHubContext,
+        IHubContext<NotificationHub> chatHubContext,
         ApplicationDbContext dbContext,
         ICurrentUser currentUser,
         UserManager<ApplicationUser> userManager,
-        IJobService jobService)
+        IFileStorageService fileStorageService)
     {
         _chatHubContext = chatHubContext;
         _dbContext = dbContext;
         _currentUser = currentUser;
         _userManager = userManager;
-        _jobService = jobService;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<List<ListUserDto>> GetListUserDtoAsync()
     {
+        var users = await _userManager.Users.ToListAsync();
+        var adminUser = await _userManager.GetUsersInRoleAsync(FSHRoles.Admin);
+        var currentUser = _currentUser.GetUserId().ToString();
+        users = users.Where(u => u.Id != currentUser && !adminUser.Contains(u)).ToList();
+
         var senderIds = await _dbContext.PatientMessages
-            .Where(pm => !pm.isStaffSender)
             .Select(pm => pm.SenderId)
             .Distinct()
             .ToListAsync();
 
-        var lastMessages = new List<ListUserDto>();
+        var latestMessages = new List<ListUserDto>();
 
-        foreach (var senderId in senderIds)
+        foreach( var user in users)
         {
             var latestMessage = await _dbContext.PatientMessages
-                .Where(pm => pm.SenderId == senderId && !pm.isStaffSender)
+                .Where(pm => pm.SenderId == user.Id)
                 .OrderByDescending(pm => pm.CreatedOn)
                 .Select(pm => new ListUserDto
                 {
                     Id = pm.Id,
-                    SenderId = pm.SenderId ?? string.Empty,
+                    SenderId = pm.SenderId ?? user.Id,
                     LatestMessage = pm.Message ?? string.Empty,
                     IsRead = pm.IsRead,
-                    CreatedOn = pm.CreatedOn
+                    CreatedOn = pm.CreatedOn,
+                    SenderName = $"{user.FirstName} {user.LastName}",
+                    ImageUrl = user.ImageUrl
                 })
                 .FirstOrDefaultAsync();
 
-            var user = await _userManager.FindByIdAsync(senderId);
-            if (user != null)
+            if (latestMessage == null )
             {
-                latestMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
-                latestMessage.ImageUrl = user.ImageUrl;
+                latestMessage = new ListUserDto
+                {
+                    SenderId = user.Id,
+                    SenderName = $"{user.FirstName} {user.LastName}",
+                    ImageUrl = user.ImageUrl,
+                    LatestMessage = string.Empty,
+                    CreatedOn = DateTime.UtcNow.AddHours(7)
+                };
             }
 
-            lastMessages.Add(latestMessage);
+            latestMessages.Add(latestMessage);
         }
 
-        return lastMessages;
+        return latestMessages;
     }
 
-    public async Task<ListMessageDto> SendMessageAsync(string? receiverId, string message, CancellationToken cancellationToken)
+    public async Task<ListMessageDto> SendMessageAsync(SendMessageDto send, CancellationToken cancellationToken)
     {
+        // send.Images có ảnh
         string senderId = _currentUser.GetUserId().ToString();
-        bool isStaffSender = _currentUser.IsInRole(FSHRoles.Staff);
         var patientMessage = new PatientMessages
         {
             SenderId = senderId,
-            receiverId = isStaffSender ? receiverId : null, // Staff can only send messages to patients
-            Message = message,
-            isStaffSender = isStaffSender ? true : false,
+            ReceiverId = send.ReceiverId ?? string.Empty,
+            Message = send.Message,
             IsRead = false
         };
+
+        if (send.Images != null)
+        {
+            patientMessage.Images = await _fileStorageService.SaveFilesAsync(send.Images, cancellationToken);
+        }
 
         _dbContext.Set<PatientMessages>().Add(patientMessage);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -102,13 +119,17 @@ public class ChatService : IChatService
             sentMessage.ImageUrl = user.ImageUrl;
         }
 
+        _chatHubContext.Clients.User(send.ReceiverId).SendAsync("ReceiveMessage", sentMessage);
+        _chatHubContext.Clients.User(senderId).SendAsync("ReceiveMessage", sentMessage);
+
         return sentMessage;
     }
 
     public async Task<IEnumerable<ListMessageDto>> GetConversationAsync(string? conversionId, CancellationToken cancellationToken)
     {
         var query = _dbContext.Set<PatientMessages>()
-            .Where(pm => pm.SenderId == conversionId || pm.receiverId == conversionId);
+            .Where(pm => pm.ReceiverId == conversionId && pm.SenderId == _currentUser.GetUserId().ToString() ||
+                         pm.SenderId == conversionId && pm.ReceiverId == _currentUser.GetUserId().ToString());
 
         var messages = await query
             .OrderBy(pm => pm.CreatedOn)
@@ -117,6 +138,7 @@ public class ChatService : IChatService
                 Id = pm.Id,
                 SenderId = pm.SenderId,
                 Message = pm.Message,
+                ImagesUrl = pm.Images,
                 CreatedOn = pm.CreatedOn
             })
             .ToListAsync(cancellationToken);
@@ -130,6 +152,7 @@ public class ChatService : IChatService
                 message.ImageUrl = user.ImageUrl;
             }
         }
+
         return messages;
     }
 

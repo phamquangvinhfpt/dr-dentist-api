@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241120001322_Init")]
-    partial class Init
+    [Migration("20241130050302_Update_Transaction")]
+    partial class Update_Transaction
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -234,6 +234,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string[]>("Images")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
@@ -244,9 +248,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Message")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ReceiverId")
+                        .HasColumnType("text");
 
                     b.Property<string>("SenderId")
                         .HasColumnType("text");
@@ -256,17 +262,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<bool>("isStaffSender")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("receiverId")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("SenderId");
+                    b.HasIndex("ReceiverId");
 
-                    b.HasIndex("receiverId");
+                    b.HasIndex("SenderId");
 
                     b.ToTable("PatientMessage", "CustomerService");
 
@@ -1014,37 +1014,71 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Transaction", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("BankAbbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankSubAccId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveAccount")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveBankId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveBankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CusumBalance")
                         .HasColumnType("numeric");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ErrorMessage")
+                    b.Property<string>("SubAccId")
+                        .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsSuccess")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<DateOnly>("TransactionDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("TransactionID")
+                    b.Property<string>("Tid")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("VirtualAccount")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VirtualAccountName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("When")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1770,12 +1804,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("SenderId")
+                        .HasForeignKey("ReceiverId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("receiverId")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 

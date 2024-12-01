@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Update_Transaction : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -175,14 +175,23 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Payment",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TransactionID = table.Column<string>(type: "text", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Tid = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
-                    TransactionDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    IsSuccess = table.Column<bool>(type: "boolean", nullable: false),
-                    ErrorMessage = table.Column<string>(type: "text", nullable: true),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    CusumBalance = table.Column<decimal>(type: "numeric", nullable: false),
+                    When = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    BankSubAccId = table.Column<string>(type: "text", nullable: false),
+                    SubAccId = table.Column<string>(type: "text", nullable: false),
+                    BankName = table.Column<string>(type: "text", nullable: false),
+                    BankAbbreviation = table.Column<string>(type: "text", nullable: false),
+                    VirtualAccount = table.Column<string>(type: "text", nullable: true),
+                    VirtualAccountName = table.Column<string>(type: "text", nullable: true),
+                    CorresponsiveName = table.Column<string>(type: "text", nullable: false),
+                    CorresponsiveAccount = table.Column<string>(type: "text", nullable: false),
+                    CorresponsiveBankId = table.Column<string>(type: "text", nullable: false),
+                    CorresponsiveBankName = table.Column<string>(type: "text", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false)
                 },
                 constraints: table =>
@@ -358,9 +367,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     SenderId = table.Column<string>(type: "text", nullable: true),
-                    receiverId = table.Column<string>(type: "text", nullable: true),
-                    Message = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    isStaffSender = table.Column<bool>(type: "boolean", nullable: false),
+                    ReceiverId = table.Column<string>(type: "text", nullable: true),
+                    Message = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    Images = table.Column<string[]>(type: "text[]", nullable: false),
                     IsRead = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -374,15 +383,15 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_PatientMessage", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_PatientMessage_Users_SenderId",
-                        column: x => x.SenderId,
+                        name: "FK_PatientMessage_Users_ReceiverId",
+                        column: x => x.ReceiverId,
                         principalSchema: "Identity",
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_PatientMessage_Users_receiverId",
-                        column: x => x.receiverId,
+                        name: "FK_PatientMessage_Users_SenderId",
+                        column: x => x.SenderId,
                         principalSchema: "Identity",
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -1171,10 +1180,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 column: "IndicationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PatientMessage_receiverId",
+                name: "IX_PatientMessage_ReceiverId",
                 schema: "CustomerService",
                 table: "PatientMessage",
-                column: "receiverId");
+                column: "ReceiverId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PatientMessage_SenderId",
