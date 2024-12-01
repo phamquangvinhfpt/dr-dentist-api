@@ -13,6 +13,7 @@ using FSH.WebApi.Shared.Multitenancy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Threading;
 
@@ -45,13 +46,47 @@ internal class ApplicationDbSeeder
         await SeedAdminUserAsync();
         await SeedAdmin2UserAsync();
         await SeedStaffUserAsync();
+        await SeedTypeServiceAsync();
         await SeedUserAsync();
         await SeedServiceAsync();
-        await SeedAppointmentAsync();
-        await SeedAppointmentInforAsync();
+        await SeedRoomAsync();
+        //await SeedAppointmentAsync();
+        //await SeedAppointmentInforAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
+    private async Task SeedRoomAsync()
+    {
+        if (!_db.Rooms.Any())
+        {
+            _logger.LogInformation("Seeding room");
+            int number = 5;
+            for (int i = 1; i <= 5; i++)
+            {
+                _db.Rooms.Add(new Domain.Examination.Room
+                {
+                    RoomName = $"Room {i}",
+                    Status = true
+                });
+            }
+            await _db.SaveChangesAsync();
+        }
+    }
+    private async Task SeedTypeServiceAsync()
+    {
+        if (!_db.TypeServices.Any())
+        {
+            _logger.LogInformation("Seeding Type Service.");
+            string? path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string dataPath = Path.Combine(path!, "Services", "TypeServiceData.json");
+            _logger.LogInformation("Started to Seed Type Service.");
+
+            string serviceData = await File.ReadAllTextAsync(dataPath);
+            var services = _serializerService.Deserialize<List<TypeService>>(serviceData);
+            await _db.TypeServices.AddRangeAsync(services);
+            await _db.SaveChangesAsync();
+        }
+    }
     private async Task SeedRolesAsync(ApplicationDbContext dbContext)
     {
         foreach (string roleName in FSHRoles.DefaultRoles)
@@ -265,6 +300,14 @@ internal class ApplicationDbSeeder
 
             string serviceData = await File.ReadAllTextAsync(dataPath);
             var services = _serializerService.Deserialize<List<Service>>(serviceData);
+            Random next = new Random();
+            var type = await _db.TypeServices.ToListAsync();
+            foreach (var service in services)
+            {
+                var t = type[next.Next(type.Count())];
+                service.TypeServiceID = t.Id;
+            }
+
             await _db.Services.AddRangeAsync(services);
             await _db.SaveChangesAsync();
 
@@ -752,7 +795,7 @@ internal class ApplicationDbSeeder
                         // Xác định status dựa vào ngày
                         if (dayOffset < 0)
                         {
-                            status = AppointmentStatus.Success;
+                            status = AppointmentStatus.Come;
                             canProvideFeeback = true;
                         }
                         else if (dayOffset == 0)
@@ -760,7 +803,7 @@ internal class ApplicationDbSeeder
                             var currentTime = DateTime.Now.TimeOfDay;
                             if (startTime < currentTime)
                             {
-                                status = AppointmentStatus.Success;
+                                status = AppointmentStatus.Come;
                                 canProvideFeeback = true;
                             }
                             else
@@ -881,7 +924,7 @@ internal class ApplicationDbSeeder
                         Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
                     })
                     .ToList();
-                var val = _db.WorkingCalendars.Add(new WorkingCalendar
+                var val = _db.AppointmentCalendars.Add(new AppointmentCalendar
                 {
                     PatientId = patientId.PatientID,
                     AppointmentId = appointment.Id,
@@ -927,7 +970,7 @@ internal class ApplicationDbSeeder
 
                 foreach (var appointment in appointments)
                 {
-                    if (appointment.Status == AppointmentStatus.Success)
+                    if (appointment.Status == AppointmentStatus.Come)
                     {
                         var s = _db.Services.FirstOrDefault(p => p.Id == appointment.ServiceId);
                         var payment = _db.Payments.Add(new Domain.Payments.Payment
@@ -972,13 +1015,13 @@ internal class ApplicationDbSeeder
                                 AppointmentID = appointment.Id,
                                 DoctorID = appointment.DentistId,
                                 Status = c ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Completed,
-                                Price = item.Procedure.Price,
+                                Cost = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
                                 DiscountAmount = 0,
-                                TotalCost = item.Procedure.Price,
+                                FinalCost = item.Procedure.Price,
                                 StartDate = date,
                             }).Entity;
-                            var w = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                            var w = _db.AppointmentCalendars.Add(new Domain.Identity.AppointmentCalendar
                             {
                                 DoctorId = appointment.DentistId,
                                 PatientId = appointment.PatientId,
@@ -1014,7 +1057,7 @@ internal class ApplicationDbSeeder
                             }
                             else
                             {
-                                appointment.Status = AppointmentStatus.Success;
+                                appointment.Status = AppointmentStatus.Come;
                             }
                         }
 
@@ -1107,10 +1150,10 @@ internal class ApplicationDbSeeder
                                 AppointmentID = appointment.Id,
                                 DoctorID = appointment.DentistId,
                                 Status = item.SP.StepOrder == 1 ? Domain.Treatment.TreatmentPlanStatus.Active : Domain.Treatment.TreatmentPlanStatus.Pending,
-                                Price = item.Procedure.Price,
+                                Cost = item.Procedure.Price,
                                 StartTime = appointment.StartTime,
                                 DiscountAmount = 0,
-                                TotalCost = item.Procedure.Price,
+                                FinalCost = item.Procedure.Price,
                             };
                             if (item.SP.StepOrder == 1)
                             {
@@ -1118,7 +1161,7 @@ internal class ApplicationDbSeeder
                             }
                             t = _db.TreatmentPlanProcedures.Add(t).Entity;
                         }
-                        _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                        _db.AppointmentCalendars.Add(new Domain.Identity.AppointmentCalendar
                         {
                             PatientId = appointment.PatientId,
                             DoctorId = appointment.DentistId,
@@ -1167,12 +1210,26 @@ internal class ApplicationDbSeeder
             int flash = 0;
             int d_profile_index = 0;
             int p_profile_index = 0;
+            Random next = new Random();
+            var type = await _db.TypeServices.ToListAsync();
             foreach (var user in users)
             {
                 var entry = _db.Users.Add(user).Entity;
-                if (flash < 10)
+                if (flash < 5)
                 {
+                    var t = type[next.Next(type.Count)];
                     doctors[d_profile_index].DoctorId = entry.Id;
+                    doctors[d_profile_index].TypeServiceID = t.Id;
+                    doctors[d_profile_index].WorkingType = WorkingType.FullTime;
+                    doctor.Add(entry);
+                    flash++;
+                    d_profile_index++;
+                }else if(flash < 10)
+                {
+                    var t = type[next.Next(type.Count)];
+                    doctors[d_profile_index].DoctorId = entry.Id;
+                    doctors[d_profile_index].TypeServiceID = t.Id;
+                    doctors[d_profile_index].WorkingType = WorkingType.PartTime;
                     doctor.Add(entry);
                     flash++;
                     d_profile_index++;

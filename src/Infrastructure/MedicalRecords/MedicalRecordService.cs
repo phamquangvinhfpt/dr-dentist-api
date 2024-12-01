@@ -41,7 +41,7 @@ public class MedicalRecordService : IMedicalRecordService
             var appointment = await _db.Appointments.FirstOrDefaultAsync(x => x.Id == request.AppointmentId
                 && (
                     x.Status == Domain.Appointments.AppointmentStatus.Confirmed
-                     || x.Status == Domain.Appointments.AppointmentStatus.Success))
+                     || x.Status == Domain.Appointments.AppointmentStatus.Come))
                     ?? throw new BadRequestException("Appointment not found");
 
             var app = new MedicalRecord

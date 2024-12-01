@@ -50,9 +50,9 @@ public class DiagnosisConfig : IEntityTypeConfiguration<Diagnosis>
               .IsMultiTenant();
 
         builder
-            .HasOne(b => b.MedicalRecord)
-            .WithOne(b => b.Diagnosis)
-            .HasForeignKey<Diagnosis>(b => b.RecordId);
+            .HasOne<MedicalRecord>()
+            .WithMany(p => p.Diagnosises)
+            .HasForeignKey(b => b.RecordId);
 
         builder
             .Property(b => b.TeethConditions)
@@ -74,6 +74,24 @@ public class ServicesConfig : IEntityTypeConfiguration<Service>
 
         builder
             .Property(b => b.ServiceDescription)
+                .HasMaxLength(256);
+        builder
+            .HasOne<TypeService>()
+            .WithMany()
+            .HasForeignKey(p => p.TypeServiceID).IsRequired(false);
+    }
+}
+
+public class RoomConfig : IEntityTypeConfiguration<Room>
+{
+    public void Configure(EntityTypeBuilder<Room> builder)
+    {
+        builder
+              .ToTable("Room", SchemaNames.Treatment)
+              .IsMultiTenant();
+
+        builder
+            .Property(b => b.RoomName)
                 .HasMaxLength(256);
     }
 }

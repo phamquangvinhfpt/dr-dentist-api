@@ -12,6 +12,8 @@ public class ServiceDTOs
     public string Description { get; set; }
     public string? CreateBy { get; set; }
     public DateTime CreateDate { get; set; }
+    public Guid TypeServiceID { get; set; }
+    public string? TypeName { get; set; }
     public bool IsActive { get; set; } = true;
     public double TotalPrice { get; set; } = 0;
 }

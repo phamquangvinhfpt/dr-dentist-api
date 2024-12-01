@@ -10,9 +10,10 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.DentalServices.Services;
 public interface IServiceService : ITransientService
 {
+    Task<bool> CheckTypeServiceExisting(Guid type);
     Task<bool> CheckExistingService(Guid serviceId);
     Task<bool> CheckExistingProcedure(Guid procedureID);
-    Task<PaginationResponse<Service>> GetServicesPaginationAsync(PaginationFilter filter, CancellationToken cancellation);
+    Task<PaginationResponse<ServiceDTOs>> GetServicesPaginationAsync(PaginationFilter filter, CancellationToken cancellation);
     Task CreateServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken);
     Task ModifyServiceAsync(CreateServiceRequest request, CancellationToken cancellationToken);
     Task<string> ToggleServiceAsync(ToggleStatusRequest request, CancellationToken cancellationToken);
@@ -25,7 +26,7 @@ public interface IServiceService : ITransientService
 
     Task<ProcedureDTOs> GetProcedureByID(Guid procedureID, CancellationToken cancellationToken);
     Task<string> DeleteServiceAsync(Guid id, CancellationToken cancellationToken);
-    Task<PaginationResponse<Service>> GetDeletedServiceAsync(PaginationFilter request, CancellationToken cancellationToken);
+    Task<PaginationResponse<ServiceDTOs>> GetDeletedServiceAsync(PaginationFilter request, CancellationToken cancellationToken);
     Task<string> RestoreServiceAsync(Guid id, CancellationToken cancellationToken);
     Task<ServiceDTO> AddOrDeleteProcedureToService(AddOrDeleteProcedureToService request, CancellationToken cancellationToken);
     Task<string> DeleteProcedureAsync(DefaultIdType id, CancellationToken cancellationToken);
@@ -34,4 +35,6 @@ public interface IServiceService : ITransientService
     Task<List<ProcedurePlanResponse>> GetProceduresByServiceID(Guid serviceID, CancellationToken cancellationToken);
     Task<ServiceDTO> GetDeleteServiceByID(DefaultIdType id, CancellationToken cancellationToken);
     Task<ServiceHaveFeedback> GetServiceDetailHaveFeedback(DefaultIdType id, CancellationToken cancellationToken);
+    Task<PaginationResponse<TypeService>> GetTypeServiceAsync(PaginationFilter request, CancellationToken cancellationToken);
+    Task<string> AddTypeServiceAsync(AddTypeServiceRequest request, CancellationToken cancellationToken);
 }

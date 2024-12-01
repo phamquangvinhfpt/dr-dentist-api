@@ -5,6 +5,7 @@ namespace FSH.WebApi.Domain.Service;
 
 public class Service : AuditableEntity, IAggregateRoot
 {
+    public Guid TypeServiceID { get; set; }
     public string ServiceName { get; set; } = string.Empty;
     public string ServiceDescription { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;

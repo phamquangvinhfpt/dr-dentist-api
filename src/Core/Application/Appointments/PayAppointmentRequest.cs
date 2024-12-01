@@ -1,4 +1,4 @@
-﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+﻿using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Payments;
 using System;

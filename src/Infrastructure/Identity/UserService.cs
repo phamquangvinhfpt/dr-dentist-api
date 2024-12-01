@@ -15,10 +15,10 @@ using FSH.WebApi.Application.Common.ReCaptchaV3;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Common.SpeedSMS;
 using FSH.WebApi.Application.CustomerServices.Feedbacks;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Auditing;
@@ -59,7 +59,7 @@ internal partial class UserService : IUserService
     private readonly ISpeedSMSService _speedSMSService;
     private readonly ICurrentUser _currentUserService;
     private readonly IMedicalHistoryService _medicalHistoryService;
-    private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly IAppointmentCalendarService _workingCalendarService;
     private readonly ILogger<UserService> _logger;
     public UserService(
         SignInManager<ApplicationUser> signInManager,
@@ -80,7 +80,7 @@ internal partial class UserService : IUserService
         ISpeedSMSService speedSMSService,
         ICurrentUser currentUser,
         IMedicalHistoryService medicalHistoryService,
-        IWorkingCalendarService workingCalendarService,
+        IAppointmentCalendarService workingCalendarService,
         ILogger<UserService> logger)
     {
         _signInManager = signInManager;
@@ -152,8 +152,7 @@ internal partial class UserService : IUserService
     {
         EnsureValidTenant();
         var user = await _userManager.FindByIdAsync(userID);
-        var re = user is not null;
-        return re;
+        return user is not null;
     }
 
     public async Task<bool> ExistsWithNameAsync(string name)
@@ -321,6 +320,9 @@ internal partial class UserService : IUserService
                 profile.Education = request.Education ?? profile.Education;
                 profile.SeftDescription = request.SeftDescription ?? profile.SeftDescription;
                 profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
+                profile.WorkingType = request.WorkingType;
+                profile.TypeServiceID = request.TypeServiceID;
+
                 await _db.SaveChangesAsync(cancellationToken);
             }
             else
@@ -330,10 +332,13 @@ internal partial class UserService : IUserService
                     DoctorId = request.DoctorID,
                     CreatedBy = _currentUserService.GetUserId(),
                     Certification = request.Certification,
+                    TypeServiceID = request.TypeServiceID,
                     College = request.College,
                     Education = request.Education,
                     SeftDescription = request.SeftDescription,
                     YearOfExp = request.YearOfExp,
+                    WorkingType = WorkingType.None,
+                    IsActive = false,
                 });
                 await _db.SaveChangesAsync(cancellationToken);
             }
@@ -419,7 +424,7 @@ internal partial class UserService : IUserService
             foreach (var user in users)
             {
                 var doctor = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
-                var rating = await GetDoctorRating(doctor.Id);
+                double rating = await GetDoctorRating(doctor.Id);
                 doctorResponses.Add(new GetDoctorResponse
                 {
                     Id = user.Id,

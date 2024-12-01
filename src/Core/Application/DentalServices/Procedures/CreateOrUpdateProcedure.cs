@@ -68,7 +68,7 @@ public class CreateOrUpdateProcedureHandler : IRequestHandler<CreateOrUpdateProc
 
     public async Task<string> Handle(CreateOrUpdateProcedure request, CancellationToken cancellationToken)
     {
-        if (request.isModify) {
+        if (request.isModify){
             await _serviceService.ModifyProcedureAsync(request, cancellationToken);
         }
         else

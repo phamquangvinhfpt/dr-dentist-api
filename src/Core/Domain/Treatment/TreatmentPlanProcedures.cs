@@ -14,9 +14,9 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
     public TreatmentPlanStatus Status { get; set; }
     public DateOnly? StartDate { get; set; }
     public TimeSpan? StartTime { get; set; }
-    public double Price { get; set; }
+    public double Cost { get; set; }
     public double DiscountAmount { get; set; }
-    public double TotalCost { get; set; }
+    public double FinalCost { get; set; }
     public string? Note { get; set; }
     public int RescheduleTime { get; set; } = 0;
 
@@ -42,9 +42,9 @@ public class TreatmentPlanProcedures : AuditableEntity, IAggregateRoot
         Status = status;
         StartDate = startDate;
         StartTime = startTime;
-        Price = price;
+        Cost = price;
         DiscountAmount = discountAmount;
-        TotalCost = totalCost;
+        FinalCost = totalCost;
         Note = note;
         RescheduleTime = rescheduleTime;
     }

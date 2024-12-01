@@ -4,7 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FSH.WebApi.Application.Identity.WorkingCalendars;
-internal class FollowUpAppointmentResponse
+namespace FSH.WebApi.Domain.Identity;
+public enum WorkingType
 {
+    None,
+    PartTime,
+    FullTime
 }

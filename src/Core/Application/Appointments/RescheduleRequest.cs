@@ -1,4 +1,4 @@
-﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+﻿using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +10,13 @@ public class RescheduleRequest : IRequest<string>
 {
     public Guid AppointmentID { get; set; }
     public DateOnly AppointmentDate { get; set; }
-    public TimeSpan StartTime {  get; set; }
+    public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
 }
 
 public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
 {
-    public RescheduleRequestValidator(IAppointmentService appointmentService, IWorkingCalendarService workingCalendarService)
+    public RescheduleRequestValidator(IAppointmentService appointmentService, IAppointmentCalendarService workingCalendarService)
     {
         RuleFor(p => p.AppointmentID)
             .NotEmpty()

@@ -1,8 +1,7 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
-using FSH.WebApi.Application.Identity.MedicalHistories;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Infrastructure.Redis;
@@ -17,6 +16,7 @@ public class AppointmentController : VersionNeutralApiController
     private readonly ICurrentUser _currentUserService;
     private static string APPOINTMENT = "APPOINTMENT";
     private static string FOLLOW = "FOLLOW";
+    private static string REEXAM = "REEXAM";
     private static string NON = "NON";
     public AppointmentController(ICacheService cacheService, IAppointmentService appointmentService, ICurrentUser currentUserService)
     {
@@ -33,7 +33,15 @@ public class AppointmentController : VersionNeutralApiController
         DeleteRedisCode();
         return Mediator.Send(request);
     }
-
+    //checked
+    [HttpPost("re/create")]
+    [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
+    [OpenApiOperation("Create ReExamination Appointment", "")]
+    public async Task<string> CreateReAppointment(AddReExamination request, CancellationToken cancellationToken)
+    {
+        DeleteRedisCode();
+        return await _appointmentService.CreateReExamination(request, cancellationToken);
+    }
     [HttpPost("cancel")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Cancel Appointment", "")]
@@ -204,7 +212,41 @@ public class AppointmentController : VersionNeutralApiController
             List<string> list = new List<string> { key };
             _cacheService.Set(APPOINTMENT, list);
         }
-        return await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
+        return result;
+    }
+
+    //checked
+    [HttpPost("re/get-all")]
+    [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
+    [OpenApiOperation("View Re Examination Appointments", "")]
+    public async Task<PaginationResponse<GetWorkingDetailResponse>> GetReExamAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        string key = RedisKeyGenerator.GenerateAppointmentKey(
+            _currentUserService.GetUserId().ToString(),
+            filter,
+            date,
+            REEXAM
+        );
+        var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
+        if (r != null)
+        {
+            return r;
+        }
+        var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
+        _cacheService.SetAsync(key, result);
+        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+        if (keys != null)
+        {
+            keys.Add(key);
+            _cacheService.Remove(APPOINTMENT);
+            _cacheService.Set(APPOINTMENT, keys);
+        }
+        else
+        {
+            List<string> list = new List<string> { key };
+            _cacheService.Set(APPOINTMENT, list);
+        }
+        return result;
     }
     public async Task DeleteRedisCode()
     {

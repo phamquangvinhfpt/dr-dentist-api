@@ -3,7 +3,6 @@ using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Dashboards;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Auth.Permissions;
@@ -66,7 +65,7 @@ internal class DashboardService : IDashboardService
                 Date = n.Key,
                 CancelAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Cancelled),
                 FailAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Failed),
-                SuccessAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Success ||
+                SuccessAnalytic = n.Count(p => p.Status == Domain.Appointments.AppointmentStatus.Come ||
                                              p.Status == Domain.Appointments.AppointmentStatus.Done)
             })
             .OrderBy(p => p.Date)
@@ -239,7 +238,7 @@ internal class DashboardService : IDashboardService
     {
         try
         {
-            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Done || p.Status == Domain.Appointments.AppointmentStatus.Success);
+            var chartQuery = _db.Appointments.Where(p => p.Status == Domain.Appointments.AppointmentStatus.Done || p.Status == Domain.Appointments.AppointmentStatus.Come);
 
             if (startDate != default)
             {

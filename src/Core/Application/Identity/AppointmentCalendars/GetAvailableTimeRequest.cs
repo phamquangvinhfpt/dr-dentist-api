@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FSH.WebApi.Application.Identity.WorkingCalendars;
+namespace FSH.WebApi.Application.Identity.AppointmentCalendars;
 public class GetAvailableTimeRequest : IRequest<List<AvailableTimeResponse>>
 {
     public string? DoctorID { get; set; }
@@ -35,10 +35,10 @@ public class GetAvailableTimeRequestValidator : CustomValidator<GetAvailableTime
 
 public class GetAvailableTimeRequestHandler : IRequestHandler<GetAvailableTimeRequest, List<AvailableTimeResponse>>
 {
-    private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly IAppointmentCalendarService _workingCalendarService;
     private readonly IStringLocalizer<GetAvailableTimeRequest> _t;
 
-    public GetAvailableTimeRequestHandler(IWorkingCalendarService workingCalendarService, IStringLocalizer<GetAvailableTimeRequest> t)
+    public GetAvailableTimeRequestHandler(IAppointmentCalendarService workingCalendarService, IStringLocalizer<GetAvailableTimeRequest> t)
     {
         _workingCalendarService = workingCalendarService;
         _t = t;

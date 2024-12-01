@@ -1,7 +1,7 @@
 ﻿using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Shared.Authorization;
 using System;
@@ -24,7 +24,7 @@ public class CreateAppointmentRequest : IRequest<PayAppointmentRequest>
 
 public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointmentRequest>
 {
-    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService, IWorkingCalendarService workingCalendarService)
+    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService, IAppointmentCalendarService workingCalendarService)
     {
         RuleFor(p => p.PatientId)
             .NotNull()
@@ -75,7 +75,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(21))
                 {
                     return false;
                 }
@@ -84,7 +84,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                 })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(21))
                 {
                     return "Start time must be between 8:00 AM and 8:00 PM";
                 }

@@ -2,7 +2,7 @@
 using DocumentFormat.OpenXml.Vml.Office;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Application.TreatmentPlan.Prescriptions;
@@ -32,11 +32,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IJobService _jobService;
     private readonly ILogger<TreatmentPlanService> _logger;
-    private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly IAppointmentCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
 
-    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IWorkingCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService)
+    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService)
     {
         _db = db;
         _t = t;
@@ -55,7 +55,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            if (appointment.Status != AppointmentStatus.Success)
+            if (appointment.Status != AppointmentStatus.Come)
             {
                 throw new Exception("Appointment in status that can not do this action");
             }
@@ -90,7 +90,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == appointment.Id)
                     .FirstOrDefaultAsync();
 
-                var hasCalendar = await _db.WorkingCalendars
+                var hasCalendar = await _db.AppointmentCalendars
                     .FirstOrDefaultAsync(p => p.PlanID == past_plan.Id);
 
                 if (hasCalendar == null)
@@ -107,7 +107,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 plan.Plan.StartDate = request.TreatmentDate;
                 plan.Plan.StartTime = request.TreatmentTime;
                 plan.Plan.Status = Domain.Treatment.TreatmentPlanStatus.Active;
-                _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                _db.AppointmentCalendars.Add(new Domain.Identity.AppointmentCalendar
                 {
                     PatientId = appointment.PatientId,
                     DoctorId = appointment.DentistId,
@@ -228,7 +228,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 throw new Exception("The plan date is not today");
             }
 
-            var cal = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
+            var cal = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
                 ?? throw new Exception("Calendar is not found.");
 
             plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
@@ -261,7 +261,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         {
             List<TreatmentPlanResponse> result = new List<TreatmentPlanResponse>();
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id) ?? throw new Exception("Patient not found");
-            var newAppointment = await _db.Appointments.Where(p => p.PatientId == patient.Id && p.Status == AppointmentStatus.Success)
+            var newAppointment = await _db.Appointments.Where(p => p.PatientId == patient.Id && p.Status == AppointmentStatus.Come)
                 .OrderByDescending(p => p.AppointmentDate)
                 .FirstOrDefaultAsync();
 
@@ -300,7 +300,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Price = sp.Procedure.Price,
                     DoctorID = doctor.Id,
                     DoctorName = doctor.UserName,
-                    PlanCost = item.TotalCost,
+                    PlanCost = item.FinalCost,
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
@@ -476,7 +476,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     Price = sp.Procedure.Price,
                     DoctorID = doctor.Id,
                     DoctorName = $"{doctor.FirstName} {doctor.LastName}",
-                    PlanCost = item.TotalCost,
+                    PlanCost = item.FinalCost,
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
@@ -512,7 +512,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             {
                 throw new Exception("Can not find plan");
             }
-            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
+            var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
             if (calendar == null) {
                 throw new Exception("The plan is not on calendar");
             }
@@ -526,7 +526,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == request.AppointmentID)
                     .FirstOrDefaultAsync();
 
-                var hasCalendar = await _db.WorkingCalendars
+                var hasCalendar = await _db.AppointmentCalendars
                     .FirstOrDefaultAsync(p => p.PlanID == past_plan.Id);
 
                 if (hasCalendar == null)

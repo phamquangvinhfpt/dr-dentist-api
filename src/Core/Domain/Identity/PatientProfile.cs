@@ -12,6 +12,7 @@ public class PatientProfile : AuditableEntity, IAggregateRoot
     public string? PatientCode { get; set; }
     public string? IDCardNumber { get; set; }
     public string? Occupation { get; set; }
+    public string? Phone { get; set; }
 
     // Navigation property
     [JsonIgnore]

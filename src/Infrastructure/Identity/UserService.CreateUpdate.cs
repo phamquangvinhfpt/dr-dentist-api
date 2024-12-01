@@ -171,7 +171,8 @@ internal partial class UserService
                 {
                     Email = user.Email,
                     UserName = user.UserName,
-                    Url = emailVerificationUri
+                    Url = emailVerificationUri,
+                    Password = request.Password,
                 };
                 if (local.Equals("en"))
                 {

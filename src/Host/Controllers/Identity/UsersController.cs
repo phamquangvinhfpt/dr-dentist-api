@@ -2,6 +2,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Mailing;
+using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
@@ -14,12 +15,15 @@ public class UsersController : VersionNeutralApiController
 {
     private readonly IUserService _userService;
     private readonly ICurrentUser _currentUserService;
+    private readonly IServiceService _serviceService;
 
-    public UsersController(IUserService userService, ICurrentUser currentUserService)
+    public UsersController(IUserService userService, ICurrentUser currentUserService, IServiceService serviceService)
     {
         _userService = userService;
         _currentUserService = currentUserService;
+        _serviceService = serviceService;
     }
+
     //checked
     [HttpPost("get-users")]
     [MustHavePermission(FSHAction.View, FSHResource.Users)]
@@ -59,7 +63,7 @@ public class UsersController : VersionNeutralApiController
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
     public Task<string> CreateAsync(CreateUserRequest request, CancellationToken cancellation)
     {
-        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService, _serviceService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {
             var t = validation.Result;
@@ -106,7 +110,7 @@ public class UsersController : VersionNeutralApiController
     [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Register))]
     public Task<string> SelfRegisterAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
-        var validation = new CreateUserRequestValidator(_userService, _currentUserService).ValidateAsync(request);
+        var validation = new CreateUserRequestValidator(_userService, _currentUserService, _serviceService).ValidateAsync(request);
         if (!validation.IsCompleted)
         {
             var t = validation.Result;

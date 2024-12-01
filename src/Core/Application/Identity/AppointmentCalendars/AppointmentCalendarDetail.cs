@@ -6,8 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FSH.WebApi.Application.Identity.WorkingCalendars;
-public class WorkingCalendarDetail
+namespace FSH.WebApi.Application.Identity.AppointmentCalendars;
+public class AppointmentCalendarDetail
 {
     public Guid CalendarID { get; set; }
     public string? PatientName { get; set; }

@@ -19,20 +19,14 @@ public interface IUserService : ITransientService
     Task<bool> VerifyCurrentPassword(string userId, string password);
     Task<string> GetFullName(Guid userId);
     Task<List<ListUserDTO>> GetListAsync(CancellationToken cancellationToken);
-
     Task<int> GetCountAsync(CancellationToken cancellationToken);
-
     Task<UserDetailsDto> GetAsync(string userId, CancellationToken cancellationToken);
-
     Task<UserRoleDto> GetRolesAsync(string userId, CancellationToken cancellationToken);
     Task<string> AssignRolesAsync(string userId, UserRolesRequest request, CancellationToken cancellationToken);
-
     Task<List<string>> GetPermissionsAsync(string userId, CancellationToken cancellationToken);
     Task<bool> HasPermissionAsync(string userId, string permission, CancellationToken cancellationToken = default);
     Task InvalidatePermissionCacheAsync(string userId, CancellationToken cancellationToken);
-
     Task ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken);
-
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
     Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken);
     Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken);
@@ -53,7 +47,6 @@ public interface IUserService : ITransientService
     Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken);
     Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
     Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request);
-
     Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken);
     Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken);
     Task<List<GetDoctorResponse>> GetTop4Doctors();

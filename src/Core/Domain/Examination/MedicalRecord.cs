@@ -20,7 +20,7 @@ public class MedicalRecord : AuditableEntity, IAggregateRoot
     [JsonIgnore]
     public Appointment? Appointment { get; set; }
     [JsonIgnore]
-    public Diagnosis? Diagnosis { get; set; }
+    public ICollection<Diagnosis>? Diagnosises { get; set; }
     [JsonIgnore]
     public Indication? Indication { get; set; }
     [JsonIgnore]

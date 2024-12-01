@@ -41,10 +41,14 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<MedicalHistory> MedicalHistorys { get; set; }
     public DbSet<DoctorProfile> DoctorProfiles { get; set; }
     public DbSet<PatientProfile> PatientProfiles { get; set; }
-    public DbSet<WorkingCalendar> WorkingCalendars { get; set; }
+    public DbSet<AppointmentCalendar> AppointmentCalendars { get; set; }
     public DbSet<MedicalRecord> MedicalRecords { get; set; }
     public DbSet<BasicExamination> BasicExaminations { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
+    public DbSet<TypeService> TypeServices { get; set; }
+    public DbSet<WorkingCalendar> WorkingCalendars { get; set; }
+    public DbSet<TimeWorking> TimeWorkings { get; set; }
+    public DbSet<Room> Rooms { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

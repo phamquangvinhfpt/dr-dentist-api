@@ -13,6 +13,7 @@ public class CreateServiceRequest : IRequest<string>
     public Guid ServiceID { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public Guid TypeID { get; set; }
     public bool IsModify { get; set; } = false;
 }
 

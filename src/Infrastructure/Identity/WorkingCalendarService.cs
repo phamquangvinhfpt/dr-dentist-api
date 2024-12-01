@@ -1,36 +1,32 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Wordprocessing;
-using FSH.WebApi.Application.Common.Exceptions;
+using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.Users;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Identity.WorkingCalendar;
+using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
-using FSH.WebApi.Domain.Service;
-using FSH.WebApi.Infrastructure.Auth;
+using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Persistence.Context;
-using FSH.WebApi.Infrastructure.Treatments;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using Pomelo.EntityFrameworkCore.MySql.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using Xceed.Words.NET;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
-
 internal class WorkingCalendarService : IWorkingCalendarService
 {
     private readonly ApplicationDbContext _db;
@@ -38,335 +34,403 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly ICurrentUser _currentUserService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<WorkingCalendarService> _logger;
-
-    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger)
+    private readonly ICacheService _cacheService;
+    private readonly INotificationService _notificationService;
+    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService)
     {
         _db = db;
         _t = t;
         _currentUserService = currentUserService;
         _userManager = userManager;
         _logger = logger;
+        _cacheService = cacheService;
+        _notificationService = notificationService;
     }
 
-    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, string doctorId)
+    public Task<bool> CheckAvailableTimeWorking(string DoctorID, DateOnly date, TimeSpan time)
     {
-        var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorId);
-        var calendars = await _db.WorkingCalendars
-            .Where(c =>
-                c.DoctorId == doctor.Id &&
-                c.Date == date &&
-                (
-                    (c.StartTime <= start && start < c.EndTime) ||
-                    (c.StartTime < end && end <= c.EndTime) ||
-                    (start <= c.StartTime && c.EndTime <= end)
-                ) &&
-                (
-                    c.Status == CalendarStatus.Booked ||
-                    c.Status == CalendarStatus.Waiting
-                )
-            )
-            .AnyAsync();
-
-        return !calendars;
+        throw new NotImplementedException();
     }
 
-    public async Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, Guid DoctorID)
+    public async Task<string> CreateWorkingCalendarForParttime(List<CreateOrUpdateWorkingCalendar> request, string doctorID, CancellationToken cancellationToken)
     {
-        var calendars = await _db.WorkingCalendars
-            .Where(c =>
-                c.DoctorId == DoctorID &&
-                c.Date == date &&
-                (
-                    (c.StartTime <= start && start < c.EndTime) ||
-                    (c.StartTime < end && end <= c.EndTime) ||
-                    (start <= c.StartTime && c.EndTime <= end)
-                ) &&
-                (
-                    c.Status == CalendarStatus.Booked ||
-                    c.Status == CalendarStatus.Waiting
-                )
-            )
-            .AnyAsync();
-
-        return !calendars;
-    }
-
-    public async Task<bool> CheckAvailableTimeSlotToAddFollowUp(Guid doctorID, DateOnly treatmentDate, TimeSpan treatmentTime)
-    {
-        var endTime = treatmentTime.Add(TimeSpan.FromMinutes(30));
-        var calendars = await _db.WorkingCalendars
-            .Where(c =>
-                c.DoctorId == doctorID &&
-                c.Date == treatmentDate &&
-                (
-                    (c.StartTime <= treatmentTime && treatmentTime < c.EndTime) ||
-                    (c.StartTime < endTime && endTime <= c.EndTime) ||
-                    (treatmentTime <= c.StartTime && c.EndTime <= endTime)
-                ) &&
-                (
-                    c.Status == CalendarStatus.Booked ||
-                    c.Status == CalendarStatus.Waiting
-                )
-            )
-            .AnyAsync();
-
-        return !calendars;
-    }
-
-    public async Task<bool> CheckAvailableTimeSlotToReschedule(Guid appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
-    {
-        var existingCalendar = await _db.WorkingCalendars.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");
-        if (existingCalendar.Status != CalendarStatus.Booked) {
-            return false;
-        }
-        var calendars = await _db.WorkingCalendars
-            .Where(c =>
-                c.DoctorId == existingCalendar.DoctorId &&
-                c.Date == appointmentDate &&
-                (
-                    (c.StartTime <= startTime && startTime < c.EndTime) ||
-                    (c.StartTime < endTime && endTime <= c.EndTime) ||
-                    (startTime <= c.StartTime && c.EndTime <= endTime)
-                ) &&
-                (
-                    c.Status == CalendarStatus.Booked ||
-                    c.Status == CalendarStatus.Waiting
-                )
-            )
-            .AnyAsync();
-
-        return !calendars;
-    }
-
-    public List<WorkingCalendar> CreateWorkingCalendar(Guid doctorId, TimeSpan startTime, TimeSpan endTime, string? note = null)
-    {
-        var result = new List<WorkingCalendar>();
-
-        var currentDate = DateOnly.FromDateTime(DateTime.Now);
-
-        var lastDayOfMonth = new DateTime(currentDate.Year, currentDate.Month, DateTime.DaysInMonth(currentDate.Year, currentDate.Month));
-        var lastDate = DateOnly.FromDateTime(lastDayOfMonth);
-
-        var date = currentDate;
-        while (date <= lastDate)
-        {
-            var workingCalendar = new WorkingCalendar
-            {
-                DoctorId = doctorId,
-                Date = date,
-                StartTime = startTime,
-                EndTime = endTime,
-                Status = CalendarStatus.Waiting,
-                Note = note,
-                CreatedOn = DateTime.Now,
-                CreatedBy = _currentUserService.GetUserId(),
-            };
-
-            result.Add(workingCalendar);
-            date = date.AddDays(1);
-        }
-
-        return result;
-    }
-
-    public async Task<List<AvailableTimeResponse>> GetAvailableTimeSlot(GetAvailableTimeRequest request, CancellationToken cancellationToken)
-    {
-        var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
-        var timeSlot = await _db.WorkingCalendars.Where(a => a.DoctorId == dprofile.Id && a.Date == request.Date &&
-        (a.Status == CalendarStatus.Booked || a.Status == CalendarStatus.Waiting))
-            .OrderBy(a => a.StartTime).ToListAsync();
-
-        var startOfDay = new TimeSpan(8, 0, 0);
-        var endOfDay = new TimeSpan(20, 0, 0);
-        //var lunchStart = new TimeSpan(12, 0, 0);
-        //var lunchEnd = new TimeSpan(14, 0, 0);
-
-        var result = new List<AvailableTimeResponse>();
-
-        for (var time = startOfDay; time < endOfDay; time += TimeSpan.FromMinutes(30))
-        {
-            //if (time >= lunchStart && time < lunchEnd)
-            //{
-            //    continue;
-            //}
-            result.Add(new AvailableTimeResponse
-            {
-                Time = time,
-            });
-        }
-        foreach (var t in timeSlot)
-        {
-            result.RemoveAll(slot =>
-                slot.Time >= t.StartTime && slot.Time < t.EndTime);
-        }
-        return result;
-    }
-
-    public async Task<GetWorkingDetailResponse> GetCalendarDetail(Guid id, CancellationToken cancellationToken)
-    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            bool check = await _db.WorkingCalendars.AnyAsync(a => a.Id == id);
-            if (!check)
-            {
-                throw new BadRequestException("Calendar Not Found");
+            var doctor = await _userManager.FindByIdAsync(doctorID);
+            if (doctor == null) {
+                throw new Exception("Waring: Doctor is not existing.");
             }
-            var calendar = await _db.WorkingCalendars
-                .Where(p => p.Id == id)
-                .Select(p => new
-                {
-                    Calendar = p,
-                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == p.DoctorId),
-                    Appointment = _db.Appointments.FirstOrDefault(a => a.Id == p.AppointmentId),
-                    TreamentPlan = _db.TreatmentPlanProcedures.FirstOrDefault(t => t.Id == p.PlanID),
-                })
-                .FirstOrDefaultAsync();
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorID);
 
-            var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == calendar.Appointment.PatientId);
-            var pUser = await _userManager.FindByIdAsync(pProfile.UserId);
+            var weeklyHours = request
+                .GroupBy(r => GetWeekOfMonth(r.Date))
+                .ToDictionary(g => g.Key, g => 0);
 
-            var dProfile = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
-
-            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == calendar.Appointment.ServiceId);
-
-            var result = new GetWorkingDetailResponse
+            foreach (var item in request)
             {
-                CalendarID = calendar.Calendar.Id,
-                PatientProfileID = calendar.Appointment.PatientId,
-                PatientCode = pProfile.PatientCode,
-                PatientName = pUser.UserName,
-                DoctorProfileID = calendar.Doctor.Id,
-                DoctorName = dProfile.UserName,
-                AppointmentId = calendar.Appointment.Id,
-                AppointmentType = calendar.Calendar.Type,
-                ServiceID = service.Id,
-                ServiceName = service.ServiceName,
-                Date = calendar.Calendar.Date!.Value,
-                StartTime = calendar.Calendar.StartTime!.Value,
-                EndTime = calendar.Calendar.EndTime!.Value,
-                Status = calendar.Calendar.Status,
-                Note = calendar.Calendar.Note,
-            };
-
-            if(calendar.TreamentPlan != null)
-            {
-                var sp = await _db.ServiceProcedures
-                .Where(p => p.Id == calendar.TreamentPlan.ServiceProcedureId)
-                .Select(a => new
+                var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
+                if (existing) {
+                    throw new Exception($"Date: {item.Date} has been taken in your working calendar");
+                }
+                int totalTimeInDay = 0;
+                var calendar = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
                 {
-                    SP = a,
-                    Procedure = _db.Procedures.FirstOrDefault(r => r.Id == a.ProcedureId),
-                })
-                .FirstOrDefaultAsync();
-                result.Step = sp.SP.StepOrder;
-                result.ProcedureName = sp.Procedure.Name;
-                result.ProcedureID = sp.Procedure.Id;
+                    DoctorID = dProfile.Id,
+                    Date = item.Date,
+                    Status = WorkingStatus.Waiting,
+                }).Entity;
+
+                foreach (var t in item.TimeWorkings)
+                {
+                    int timeWorked = (int)(t.EndTime - t.StartTime).TotalHours;
+                    if (timeWorked < 4)
+                    {
+                        throw new Exception($"At least 4 hours each session: {t.StartTime} - {t.EndTime}");
+                    }
+                    _db.TimeWorkings.Add(new Domain.Identity.TimeWorking
+                    {
+                        CalendarID = calendar.Id,
+                        StartTime = t.StartTime,
+                        EndTime = t.EndTime,
+                        IsActive = true
+                    });
+                    totalTimeInDay += timeWorked;
+                }
+
+                if (dProfile.WorkingType == WorkingType.PartTime && totalTimeInDay < 4)
+                {
+                    throw new Exception($"Part-time doctor must work at least 4 hours per day. Date: {item.Date}");
+                }
+
+                // Add daily hours to weekly total
+                int weekNumber = GetWeekOfMonth(item.Date);
+                weeklyHours[weekNumber] += totalTimeInDay;
             }
-            return result;
 
+            // Validate each week's total hours
+            foreach (var weekHours in weeklyHours)
+            {
+                if (weekHours.Value != 20)
+                {
+                    throw new Exception($"Total time working for week {weekHours.Key} is {weekHours.Value} hours. Must be exactly 20 hours per week.");
+                }
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return "Success";
         }
         catch (Exception ex) {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw new BadRequestException(ex.Message);
+            throw;
         }
     }
 
-    public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendars(PaginationFilter filter, DateOnly date, CancellationToken cancellation)
+    private int GetWeekOfMonth(DateOnly date)
     {
+        return ((date.Day - 1) / 7) + 1;
+    }
 
-        var result = new List<WorkingCalendarResponse>();
-        int totalCount = 0;
+    public async Task<string> FullTimeRegistDateWorking(string doctorID, DateTime date, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var currentUserRole = _currentUserService.GetRole();
-            var currentUserId = _currentUserService.GetUserId().ToString();
-
-            if (currentUserRole == FSHRoles.Dentist)
+            var doctor = await _userManager.FindByIdAsync(doctorID);
+            if (doctor == null)
             {
-                if (filter.AdvancedSearch == null)
-                {
-                    filter.AdvancedSearch = new Search();
-                    filter.AdvancedSearch.Fields = new List<string>();
-                }
-                var profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == currentUserId);
-                filter.AdvancedSearch.Fields.Add("DoctorId");
-                filter.AdvancedSearch.Keyword = profile.Id.ToString();
+                throw new Exception("Waring: Doctor is not existing.");
             }
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorID);
 
+            var dayInMonth = DateTime.DaysInMonth(date.Year, date.Month);
+
+            for (int day = date.Day; day <= dayInMonth; day++)
+            {
+
+                var currentDate = new DateOnly(date.Year, date.Month, day);
+
+                var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == currentDate);
+                if (existing) {
+                    throw new Exception($"Day: {currentDate} has been existing");
+                }
+
+                // Skip only Sundays
+                if (currentDate.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    continue;
+                }
+                // Create working calendar for workday
+                var calendar = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
+                {
+                    DoctorID = dProfile.Id,
+                    Date = currentDate,
+                    Status = WorkingStatus.Waiting,
+                }).Entity;
+
+                var addedCalendar = _db.WorkingCalendars.Add(calendar).Entity;
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<string> UpdateWorkingCalendar(List<CreateOrUpdateWorkingCalendar> request, string doctorID, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var doctor = await _userManager.FindByIdAsync(doctorID);
+            if (doctor == null)
+            {
+                throw new Exception("Waring: Doctor is not existing.");
+            }
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorID);
+
+            foreach (var item in request)
+            {
+                int totalTimeInDay = 0;
+
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
+                if (calendar == null) {
+                    throw new Exception("Warning: Error when find calendar");
+                }
+                if(calendar.Status != WorkingStatus.Waiting)
+                {
+                    throw new Exception("Warning: The time was accept or cancel");
+                }
+                foreach (var t in item.TimeWorkings)
+                {
+                    int timeWorked = (int)(t.EndTime - t.StartTime).TotalHours;
+                    //if (timeWorked < 4 && dProfile.WorkingType == WorkingType.PartTime)
+                    //{
+                    //    throw new Exception($"At least 4 hour each session for part time doctor: {t.StartTime} - {t.EndTime}");
+                    //}
+
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == calendar.Id).ToListAsync();
+                    if (times.Count() == 0) {
+                        throw new Exception("Warning: Error when find time working");
+                    }
+                    foreach (var time in times) {
+                        time.StartTime = t.StartTime;
+                        time.EndTime = t.EndTime;
+                        time.LastModifiedBy = _currentUserService.GetUserId();
+                    }
+
+                    totalTimeInDay += timeWorked;
+                }
+                if (dProfile.WorkingType == WorkingType.PartTime && totalTimeInDay < 4)
+                {
+                    throw new Exception($"Part-time doctor must work at least 4 hours per day. Date: {item.Date}");
+                }else if (dProfile.WorkingType == WorkingType.FullTime && totalTimeInDay < 8)
+                {
+                    throw new Exception($"Fulltime doctor must work at 8 hours per day. Date: {item.Date}");
+                }
+            }
+            await transaction.CommitAsync(cancellationToken);
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendarPagination(PaginationFilter filter, DateOnly date, DateOnly Edate,  CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
             var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
-
             var query = _db.WorkingCalendars
-            .Where(p => p.Status != CalendarStatus.Failed)
-            .AsNoTracking();
+                .AsNoTracking();
+
+            if(currentUser == FSHRoles.Dentist)
+            {
+                string id = _currentUserService.GetUserId().ToString();
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
 
             if (date != default)
             {
-                query = query.Where(w => w.Date == date);
+                query = query.Where(w => w.Date >= date);
             }
-
-            var calendarsGrouped = await query
-                .Where(p => p.DoctorId != null)
-                .WithSpecification(spec)
-                .GroupBy(c => c.DoctorId)
-                .ToDictionaryAsync(g => g.Key, g => g.ToList());
-
-            totalCount = calendarsGrouped.Count();
-
-            foreach (var c in calendarsGrouped)
+            if (date != default)
             {
-                var dentist = c.Key;
-                var calendars = c.Value;
+                query = query.Where(w => w.Date <= date);
+            }
+            int count = query.Count();
 
-                var appointment = await _db.Appointments
-                        .FirstOrDefaultAsync(a => a.Id == calendars[0].AppointmentId, cancellation);
+            query = query.OrderBy(p => p.Date);
 
-                if (appointment != null)
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
                 {
-                    var doc_profile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == dentist);
-                    var doc_infor = await _userManager.FindByIdAsync(doc_profile.DoctorId);
-                    var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == appointment.ServiceId);
-                    if (doc_infor.IsActive)
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach(var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
                     {
-                        var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
-                        var patientUser = await _userManager.FindByIdAsync(patientProfile.UserId);
-                        if (patientUser.IsActive)
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    if (item.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                        t.RoomID = room.Id;
+                        t.RoomName = room.RoomName;
+                    }
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach(var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
                         {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
 
-                            result.Add(new WorkingCalendarResponse
-                            {
-                                DoctorProfileID = dentist.Value,
-                                ImageUrl = doc_infor.ImageUrl,
-                                UserName = $"{doc_infor.FirstName} {doc_infor.LastName}",
-                                WorkingCalendars = calendars.Select(x =>
-                                new WorkingCalendarDetail
-                                {
-                                    CalendarID = x.Id,
-                                    AppointmentId = x.AppointmentId.Value,
-                                    Date = x.Date.Value,
-                                    EndTime = x.EndTime.Value,
-                                    Note = x.Note,
-                                    ServiceID = service.Id,
-                                    ServiceName = service.ServiceName,
-                                    PatientCode = patientProfile.PatientCode,
-                                    PatientName = patientUser.UserName,
-                                    PatientProfileID = patientProfile.Id,
-                                    StartTime = x.StartTime.Value,
-                                    Status = x.Status,
-                                    AppointmentType = x.Type,
-                                }).ToList(),
-                            });
-                        }
+    public async Task<string> AddRoomForWorkingAsync(AddRoomToWorkingRequest request, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == request.RoomID);
+            if (room == null) {
+                throw new Exception("Warning: Error when find room");
+            }
+            var calendar = await _db.WorkingCalendars
+                .Where(p => p.Id == request.CalendarID)
+                .Select(c => new
+                {
+                    Calendar = c,
+                    Times = _db.TimeWorkings.Where(p => p.CalendarID == c.Id).ToList(),
+                })
+                .FirstOrDefaultAsync();
+            if (calendar == null) {
+                throw new Exception("Warning: Error when find calendar");
+            }
+            if (calendar.Times.Count() == 0)
+            {
+                throw new Exception("Warning: Time was not selected.");
+            }
+            var wasUse = await _db.WorkingCalendars
+                .Where(p => p.RoomID == request.RoomID && p.Date == calendar.Calendar.Date && p.Status == WorkingStatus.Accept)
+                .ToListAsync();
+            bool flag = false;
+            foreach (var item in wasUse) {
+                foreach (var item2 in calendar.Times) {
+                    flag = await _db.TimeWorkings.AnyAsync(c =>
+                        c.CalendarID == item.Id && (
+                        c.StartTime < item2.StartTime && item2.StartTime < c.EndTime ||
+                        c.StartTime < item2.EndTime && item2.EndTime < c.EndTime ||
+                        item2.EndTime <= c.StartTime && c.EndTime <= item2.EndTime
+                    ));
+                    if (flag) {
+                        throw new Exception($"Warning: the room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
                     }
                 }
             }
+            calendar.Calendar.RoomID = request.RoomID;
+            await _db.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return "Success";
         }
-        catch (Exception ex) {
-            _logger.LogError(ex.Message);
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
+            throw;
         }
-        return new PaginationResponse<WorkingCalendarResponse>(
-                result,
-                totalCount,
-                filter.PageNumber,
-                filter.PageSize);
+    }
+
+    public async Task<string> CreateRoomsAsync(AddRoomRequest request, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var existing = await _db.Rooms.AnyAsync(p => p.RoomName == request.Name);
+            if (existing) {
+                throw new Exception("The room is existing");
+            }
+            _db.Rooms.Add(new Domain.Examination.Room
+            {
+                RoomName = request.Name,
+                Status = true
+            });
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<Room>> GetRoomsWithPagination(PaginationFilter filter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var spec = new EntitiesByPaginationFilterSpec<Room>(filter);
+            var query = await _db.Rooms
+                .AsNoTracking().WithSpecification(spec).ToListAsync();
+            int count = _db.Rooms.Count();
+
+            return new PaginationResponse<Room>(query, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
     }
 }

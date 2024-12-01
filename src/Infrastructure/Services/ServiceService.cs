@@ -77,7 +77,7 @@ internal class ServiceService : IServiceService
                 .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken)
                 ?? throw new NotFoundException($"Procedure with ID {request.Id} not found.");
 
-            var isDuplicate = await _db.Procedures
+            bool isDuplicate = await _db.Procedures
                 .AnyAsync(p => p.Id != request.Id &&
                               p.Name == request.Name &&
                               p.Price == request.Price &&
@@ -89,7 +89,7 @@ internal class ServiceService : IServiceService
                 throw new ConflictException("A procedure with the same information already exists.");
             }
 
-            var hasServiceProcedures = await _db.ServiceProcedures
+            bool hasServiceProcedures = await _db.ServiceProcedures
                 .AnyAsync(p => p.ProcedureId == request.Id, cancellationToken);
             var id = request.Id;
             if (hasServiceProcedures)
@@ -124,9 +124,9 @@ internal class ServiceService : IServiceService
                 var newProcedure = await _db.Procedures
                     .FirstAsync(p => p.Id == id, cancellationToken);
 
-                var priceDifference = newProcedure.Price - oldProcedure.Price;
+                double priceDifference = newProcedure.Price - oldProcedure.Price;
 
-                var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
+                bool wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
 
                 if (!wasUsed)
                 {
@@ -147,7 +147,8 @@ internal class ServiceService : IServiceService
                         CreatedBy = service.CreatedBy,
                         CreatedOn = service.CreatedOn,
                         LastModifiedBy = _currentUserService.GetUserId(),
-                        LastModifiedOn = DateTime.UtcNow
+                        LastModifiedOn = DateTime.UtcNow,
+                        TypeServiceID = service.TypeServiceID,
                     };
                     var entry = _db.Services.Add(s).Entity;
 
@@ -187,9 +188,9 @@ internal class ServiceService : IServiceService
                     var oldProcedure = await _db.Procedures
                         .FirstAsync(p => p.Id == sp.ProcedureId, cancellationToken);
 
-                    var priceDifference = newProcedure.Price - oldProcedure.Price;
+                    double priceDifference = newProcedure.Price - oldProcedure.Price;
 
-                    var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == sp.ServiceId);
+                    bool wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == sp.ServiceId);
 
                     if (!wasUsed)
                     {
@@ -210,7 +211,8 @@ internal class ServiceService : IServiceService
                             CreatedBy = service.CreatedBy,
                             CreatedOn = service.CreatedOn,
                             LastModifiedBy = _currentUserService.GetUserId(),
-                            LastModifiedOn = DateTime.UtcNow
+                            LastModifiedOn = DateTime.UtcNow,
+                            TypeServiceID = service.TypeServiceID,
                         };
                         var entry = _db.Services.Add(s).Entity;
 
@@ -253,10 +255,15 @@ internal class ServiceService : IServiceService
     {
         try
         {
-            var check = await _db.Services.AnyAsync(p => p.ServiceName == request.Name && p.IsActive);
+            bool check = await _db.Services.AnyAsync(p => p.ServiceName == request.Name && p.IsActive);
             if (check)
             {
                 throw new BadRequestException("Service Name is existing!!!");
+            }
+            var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == request.TypeID);
+            if (type == null)
+            {
+                throw new Exception("Warning: Error when identity type service.");
             }
             _db.Services.Add(new Domain.Service.Service
             {
@@ -266,6 +273,7 @@ internal class ServiceService : IServiceService
                 ServiceDescription = request.Description,
                 TotalPrice = 0,
                 IsActive = false,
+                TypeServiceID = request.TypeID,
             });
             await _db.SaveChangesAsync(cancellationToken);
         }
@@ -289,19 +297,29 @@ internal class ServiceService : IServiceService
                 {
                     throw new BadRequestException("Service Name is existing!!!");
                 }
+                var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == existing.TypeServiceID);
+                if (type == null)
+                {
+                    throw new Exception("Warning: Error when identity type service.");
+                }
                 existing.ServiceName = request.Name ?? existing.ServiceName;
                 existing.ServiceDescription = request.Description ?? existing.ServiceDescription;
                 existing.LastModifiedBy = _currentUserService.GetUserId();
                 existing.LastModifiedOn = DateTime.Now;
+                existing.TypeServiceID = type.Id;
             }
             else
             {
-                var wasUse = await _db.Appointments.AnyAsync(p => p.ServiceId ==  request.ServiceID);
+                bool wasUse = await _db.Appointments.AnyAsync(p => p.ServiceId ==  request.ServiceID);
+                var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == existing.TypeServiceID);
+                if (type == null)
+                {
+                    throw new Exception("Warning: Error when identity type service.");
+                }
                 if (wasUse) {
                     existing.IsActive = false;
                     existing.DeletedOn = DateTime.Now;
                     existing.DeletedBy = _currentUserService.GetUserId();
-
                     var ser_pro = await _db.ServiceProcedures.Where(p => p.ServiceId == existing.Id).ToListAsync();
 
                     var entry = _db.Services.Add(new Service
@@ -313,7 +331,8 @@ internal class ServiceService : IServiceService
                         CreatedBy = _currentUserService.GetUserId(),
                         CreatedOn = DateTime.Now,
                         LastModifiedBy = _currentUserService.GetUserId(),
-                        LastModifiedOn = DateTime.UtcNow
+                        LastModifiedOn = DateTime.UtcNow,
+                        TypeServiceID = type.Id
                     }).Entity;
                     foreach (var sp in ser_pro)
                     {
@@ -333,6 +352,7 @@ internal class ServiceService : IServiceService
                     existing.ServiceDescription = request.Description ?? existing.ServiceDescription;
                     existing.LastModifiedBy = _currentUserService.GetUserId();
                     existing.LastModifiedOn = DateTime.Now;
+                    existing.TypeServiceID = type.Id;
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
@@ -452,6 +472,11 @@ internal class ServiceService : IServiceService
             throw new Exception("Can not identity service.");
         }
         var existing = await _db.Services.Where(p => p.Id == serviceID).FirstOrDefaultAsync(cancellationToken) ?? throw new BadRequestException("Service is not found.");
+        var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == existing.TypeServiceID);
+        if(type == null)
+        {
+            throw new Exception("Warning: Error when identity type service.");
+        }
         var user = await _userManager.FindByIdAsync(existing.CreatedBy.ToString());
         var result = new ServiceDTO();
         result.ServiceID = existing.Id;
@@ -460,6 +485,8 @@ internal class ServiceService : IServiceService
         result.CreateBy = $"{user.FirstName} {user.LastName}";
         result.TotalPrice = existing.TotalPrice;
         result.Description = existing.ServiceDescription;
+        result.TypeName = type.TypeName;
+        result.TypeServiceID = type.Id;
         var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == serviceID).ToListAsync(cancellationToken);
         if (service_procedure != null) {
             result.Procedures = new List<ProcedureDTO>();
@@ -486,9 +513,10 @@ internal class ServiceService : IServiceService
 
     }
 
-    public async Task<PaginationResponse<Service>> GetServicesPaginationAsync(PaginationFilter filter, CancellationToken cancellation)
+    public async Task<PaginationResponse<ServiceDTOs>> GetServicesPaginationAsync(PaginationFilter filter, CancellationToken cancellation)
     {
         var spec = new EntitiesByPaginationFilterSpec<Service>(filter);
+        var result = new List<ServiceDTOs>();
         var services = await _db.Services
             .AsNoTracking()
             .WithSpecification(spec)
@@ -496,7 +524,25 @@ internal class ServiceService : IServiceService
 
         int count = await _db.Services
             .CountAsync(cancellation);
-        return new PaginationResponse<Service>(services, count, filter.PageNumber, filter.PageSize);
+
+        foreach(var item in services)
+        {
+            var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == item.TypeServiceID);
+            var user = await _userManager.FindByIdAsync(item.CreatedBy.ToString());
+            result.Add(new ServiceDTOs
+            {
+                TypeServiceID = item.TypeServiceID,
+                TypeName = type.TypeName,
+                CreateDate = item.CreatedOn,
+                Description = item.ServiceDescription,
+                IsActive = item.IsActive,
+                Name = item.ServiceName,
+                ServiceID = item.Id,
+                TotalPrice = item.TotalPrice,
+                CreateBy = $"{user.FirstName} {user.LastName}"
+            });
+        }
+        return new PaginationResponse<ServiceDTOs>(result, count, filter.PageNumber, filter.PageSize);
     }
 
     public async Task<string> DeleteServiceAsync(Guid id, CancellationToken cancellationToken)
@@ -519,11 +565,12 @@ internal class ServiceService : IServiceService
         }
     }
 
-    public async Task<PaginationResponse<Service>> GetDeletedServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<ServiceDTOs>> GetDeletedServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         try
         {
             var spec = new EntitiesByPaginationFilterSpec<Service>(request);
+            var result = new List<ServiceDTOs>();
             var services = await _db.Services
                 .IgnoreQueryFilters()
                 .AsNoTracking()
@@ -533,7 +580,24 @@ internal class ServiceService : IServiceService
 
             int count = await _db.Services.Where(p => p.DeletedBy != null)
                 .CountAsync(cancellationToken);
-            return new PaginationResponse<Service>(services, count, request.PageNumber, request.PageSize);
+            foreach (var item in services)
+            {
+                var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == item.TypeServiceID);
+                var user = await _userManager.FindByIdAsync(item.CreatedBy.ToString());
+                result.Add(new ServiceDTOs
+                {
+                    TypeServiceID = item.TypeServiceID,
+                    TypeName = type.TypeName,
+                    CreateDate = item.CreatedOn,
+                    Description = item.ServiceDescription,
+                    IsActive = item.IsActive,
+                    Name = item.ServiceName,
+                    ServiceID = item.Id,
+                    TotalPrice = item.TotalPrice,
+                    CreateBy = $"{user.FirstName} {user.LastName}"
+                });
+            }
+            return new PaginationResponse<ServiceDTOs>(result, count, request.PageNumber, request.PageSize);
         }
         catch (Exception ex)
         {
@@ -596,7 +660,7 @@ internal class ServiceService : IServiceService
                 .Where(sp => sp.ServiceId == request.ServiceID)
                 .OrderBy(sp => sp.StepOrder)
                 .ToListAsync(cancellationToken);
-            var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
+            bool wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == request.ServiceID);
             var id = request.ServiceID;
             if (request.IsRemove)
             {
@@ -661,7 +725,7 @@ internal class ServiceService : IServiceService
                 if (!wasUsed)
                 {
                     var current_service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
-                    var lastStep = currentServiceProcedures.Any() ?
+                    int lastStep = currentServiceProcedures.Any() ?
                         currentServiceProcedures.Max(x => x.StepOrder) : 0;
 
                     foreach (var procedureId in request.ProcedureID)
@@ -785,7 +849,7 @@ internal class ServiceService : IServiceService
                     }
                     else
                     {
-                        var wasUse = await _db.Appointments.AnyAsync(p => p.ServiceId == item.ServiceId);
+                        bool wasUse = await _db.Appointments.AnyAsync(p => p.ServiceId == item.ServiceId);
                         if (wasUse)
                         {
                             service.IsActive = false;
@@ -883,9 +947,9 @@ internal class ServiceService : IServiceService
             var newProcedure = await _db.Procedures
                 .FirstAsync(p => p.Id == newProcedureId, cancellationToken);
 
-            var priceDifference = newProcedure.Price - oldProcedure.Price;
+            double priceDifference = newProcedure.Price - oldProcedure.Price;
 
-            var wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == serviceId);
+            bool wasUsed = await _db.Appointments.AnyAsync(p => p.ServiceId == serviceId);
 
             if (!wasUsed)
             {
@@ -986,6 +1050,11 @@ internal class ServiceService : IServiceService
     public async Task<ServiceDTO> GetDeleteServiceByID(DefaultIdType id, CancellationToken cancellationToken)
     {
         var existing = await _db.Services.IgnoreQueryFilters().Where(p => p.Id == id).FirstOrDefaultAsync(cancellationToken) ?? throw new BadRequestException("Service is not found.");
+        var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == existing.TypeServiceID);
+        if (type == null)
+        {
+            throw new Exception("Warning: Error when identity type service.");
+        }
         var user = await _userManager.FindByIdAsync(existing.CreatedBy.ToString());
         var result = new ServiceDTO();
         result.ServiceID = existing.Id;
@@ -994,6 +1063,8 @@ internal class ServiceService : IServiceService
         result.CreateBy = user.UserName;
         result.TotalPrice = existing.TotalPrice;
         result.Description = existing.ServiceDescription;
+        result.TypeName = type.TypeName;
+        result.TypeServiceID = type.Id;
         var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == id).ToListAsync(cancellationToken);
         if (service_procedure != null)
         {
@@ -1023,7 +1094,11 @@ internal class ServiceService : IServiceService
         {
             var service = await _db.Services.FirstOrDefaultAsync(s => s.Id == id)
                 ?? throw new NotFoundException("Service not found");
-
+            var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == service.TypeServiceID);
+            if (type == null)
+            {
+                throw new Exception("Warning: Error when identity type service.");
+            }
             var totalRating = await _db.Feedbacks
                 .Where(f => f.ServiceId == id)
                 .GroupBy(f => f.ServiceId)
@@ -1090,7 +1165,9 @@ internal class ServiceService : IServiceService
                 CreateDate = service.CreatedOn,
                 IsActive = service.IsActive,
                 TotalPrice = service.TotalPrice,
-                Procedures = p
+                Procedures = p,
+                TypeServiceID = type.Id,
+                TypeName = type.TypeName,
             };
 
             // Initialize feedback list
@@ -1143,5 +1220,63 @@ internal class ServiceService : IServiceService
         }
 
         return result;
+    }
+
+    public async Task<bool> CheckTypeServiceExisting(Guid type)
+    {
+        try
+        {
+            bool existing = await _db.TypeServices.AnyAsync(p => p.Id == type);
+            return existing;
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<TypeService>> GetTypeServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var spec = new EntitiesByPaginationFilterSpec<TypeService>(request);
+            var procedures = await _db.TypeServices
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .WithSpecification(spec)
+                .ToListAsync(cancellationToken);
+
+            int count = await _db.TypeServices
+                .CountAsync(cancellationToken);
+            return new PaginationResponse<TypeService>(procedures, count, request.PageNumber, request.PageSize);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<string> AddTypeServiceAsync(AddTypeServiceRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            bool existing = await _db.TypeServices.AnyAsync(p => p.TypeName == request.TypeName || p.TypeDescription == request.TypeDescription);
+            if (existing)
+            {
+                throw new BadRequestException("Type Service has been existing");
+            }
+            _db.TypeServices.Add(new TypeService
+            {
+                TypeName = request.TypeName,
+                TypeDescription = request.TypeDescription,
+            });
+            await _db.SaveChangesAsync(cancellationToken);
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw;
+        }
     }
 }

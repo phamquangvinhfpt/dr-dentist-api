@@ -15,6 +15,7 @@ public class AppointmentResponse
     public Guid PatientId { get; set; }
     public string? PatientCode { get; set; }
     public string? PatientName { get; set; }
+    public string? PatientPhone { get; set; }
     public Guid DentistId { get; set; }
     public string? DentistName { get; set; }
     public Guid ServiceId { get; set; }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FSH.WebApi.Application.Identity.WorkingCalendars;
+namespace FSH.WebApi.Application.Identity.AppointmentCalendars;
 public class GetWorkingDetailResponse
 {
     public Guid CalendarID { get; set; }

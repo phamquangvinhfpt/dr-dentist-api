@@ -1,0 +1,44 @@
+[
+  {
+    "Id": "34b5a97f-4827-4d1a-9b2c-72b99f30d4c8",
+    "TypeName": "Khám & Phòng Ngừa",
+    "TypeDescription": "Các dịch vụ khám tổng quát và phòng ngừa bệnh lý răng miệng",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  },
+  {
+    "Id": "8fa74c03-cc1e-4d26-9e4b-5b289a0f6704",
+    "TypeName": "Điều Trị Nha Chu & Tủy",
+    "TypeDescription": "Các dịch vụ điều trị bệnh lý nha chu và điều trị tủy răng",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  },
+  {
+    "Id": "c07431b8-d8d9-42f0-98af-e214bd49a1f9",
+    "TypeName": "Chỉnh Nha",
+    "TypeDescription": "Các dịch vụ chỉnh nha và niềng răng thẩm mỹ",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  },
+  {
+    "Id": "d3b87b4d-1f9c-4af2-99c6-2851db6314b0",
+    "TypeName": "Phục Hình & Implant",
+    "TypeDescription": "Các dịch vụ phục hình răng sứ và cấy ghép implant",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  },
+  {
+    "Id": "19f51b6e-5ed3-4a12-b905-0a7c435907f1",
+    "TypeName": "Thẩm Mỹ",
+    "TypeDescription": "Các dịch vụ nha khoa thẩm mỹ và làm trắng răng",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  },
+  {
+    "Id": "4f26d3e2-b6f5-45c2-8187-f4db9e1a840b",
+    "TypeName": "Nha Khoa Chuyên Biệt",
+    "TypeDescription": "Các dịch vụ nha khoa dành cho đối tượng đặc biệt như trẻ em",
+    "CreatedBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "IsActive": true
+  }
+]
