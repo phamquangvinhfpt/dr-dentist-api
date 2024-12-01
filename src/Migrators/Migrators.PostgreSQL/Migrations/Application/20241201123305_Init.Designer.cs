@@ -12,13 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-<<<<<<<< HEAD:src/Migrators/Migrators.PostgreSQL/Migrations/Application/20241201032453_Init.Designer.cs
-    [Migration("20241201032453_Init")]
+    [Migration("20241201123305_Init")]
     partial class Init
-========
-    [Migration("20241130050302_Update_Transaction")]
-    partial class Update_Transaction
->>>>>>>> fea/update-message:src/Migrators/Migrators.PostgreSQL/Migrations/Application/20241130050302_Update_Transaction.Designer.cs
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
