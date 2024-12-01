@@ -1,9 +1,18 @@
-﻿using FSH.WebApi.Application.Notifications;
+﻿using FSH.WebApi.Application.Chat;
+using FSH.WebApi.Application.Notifications;
+using FSH.WebApi.Infrastructure.Chat;
 
 namespace FSH.WebApi.Host.Controllers.Notification;
 
 public class NotificationsController : VersionedApiController
 {
+    private readonly IChatService _chatService;
+
+    public NotificationsController(IChatService chatService)
+    {
+        _chatService = chatService;
+    }
+
     // API Just for testing purposes, it'll be removed in the future
     [HttpGet("test-send-notification")]
     [OpenApiOperation("Test notification", "")]
@@ -46,5 +55,26 @@ public class NotificationsController : VersionedApiController
     public Task<string> ReadAllNotifications()
     {
         return Mediator.Send(new ReadAllNotificationsRequest());
+    }
+
+    [HttpGet("get-list-users")]
+    [OpenApiOperation("Get list users", "")]
+    public Task<List<ListUserDto>> GetListUsers()
+    {
+        return _chatService.GetListUserDtoAsync();
+    }
+
+    [HttpGet("get-conversations/{conversionId}")]
+    [OpenApiOperation("Get conversations", "")]
+    public Task<IEnumerable<ListMessageDto>> GetConversations(string? conversionId, CancellationToken cancellationToken)
+    {
+        return _chatService.GetConversationAsync(conversionId, cancellationToken);
+    }
+
+    [HttpPost("send-message")]
+    [OpenApiOperation("Send message", "")]
+    public Task SendMessage([FromForm] SendMessageDto send, CancellationToken cancellationToken)
+    {
+        return _chatService.SendMessageAsync(send, cancellationToken);
     }
 }

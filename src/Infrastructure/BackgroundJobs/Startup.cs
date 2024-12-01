@@ -20,10 +20,7 @@ internal static class Startup
     internal static IServiceCollection AddBackgroundJobs(this IServiceCollection services, IConfiguration config)
     {
         services.AddHangfireServer(options => config.GetSection("HangfireSettings:Server").Bind(options));
-
         services.AddHangfireConsoleExtensions();
-        services.AddHostedService<TransactionCheckService>();
-
         var storageSettings = config.GetSection("HangfireSettings:Storage").Get<HangfireStorageSettings>();
         if (storageSettings is null) throw new Exception("Hangfire Storage Provider is not configured.");
         if (string.IsNullOrEmpty(storageSettings.StorageProvider)) throw new Exception("Hangfire Storage Provider is not configured.");

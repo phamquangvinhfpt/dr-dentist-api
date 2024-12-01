@@ -51,10 +51,6 @@ internal static class Startup
             options.CloseOnAuthenticationExpiration = true;
         });
 
-        endpoints.MapHub<ChatHub>("/chat", options =>
-        {
-            options.CloseOnAuthenticationExpiration = true;
-        });
         return endpoints;
     }
 }

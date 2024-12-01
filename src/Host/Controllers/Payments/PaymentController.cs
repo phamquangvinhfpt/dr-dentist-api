@@ -11,13 +11,13 @@ public class PaymentController : VersionedApiController
         _paymentService = paymentService;
     }
 
-    [HttpGet("check-new-transactions")]
-    [AllowAnonymous]
-    [OpenApiOperation("Create a job to check new transactions.", "")]
-    public Task CreateJobAsync(CancellationToken cancellationToken)
-    {
-        return _paymentService.CheckNewTransactions(cancellationToken);
-    }
+    // [HttpGet("check-new-transactions")]
+    // [AllowAnonymous]
+    // [OpenApiOperation("Create a job to check new transactions.", "")]
+    // public Task CreateJobAsync(CancellationToken cancellationToken)
+    // {
+    //     return _paymentService.CheckNewTransactions(cancellationToken);
+    // }
 
     // [HttpGet("check-transactions")]
     // [TenantIdHeader]
@@ -48,12 +48,36 @@ public class PaymentController : VersionedApiController
         return _paymentService.GetAllTransactions(filter, cancellationToken);
     }
 
-    [HttpPost("transaction/seed")]
-    [OpenApiOperation("Seed a transaction", "")]
+    // [HttpPost("transaction/seed")]
+    // [OpenApiOperation("Seed a transaction", "")]
+    // [AllowAnonymous]
+    // [TenantIdHeader]
+    // public Task SeedTransaction(List<TransactionDto> list, CancellationToken cancellationToken)
+    // {
+    //     return _paymentService.SeedTransactions(list, cancellationToken);
+    // }
+
+    [HttpPost("webhook")]
+    [OpenApiOperation("Post webhook", "")]
     [AllowAnonymous]
     [TenantIdHeader]
-    public Task SeedTransaction(List<TransactionDto> list, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTransactionWebhook(
+        [FromBody] TransactionAPIResponse data,
+        CancellationToken cancellationToken)
     {
-        return _paymentService.SeedTransactions(list, cancellationToken);
+        if (data == null)
+        {
+            return BadRequest("Invalid payload");
+        }
+
+        try
+        {
+            await _paymentService.GetTransactionFromWebhook(data, cancellationToken);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "An error occurred processing the webhook");
+        }
     }
 }
