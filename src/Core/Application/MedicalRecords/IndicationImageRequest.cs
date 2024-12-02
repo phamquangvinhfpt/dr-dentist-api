@@ -1,16 +1,18 @@
-﻿namespace FSH.WebApi.Application.MedicalRecords;
+﻿using Microsoft.AspNetCore.Http;
+
+namespace FSH.WebApi.Application.MedicalRecords;
 public class IndicationImageRequest
 {
-    public string ImageUrl { get; set; } = string.Empty;
+    public IFormFile? Images { get; set; }
     public string ImageType { get; set; } = string.Empty;
 }
 public class IndicationImageRequestValidator : CustomValidator<IndicationImageRequest>
 {
     public IndicationImageRequestValidator()
     {
-        RuleFor(x => x.ImageUrl)
+        RuleFor(x => x.Images)
             .NotEmpty()
-            .WithMessage("Image URL is required");
+            .WithMessage("Image is required");
 
         RuleFor(x => x.ImageType)
             .NotEmpty()

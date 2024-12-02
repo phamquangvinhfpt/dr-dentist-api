@@ -61,7 +61,7 @@ public class UsersController : VersionNeutralApiController
     [HttpPost("create-user")]
     [MustHavePermission(FSHAction.Create, FSHResource.Users)]
     [OpenApiOperation("Creates a new Staff/Doctor.", "")]
-    public Task<string> CreateAsync(CreateUserRequest request, CancellationToken cancellation)
+    public Task<string> CreateAsync([FromForm]CreateUserRequest request, CancellationToken cancellation)
     {
         var validation = new CreateUserRequestValidator(_userService, _currentUserService, _serviceService).ValidateAsync(request);
         if (!validation.IsCompleted)

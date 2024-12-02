@@ -16,7 +16,7 @@ public class DoctorProfile : AuditableEntity, IAggregateRoot
     public string? Education { get; set; }
     public string? College { get; set; }
     public string? Certification { get; set; }
-    public string? CertificationImage { get; set; }
+    public string[]? CertificationImage { get; set; }
     public string? YearOfExp { get; set; }
     public string? SeftDescription { get; set; }
     public WorkingType WorkingType { get; set; }

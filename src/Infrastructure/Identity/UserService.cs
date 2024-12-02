@@ -19,6 +19,7 @@ using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
+using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Auditing;
@@ -322,12 +323,19 @@ internal partial class UserService : IUserService
                 profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
                 profile.WorkingType = request.WorkingType;
                 profile.TypeServiceID = request.TypeServiceID;
-
+                if (request.CertificationImage != null)
+                {
+                    if(profile.CertificationImage != null)
+                    {
+                        _fileStorage.RemoveAll(profile.CertificationImage);
+                    }
+                    profile.CertificationImage = await _fileStorage.SaveFilesAsync(request.CertificationImage, cancellationToken);
+                }
                 await _db.SaveChangesAsync(cancellationToken);
             }
             else
             {
-                _db.DoctorProfiles.Add(new DoctorProfile
+                var d = new DoctorProfile
                 {
                     DoctorId = request.DoctorID,
                     CreatedBy = _currentUserService.GetUserId(),
@@ -339,7 +347,12 @@ internal partial class UserService : IUserService
                     YearOfExp = request.YearOfExp,
                     WorkingType = WorkingType.None,
                     IsActive = false,
-                });
+                };
+                if (request.CertificationImage != null)
+                {
+                    d.CertificationImage = await _fileStorage.SaveFilesAsync(request.CertificationImage, cancellationToken);
+                }
+                _db.DoctorProfiles.Add(d);
                 await _db.SaveChangesAsync(cancellationToken);
             }
         }

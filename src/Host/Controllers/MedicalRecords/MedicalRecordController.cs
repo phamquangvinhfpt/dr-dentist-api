@@ -14,7 +14,7 @@ public class MedicalRecordController : VersionNeutralApiController
     [HttpPost("create")]
     [MustHavePermission(FSHAction.Create, FSHResource.MedicalRecord)]
     [OpenApiOperation("Create Medical record.", "")]
-    public Task<string> CreateMedicalRecord(CreateMedicalRecordRequest request)
+    public Task<string> CreateMedicalRecord([FromForm] CreateMedicalRecordRequest request)
     {
         return Mediator.Send(request);
     }

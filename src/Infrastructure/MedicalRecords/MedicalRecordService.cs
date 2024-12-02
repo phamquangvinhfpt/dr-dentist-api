@@ -1,5 +1,6 @@
 ﻿using ClosedXML;
 using FSH.WebApi.Application.Common.Exceptions;
+using FSH.WebApi.Application.Common.FileStorage;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.MedicalRecords;
 using FSH.WebApi.Domain.Examination;
@@ -23,8 +24,9 @@ public class MedicalRecordService : IMedicalRecordService
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<MedicalRecordService> _logger;
+    private readonly IFileStorageService _fileStorageService;
 
-    public MedicalRecordService(ApplicationDbContext db, IStringLocalizer<MedicalRecord> t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalRecordService> logger)
+    public MedicalRecordService(ApplicationDbContext db, IStringLocalizer<MedicalRecord> t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalRecordService> logger, IFileStorageService fileStorageService)
     {
         _db = db;
         _t = t;
@@ -32,6 +34,7 @@ public class MedicalRecordService : IMedicalRecordService
         _roleManager = roleManager;
         _currentUser = currentUser;
         _logger = logger;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task CreateMedicalRecord(CreateMedicalRecordRequest request, CancellationToken cancellationToken)
@@ -92,7 +95,7 @@ public class MedicalRecordService : IMedicalRecordService
                         var indiImage = new PatientImage
                         {
                             IndicationId = indication.Id,
-                            ImageUrl = image.ImageUrl,
+                            ImageUrl = await _fileStorageService.SaveFileAsync(image.Images, cancellationToken),
                             ImageType = image.ImageType
                         };
                         await _db.PatientImages.AddRangeAsync(indiImage);

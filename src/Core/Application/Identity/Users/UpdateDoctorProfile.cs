@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Shared.Authorization;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,7 @@ public class UpdateDoctorProfile : IRequest<string>
     public string? Certification { get; set; }
     public string? YearOfExp { get; set; }
     public string? SeftDescription { get; set; }
+    public IFormFile[]? CertificationImage { get; set; }
     public WorkingType WorkingType { get; set; }
 }
 public class UpdateDoctorProfileVaidator : CustomValidator<UpdateDoctorProfile>
