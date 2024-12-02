@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -254,7 +255,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var result = new List<WorkingCalendarResponse>();
             var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
             var query = _db.WorkingCalendars
-                .AsNoTracking();
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Accept);
 
             if(currentUser == FSHRoles.Dentist)
             {
@@ -426,6 +427,384 @@ internal class WorkingCalendarService : IWorkingCalendarService
             int count = _db.Rooms.Count();
 
             return new PaginationResponse<Room>(query, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeNonAcceptWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+            var query = _db.WorkingCalendars
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Waiting);
+
+            if (currentUser == FSHRoles.Dentist)
+            {
+                string id = _currentUserService.GetUserId().ToString();
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
+            else
+            {
+                var ptDoctor = await _db.DoctorProfiles.Where(p => p.WorkingType == WorkingType.PartTime).Select(p => p.Id).ToListAsync();
+                query = query.Where(p => ptDoctor.Contains(p.DoctorID));
+            }
+
+            if (startDate != default)
+            {
+                query = query.Where(w => w.Date >= startDate);
+            }
+            if (endDate != default)
+            {
+                query = query.Where(w => w.Date <= endDate);
+            }
+            int count = query.Count();
+
+            query = query.OrderBy(p => p.Date);
+
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
+                {
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach (var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
+                    {
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    //if (item.RoomID != default)
+                    //{
+                    //    var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                    //    t.RoomID = room.Id;
+                    //    t.RoomName = room.RoomName;
+                    //}
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach (var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
+                        {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeNonAcceptWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+            var query = _db.WorkingCalendars
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Waiting);
+
+            if (currentUser == FSHRoles.Dentist)
+            {
+                string id = _currentUserService.GetUserId().ToString();
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
+            else
+            {
+                var ptDoctor = await _db.DoctorProfiles.Where(p => p.WorkingType == WorkingType.FullTime).Select(p => p.Id).ToListAsync();
+                query = query.Where(p => ptDoctor.Contains(p.DoctorID));
+            }
+
+            if (startDate != default)
+            {
+                query = query.Where(w => w.Date >= startDate);
+            }
+            if (endDate != default)
+            {
+                query = query.Where(w => w.Date <= endDate);
+            }
+            int count = query.Count();
+
+            query = query.OrderBy(p => p.Date);
+
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
+                {
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach (var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
+                    {
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    //if (item.RoomID != default)
+                    //{
+                    //    var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                    //    t.RoomID = room.Id;
+                    //    t.RoomName = room.RoomName;
+                    //}
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach (var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
+                        {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+
+            var query = _db.WorkingCalendars
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Off);
+
+            if (currentUser == FSHRoles.Dentist)
+            {
+                string id = _currentUserService.GetUserId().ToString();
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
+            else
+            {
+                var ptDoctor = await _db.DoctorProfiles.Where(p => p.WorkingType == WorkingType.FullTime).Select(p => p.Id).ToListAsync();
+                query = query.Where(p => ptDoctor.Contains(p.DoctorID));
+            }
+
+            if (startDate != default)
+            {
+                query = query.Where(w => w.Date >= startDate);
+            }
+            if (endDate != default)
+            {
+                query = query.Where(w => w.Date <= endDate);
+            }
+            int count = query.Count();
+
+            query = query.OrderBy(p => p.Date);
+
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
+                {
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach (var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
+                    {
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    if (item.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                        t.RoomID = room.Id;
+                        t.RoomName = room.RoomName;
+                    }
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach (var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
+                        {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+
+            var query = _db.WorkingCalendars
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Off);
+
+            if (currentUser == FSHRoles.Dentist)
+            {
+                string id = _currentUserService.GetUserId().ToString();
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
+            else
+            {
+                var ptDoctor = await _db.DoctorProfiles.Where(p => p.WorkingType == WorkingType.PartTime).Select(p => p.Id).ToListAsync();
+                query = query.Where(p => ptDoctor.Contains(p.DoctorID));
+            }
+
+            if (startDate != default)
+            {
+                query = query.Where(w => w.Date >= startDate);
+            }
+            if (endDate != default)
+            {
+                query = query.Where(w => w.Date <= endDate);
+            }
+            int count = query.Count();
+
+            query = query.OrderBy(p => p.Date);
+
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
+                {
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach (var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
+                    {
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    if (item.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                        t.RoomID = room.Id;
+                        t.RoomName = room.RoomName;
+                    }
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach (var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
+                        {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
         {

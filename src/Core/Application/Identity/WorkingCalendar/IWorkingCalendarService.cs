@@ -17,4 +17,8 @@ public interface IWorkingCalendarService : ITransientService
     Task<string> AddRoomForWorkingAsync(AddRoomToWorkingRequest request, CancellationToken cancellationToken);
     Task<string> CreateRoomsAsync(AddRoomRequest request, CancellationToken cancellationToken);
     Task<PaginationResponse<Room>> GetRoomsWithPagination(PaginationFilter filter, CancellationToken cancellationToken);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeNonAcceptWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeNonAcceptWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
 }

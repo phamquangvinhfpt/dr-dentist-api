@@ -28,7 +28,7 @@ public class WorkingCalendarController : VersionNeutralApiController
     }
 
     [HttpPost("working-calendar")]
-    [OpenApiOperation("Get Working Calendar with Pagination.", "")]
+    [OpenApiOperation("Get Working Calendar Accept with Pagination.", "")]
     public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendarAsync(
         PaginationFilter filter,
         [FromQuery] DateOnly startDate,
@@ -37,6 +37,58 @@ public class WorkingCalendarController : VersionNeutralApiController
     {
         return await _workingCalendarService.GetWorkingCalendarPagination(filter, startDate, endDate, cancellationToken);
     }
+
+    [HttpPost("part-time/non-accept")]
+    [OpenApiOperation("Get Working Calendar of Doctor Part time non accept with Pagination.", "")]
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeWorkingCalendarsAsync(
+        PaginationFilter filter,
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetPartTimeNonAcceptWorkingCalendarsAsync(filter, startDate, endDate, cancellationToken);
+    }
+    [HttpPost("part-time/Off")]
+    [OpenApiOperation("Get Working Calendar of Doctor Part time Off with Pagination.", "")]
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeOffWorkingCalendarsAsync(
+        PaginationFilter filter,
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetPartTimeOffWorkingCalendarsAsync(filter, startDate, endDate, cancellationToken);
+    }
+    [HttpPost("full-time/non-accept")]
+    [OpenApiOperation("Get Working Calendar of Doctor Full time non accept with Pagination.", "")]
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeWorkingCalendarsAsync(
+        PaginationFilter filter,
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetFullTimeNonAcceptWorkingCalendarsAsync(filter, startDate, endDate, cancellationToken);
+    }
+    [HttpPost("full-time/off")]
+    [OpenApiOperation("Get Working Calendar of Doctor Full time off with Pagination.", "")]
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeOffWorkingCalendarsAsync(
+        PaginationFilter filter,
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetFullTimeOffWorkingCalendarsAsync(filter, startDate, endDate, cancellationToken);
+    }
+
+    //[HttpPost("full-time/add-time")]
+    //[OpenApiOperation("Staff Add time working for Doctor Full time.", "")]
+    //public async Task<string> AddTimeForFullTimeWorkingCalendarsAsync(
+    //    [FromBody] List<CreateOrUpdateWorkingCalendar> request,
+    //    [FromQuery] string doctorId,
+    //    CancellationToken cancellationToken)
+    //{
+    //    var result = await _workingCalendarService.CreateWorkingCalendarForParttime(request, doctorId, cancellationToken);
+    //    return result;
+    //}
 
     [HttpPut("update")]
     [OpenApiOperation("Update Working Calendar.", "")]
