@@ -82,6 +82,24 @@ public class ServicesConfig : IEntityTypeConfiguration<Service>
     }
 }
 
+public class TypeServiceConfig : IEntityTypeConfiguration<TypeService>
+{
+    public void Configure(EntityTypeBuilder<TypeService> builder)
+    {
+        builder
+              .ToTable("TypeService", SchemaNames.Service)
+              .IsMultiTenant();
+
+        builder
+            .Property(b => b.TypeName)
+                .HasMaxLength(256);
+
+        builder
+            .Property(b => b.TypeDescription)
+                .HasMaxLength(256);
+    }
+}
+
 public class RoomConfig : IEntityTypeConfiguration<Room>
 {
     public void Configure(EntityTypeBuilder<Room> builder)

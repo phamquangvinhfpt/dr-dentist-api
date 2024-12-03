@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241201123305_Init")]
+    [Migration("20241202145853_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -665,8 +665,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("Certification")
                         .HasColumnType("text");
 
-                    b.Property<string>("CertificationImage")
-                        .HasColumnType("text");
+                    b.Property<string[]>("CertificationImage")
+                        .HasColumnType("text[]");
 
                     b.Property<string>("College")
                         .HasColumnType("text");
@@ -1436,15 +1436,24 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("TypeDescription")
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("TypeName")
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("TypeServices", "Catalog");
+                    b.ToTable("TypeService", "Service");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>

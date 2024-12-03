@@ -176,6 +176,8 @@ public class ServiceController : VersionNeutralApiController
 
     [HttpPost("type")]
     [OpenApiOperation("Get Type Service.", "")]
+    [TenantIdHeader]
+    [AllowAnonymous]
     public async Task<PaginationResponse<TypeService>> GetTypeServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         return await _serviceService.GetTypeServiceAsync(request, cancellationToken);

@@ -206,7 +206,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
                 if (calendar == null) {
                     //throw new Exception("Warning: Error when find calendar");
-                    _logger.LogInformation("Warning: Error when find calendar at UpdateWorkingCalendar. To Processing create new working time.")
+                    _logger.LogInformation("Warning: Error when find calendar at UpdateWorkingCalendar. To Processing create new working time.");
                 }
                 if(calendar.Status != WorkingStatus.Waiting)
                 {

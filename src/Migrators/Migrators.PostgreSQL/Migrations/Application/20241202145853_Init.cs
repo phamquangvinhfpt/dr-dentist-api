@@ -33,9 +33,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
             migrationBuilder.EnsureSchema(
                 name: "Service");
 
-            migrationBuilder.EnsureSchema(
-                name: "Catalog");
-
             migrationBuilder.CreateTable(
                 name: "Appointment",
                 schema: "Treatment",
@@ -202,13 +199,14 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 });
 
             migrationBuilder.CreateTable(
-                name: "TypeServices",
-                schema: "Catalog",
+                name: "TypeService",
+                schema: "Service",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TypeName = table.Column<string>(type: "text", nullable: true),
-                    TypeDescription = table.Column<string>(type: "text", nullable: true),
+                    TypeName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    TypeDescription = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -218,7 +216,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TypeServices", x => x.Id);
+                    table.PrimaryKey("PK_TypeService", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -308,10 +306,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_Service", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Service_TypeServices_TypeServiceID",
+                        name: "FK_Service_TypeService_TypeServiceID",
                         column: x => x.TypeServiceID,
-                        principalSchema: "Catalog",
-                        principalTable: "TypeServices",
+                        principalSchema: "Service",
+                        principalTable: "TypeService",
                         principalColumn: "Id");
                 });
 
@@ -356,7 +354,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Education = table.Column<string>(type: "text", nullable: true),
                     College = table.Column<string>(type: "text", nullable: true),
                     Certification = table.Column<string>(type: "text", nullable: true),
-                    CertificationImage = table.Column<string>(type: "text", nullable: true),
+                    CertificationImage = table.Column<string[]>(type: "text[]", nullable: true),
                     YearOfExp = table.Column<string>(type: "text", nullable: true),
                     SeftDescription = table.Column<string>(type: "text", nullable: true),
                     WorkingType = table.Column<int>(type: "integer", nullable: false),
@@ -373,10 +371,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     table.PrimaryKey("PK_DoctorProfile", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DoctorProfile_TypeServices_TypeServiceID",
+                        name: "FK_DoctorProfile_TypeService_TypeServiceID",
                         column: x => x.TypeServiceID,
-                        principalSchema: "Catalog",
-                        principalTable: "TypeServices",
+                        principalSchema: "Service",
+                        principalTable: "TypeService",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_DoctorProfile_Users_DoctorId",
@@ -1671,8 +1669,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity");
 
             migrationBuilder.DropTable(
-                name: "TypeServices",
-                schema: "Catalog");
+                name: "TypeService",
+                schema: "Service");
         }
     }
 }
