@@ -154,4 +154,20 @@ public class WorkingCalendarController : VersionNeutralApiController
         return await _workingCalendarService.GetRoomsWithPagination(filter, cancellationToken);
     }
 
+    [HttpPost("non-accept/get-all")]
+    [OpenApiOperation("Get All Non Accept with Pagination.", "")]
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetAllNonAcceptAsync(
+        PaginationFilter filter,
+        [FromQuery] DateOnly startDate,
+        [FromQuery] DateOnly endDate,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetAllNonAcceptWithPagination(filter, startDate, endDate, cancellationToken);
+    }
+    [HttpPost("non-accept/get-all")]
+    [OpenApiOperation("Get All Non Accept with Pagination.", "")]
+    public async Task<string> AddTimeWorkingAsync(CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetAllNonAcceptWithPagination(filter, startDate, endDate, cancellationToken);
+    }
 }

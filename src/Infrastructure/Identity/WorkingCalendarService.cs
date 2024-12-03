@@ -169,8 +169,11 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Date = currentDate,
                     Status = WorkingStatus.Waiting,
                 }).Entity;
-
-                var addedCalendar = _db.WorkingCalendars.Add(calendar).Entity;
+                var time = _db.TimeWorkings.Add(new TimeWorking
+                {
+                    CalendarID = calendar.Id,
+                    IsActive = false
+                });
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -202,7 +205,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
                 if (calendar == null) {
-                    throw new Exception("Warning: Error when find calendar");
+                    //throw new Exception("Warning: Error when find calendar");
+                    _logger.LogInformation("Warning: Error when find calendar at UpdateWorkingCalendar. To Processing create new working time.")
                 }
                 if(calendar.Status != WorkingStatus.Waiting)
                 {
@@ -224,6 +228,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                         time.StartTime = t.StartTime;
                         time.EndTime = t.EndTime;
                         time.LastModifiedBy = _currentUserService.GetUserId();
+                        time.IsActive = dProfile.WorkingType == WorkingType.FullTime ? true : false;
                     }
 
                     totalTimeInDay += timeWorked;
@@ -235,7 +240,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 {
                     throw new Exception($"Fulltime doctor must work at 8 hours per day. Date: {item.Date}");
                 }
+                calendar.Status = dProfile.WorkingType == WorkingType.FullTime ? WorkingStatus.Accept : WorkingStatus.Waiting;
             }
+            await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return "Success";
         }
@@ -745,6 +752,88 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 query = query.Where(p => ptDoctor.Contains(p.DoctorID));
             }
 
+            if (startDate != default)
+            {
+                query = query.Where(w => w.Date >= startDate);
+            }
+            if (endDate != default)
+            {
+                query = query.Where(w => w.Date <= endDate);
+            }
+            int count = query.Count();
+
+            query = query.OrderBy(p => p.Date);
+
+            var calendars = await query.WithSpecification(spec)
+                .GroupBy(p => p.DoctorID)
+                .Select(c => new
+                {
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.Key),
+                    Calendar = c.ToList(),
+                })
+                .ToListAsync();
+            foreach (var calendar in calendars)
+            {
+                var u = await _userManager.FindByIdAsync(calendar.Doctor.DoctorId);
+                var r = new WorkingCalendarResponse
+                {
+                    DentistUserID = u.Id,
+                    DentistProfileId = calendar.Doctor.Id,
+                    DentistName = $"{u.FirstName} {u.LastName}",
+                    DentistImage = u.ImageUrl,
+                    Phone = u.PhoneNumber,
+                    WorkingType = calendar.Doctor.WorkingType,
+                };
+                r.CalendarDetails = new List<CalendarDetail>();
+                foreach (var item in calendar.Calendar)
+                {
+                    var t = new CalendarDetail
+                    {
+                        CalendarID = item.Id,
+                        Date = item.Date.Value,
+                        Note = item.Note,
+                        WorkingStatus = item.Status,
+                    };
+                    if (item.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == item.RoomID);
+                        t.RoomID = room.Id;
+                        t.RoomName = room.RoomName;
+                    }
+                    t.Times = new List<TimeDetail>();
+                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
+                    foreach (var i in times)
+                    {
+                        t.Times.Add(new TimeDetail
+                        {
+                            TimeID = i.Id,
+                            EndTime = i.EndTime,
+                            IsActive = i.IsActive,
+                            StartTime = i.StartTime,
+                        });
+                    }
+                    r.CalendarDetails.Add(t);
+                }
+                result.Add(r);
+            }
+            return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetAllNonAcceptWithPagination(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string currentUser = _currentUserService.GetRole();
+            var result = new List<WorkingCalendarResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
+            var query = _db.WorkingCalendars
+                .AsNoTracking().Where(p => p.Status == WorkingStatus.Waiting);
             if (startDate != default)
             {
                 query = query.Where(w => w.Date >= startDate);

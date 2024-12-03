@@ -21,4 +21,5 @@ public interface IWorkingCalendarService : ITransientService
     Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeNonAcceptWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
     Task<PaginationResponse<WorkingCalendarResponse>> GetFullTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
     Task<PaginationResponse<WorkingCalendarResponse>> GetPartTimeOffWorkingCalendarsAsync(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
+    Task<PaginationResponse<WorkingCalendarResponse>> GetAllNonAcceptWithPagination(PaginationFilter filter, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
 }
