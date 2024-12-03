@@ -326,6 +326,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     r.CalendarDetails.Add(t);
                 }
+                result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
@@ -519,6 +520,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     r.CalendarDetails.Add(t);
                 }
+                result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
@@ -613,6 +615,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     r.CalendarDetails.Add(t);
                 }
+                result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
@@ -708,6 +711,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     r.CalendarDetails.Add(t);
                 }
+                result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
@@ -803,6 +807,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     r.CalendarDetails.Add(t);
                 }
+                result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
