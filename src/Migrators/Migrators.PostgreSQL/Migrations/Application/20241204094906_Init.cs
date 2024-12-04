@@ -1239,8 +1239,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 name: "IX_ContactInfor_StaffId",
                 schema: "CustomerService",
                 table: "ContactInfor",
-                column: "StaffId",
-                unique: true);
+                column: "StaffId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Diagnosis_MedicalRecordId",

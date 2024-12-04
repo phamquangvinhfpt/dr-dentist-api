@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241202145853_Init")]
+    [Migration("20241204094906_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -146,8 +146,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StaffId")
-                        .IsUnique();
+                    b.HasIndex("StaffId");
 
                     b.ToTable("ContactInfor", "CustomerService");
 
@@ -1988,8 +1987,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.ContactInfor", b =>
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.CustomerServices.ContactInfor", "StaffId");
+                        .WithMany()
+                        .HasForeignKey("StaffId");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.Feedback", b =>

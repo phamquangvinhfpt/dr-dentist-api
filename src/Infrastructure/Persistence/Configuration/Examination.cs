@@ -364,8 +364,8 @@ public class ContactInforConfig : IEntityTypeConfiguration<ContactInfor>
 
         builder
             .HasOne<ApplicationUser>()
-            .WithOne()
-            .HasForeignKey<ContactInfor>("StaffId").IsRequired(false);
+            .WithMany()
+            .HasForeignKey(p => p.StaffId).IsRequired(false);
     }
 }
 
