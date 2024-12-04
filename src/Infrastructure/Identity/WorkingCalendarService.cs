@@ -169,11 +169,11 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Date = currentDate,
                     Status = WorkingStatus.Waiting,
                 }).Entity;
-                var time = _db.TimeWorkings.Add(new TimeWorking
-                {
-                    CalendarID = calendar.Id,
-                    IsActive = false
-                });
+                //var time = _db.TimeWorkings.Add(new TimeWorking
+                //{
+                //    CalendarID = calendar.Id,
+                //    IsActive = false
+                //});
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -220,15 +220,29 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     //    throw new Exception($"At least 4 hour each session for part time doctor: {t.StartTime} - {t.EndTime}");
                     //}
 
-                    var times = await _db.TimeWorkings.Where(p => p.CalendarID == calendar.Id).ToListAsync();
-                    if (times.Count() == 0) {
-                        throw new Exception("Warning: Error when find time working");
+                    if(dProfile.WorkingType == WorkingType.PartTime)
+                    {
+                        var times = await _db.TimeWorkings.Where(p => p.CalendarID == calendar.Id).ToListAsync();
+                        if (times.Count() == 0)
+                        {
+                            throw new Exception("Warning: Error when find time working");
+                        }
+                        foreach (var time in times)
+                        {
+                            time.StartTime = t.StartTime;
+                            time.EndTime = t.EndTime;
+                            time.LastModifiedBy = _currentUserService.GetUserId();
+                        }
                     }
-                    foreach (var time in times) {
-                        time.StartTime = t.StartTime;
-                        time.EndTime = t.EndTime;
-                        time.LastModifiedBy = _currentUserService.GetUserId();
-                        time.IsActive = dProfile.WorkingType == WorkingType.FullTime ? true : false;
+                    else
+                    {
+                        _db.TimeWorkings.Add(new TimeWorking
+                        {
+                            CalendarID = calendar.Id,
+                            StartTime = t.StartTime,
+                            EndTime = t.EndTime,
+                            IsActive = true
+                        });
                     }
 
                     totalTimeInDay += timeWorked;
