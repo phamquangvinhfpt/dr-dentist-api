@@ -289,9 +289,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
             {
                 query = query.Where(w => w.Date >= date);
             }
-            if (date != default)
+            if (Edate != default)
             {
-                query = query.Where(w => w.Date <= date);
+                query = query.Where(w => w.Date <= Edate);
             }
             int count = query.Count();
 
@@ -373,6 +373,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 {
                     Calendar = c,
                     Times = _db.TimeWorkings.Where(p => p.CalendarID == c.Id).ToList(),
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.DoctorID)
                 })
                 .FirstOrDefaultAsync();
             if (calendar == null) {
@@ -381,6 +382,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
             if (calendar.Times.Count() == 0)
             {
                 throw new Exception("Warning: Time was not selected.");
+            }
+            if (calendar.Doctor.WorkingType == WorkingType.FullTime && calendar.Calendar.Status != WorkingStatus.Accept)
+            {
+                throw new Exception("Warning: Time working that is not set to doctor full time.");
             }
             var wasUse = await _db.WorkingCalendars
                 .Where(p => p.RoomID == request.RoomID && p.Date == calendar.Calendar.Date && p.Status == WorkingStatus.Accept)
@@ -399,9 +404,14 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                 }
             }
+            if (calendar.Doctor.WorkingType == WorkingType.PartTime) {
+                calendar.Calendar.Status = WorkingStatus.Accept;
+                foreach (var item in calendar.Times) {
+                    item.IsActive = true;
+                }
+            }
             calendar.Calendar.RoomID = request.RoomID;
             await _db.SaveChangesAsync(cancellationToken);
-
             await transaction.CommitAsync(cancellationToken);
             return "Success";
         }
