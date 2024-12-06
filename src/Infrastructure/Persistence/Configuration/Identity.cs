@@ -47,6 +47,31 @@ public class MedicalHistoryConfig : IEntityTypeConfiguration<MedicalHistory>
     }
 }
 
+public class ApplicationFormConfig : IEntityTypeConfiguration<ApplicationForm>
+{
+    public void Configure(EntityTypeBuilder<ApplicationForm> builder)
+    {
+        builder
+            .ToTable("ApplicationForm", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(b => b.UserID);
+
+        builder
+            .HasOne<WorkingCalendar>()
+            .WithMany()
+            .HasForeignKey(b => b.CalendarID);
+
+        builder
+            .HasOne<TimeWorking>()
+            .WithMany()
+            .HasForeignKey(b => b.TimeID).IsRequired(false);
+    }
+}
+
 public class PatientFamilyConfig : IEntityTypeConfiguration<PatientFamily>
 {
     public void Configure(EntityTypeBuilder<PatientFamily> builder)

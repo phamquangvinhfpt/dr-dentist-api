@@ -49,6 +49,7 @@ public class ApplicationDbContext : BaseDbContext
     public DbSet<WorkingCalendar> WorkingCalendars { get; set; }
     public DbSet<TimeWorking> TimeWorkings { get; set; }
     public DbSet<Room> Rooms { get; set; }
+    public DbSet<ApplicationForm> ApplicationForms { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

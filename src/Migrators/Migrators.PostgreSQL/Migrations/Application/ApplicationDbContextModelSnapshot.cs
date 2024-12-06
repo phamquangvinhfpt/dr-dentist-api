@@ -577,6 +577,66 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.ApplicationForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CalendarID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("TimeID")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserID")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CalendarID");
+
+                    b.HasIndex("TimeID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("ApplicationForm", "Identity");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.AppointmentCalendar", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2097,6 +2157,23 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Indication");
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.ApplicationForm", b =>
+                {
+                    b.HasOne("FSH.WebApi.Domain.Identity.WorkingCalendar", null)
+                        .WithMany()
+                        .HasForeignKey("CalendarID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.TimeWorking", null)
+                        .WithMany()
+                        .HasForeignKey("TimeID");
+
+                    b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserID");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.AppointmentCalendar", b =>

@@ -13,10 +13,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "Treatment");
+                name: "Identity");
 
             migrationBuilder.EnsureSchema(
-                name: "Identity");
+                name: "Treatment");
 
             migrationBuilder.EnsureSchema(
                 name: "Auditing");
@@ -992,6 +992,50 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 });
 
             migrationBuilder.CreateTable(
+                name: "ApplicationForm",
+                schema: "Identity",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserID = table.Column<string>(type: "text", nullable: true),
+                    CalendarID = table.Column<Guid>(type: "uuid", nullable: false),
+                    TimeID = table.Column<Guid>(type: "uuid", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Note = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastModifiedBy = table.Column<Guid>(type: "uuid", nullable: false),
+                    LastModifiedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ApplicationForm", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ApplicationForm_TimeWorking_TimeID",
+                        column: x => x.TimeID,
+                        principalSchema: "Identity",
+                        principalTable: "TimeWorking",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ApplicationForm_Users_UserID",
+                        column: x => x.UserID,
+                        principalSchema: "Identity",
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ApplicationForm_WorkingCalendar_CalendarID",
+                        column: x => x.CalendarID,
+                        principalSchema: "Identity",
+                        principalTable: "WorkingCalendar",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PatientImage",
                 schema: "Treatment",
                 columns: table => new
@@ -1202,6 +1246,24 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApplicationForm_CalendarID",
+                schema: "Identity",
+                table: "ApplicationForm",
+                column: "CalendarID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApplicationForm_TimeID",
+                schema: "Identity",
+                table: "ApplicationForm",
+                column: "TimeID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApplicationForm_UserID",
+                schema: "Identity",
+                table: "ApplicationForm",
+                column: "UserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AppointmentCalendar_AppointmentId",
@@ -1528,6 +1590,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "ApplicationForm",
+                schema: "Identity");
+
+            migrationBuilder.DropTable(
                 name: "AppointmentCalendar",
                 schema: "Identity");
 
@@ -1584,10 +1650,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "TimeWorking",
-                schema: "Identity");
-
-            migrationBuilder.DropTable(
                 name: "Transactions",
                 schema: "Payment");
 
@@ -1608,6 +1670,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Identity");
 
             migrationBuilder.DropTable(
+                name: "TimeWorking",
+                schema: "Identity");
+
+            migrationBuilder.DropTable(
                 name: "Indication",
                 schema: "Treatment");
 
@@ -1616,11 +1682,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 schema: "Treatment");
 
             migrationBuilder.DropTable(
-                name: "WorkingCalendar",
+                name: "Roles",
                 schema: "Identity");
 
             migrationBuilder.DropTable(
-                name: "Roles",
+                name: "WorkingCalendar",
                 schema: "Identity");
 
             migrationBuilder.DropTable(
