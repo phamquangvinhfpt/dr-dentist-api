@@ -52,6 +52,7 @@ internal class ApplicationDbSeeder
         await SeedRoomAsync();
         //await SeedAppointmentAsync();
         //await SeedAppointmentInforAsync();
+        await SeedPatientDemoAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 

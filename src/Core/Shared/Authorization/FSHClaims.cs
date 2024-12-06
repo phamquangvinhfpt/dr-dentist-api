@@ -9,4 +9,5 @@ public static class FSHClaims
     public const string IpAddress = "ipAddress";
     public const string DeviceId = "deviceId";
     public const string Expiration = "exp";
+    public const string DType = "type";
 }
