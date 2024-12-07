@@ -14,8 +14,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Reflection;
 using System.Threading;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Persistence.Initialization;
 
@@ -48,16 +51,18 @@ internal class ApplicationDbSeeder
         await SeedStaffUserAsync();
         await SeedTypeServiceAsync();
         await SeedUserAsync();
-        await SeedServiceAsync();
         await SeedRoomAsync();
-        //await SeedAppointmentAsync();
-        //await SeedAppointmentInforAsync();
+        await SeedWorkingCalendar();
+        await SeedServiceAsync();
+        await SeedAppointmentAsync();
+        await SeedAppointmentInforAsync();
         await SeedPatientDemoAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
     private async Task SeedRoomAsync()
     {
+
         if (!_db.Rooms.Any())
         {
             _logger.LogInformation("Seeding room");
@@ -745,59 +750,132 @@ internal class ApplicationDbSeeder
     }
     private async Task SeedAppointmentAsync()
     {
-        _logger.LogInformation("Seeded Appointment.");
+        _logger.LogInformation("Seeding Appointments...");
         try
         {
             if (!_db.Appointments.Any())
             {
                 var serviceProcedures = _db.ServiceProcedures
-                .GroupBy(p => p.ServiceId)
-                .Select(p => new
-                {
-                    ServiceID = p.Key,
-                    ProcedureIDs = p.Select(p => p.ProcedureId).ToList(),
-                })
-                .ToList();
+                    .GroupBy(p => p.ServiceId)
+                    .Select(p => new
+                    {
+                        ServiceID = p.Key,
+                        ProcedureIDs = p.Select(p => p.ProcedureId).ToList(),
+                    })
+                    .ToList();
 
                 var patients = _db.PatientProfiles.Select(p => new { PatientID = p.Id }).ToList();
-
-                var doctor = _db.DoctorProfiles.Select(p => new { DoctorId = p.Id }).ToList();
-
-                var appointments = new List<Appointment>();
                 var random = new Random();
-
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
 
-                for (int dayOffset = -270; dayOffset <= 30; dayOffset++)
+                for (int dayOffset = -270; dayOffset <= 0; dayOffset++)
                 {
                     var appointmentDate = currentDate.AddDays(dayOffset);
 
-                    if (appointmentDate.DayOfWeek == DayOfWeek.Saturday ||
-                        appointmentDate.DayOfWeek == DayOfWeek.Sunday)
+                    if (appointmentDate.DayOfWeek == DayOfWeek.Sunday)
                     {
                         continue;
                     }
 
-                    var appointmentsPerDay = random.Next(4, 7);
-                    //for(int i = 0; i < appointmentsPerDay; i++)
-                    //{
-                        var startHour = random.Next(8, 17);
-                        var startTime = new TimeSpan(startHour, 0, 0);
+                    var availableDoctors = await _db.WorkingCalendars
+                        .Where(w => w.Date == appointmentDate && w.Status == WorkingStatus.Accept)
+                        .Select(w => new
+                        {
+                            DoctorId = w.DoctorID,
+                            CalendarId = w.Id
+                        })
+                        .ToListAsync();
 
-                        var duration = TimeSpan.FromMinutes(30);
+                    if (!availableDoctors.Any())
+                    {
+                        continue; // Bỏ qua ngày nếu không có bác sĩ nào làm việc
+                    }
+
+                    var appointmentsPerDay = random.Next(4, 7);
+
+                    for (int i = 0; i < appointmentsPerDay; i++)
+                    {
+                        var selectedDoctor = availableDoctors[random.Next(availableDoctors.Count)];
+
+                        var doctorTimeSlots = await _db.TimeWorkings
+                            .Where(t => t.CalendarID == selectedDoctor.CalendarId && t.IsActive)
+                            .ToListAsync();
+
+                        if (!doctorTimeSlots.Any())
+                        {
+                            continue; // Không có khung thời gian nào khả dụng cho bác sĩ này
+                        }
+
+                        TimeSpan startTime = TimeSpan.Zero;
+                        TimeSpan duration = TimeSpan.FromMinutes(30);
+                        bool slotFound = false;
+                        int attempts = 0;
+
+                        do
+                        {
+                            // Lấy ngẫu nhiên một ca làm việc
+                            var selectedTimeSlot = doctorTimeSlots[random.Next(doctorTimeSlots.Count)];
+
+                            // Tính khoảng thời gian tối đa có thể lấy (có trừ thời lượng của cuộc hẹn)
+                            var maxStartTime = selectedTimeSlot.EndTime - duration;
+
+                            //// Kiểm tra nếu khoảng thời gian không đủ 30 phút thì bỏ qua
+                            //if (maxStartTime <= selectedTimeSlot.StartTime)
+                            //{
+                            //    attempts++;
+                            //    continue;
+                            //}
+
+                            // Random thời gian bắt đầu trong khoảng từ StartTime đến maxStartTime
+                            int availableMinutes = (int)(maxStartTime - selectedTimeSlot.StartTime).TotalHours;
+                            int randomOffsetMinutes = random.Next(0, availableMinutes);
+                            startTime = selectedTimeSlot.StartTime.Add(TimeSpan.FromMinutes(randomOffsetMinutes));
+
+                            // Kiểm tra xem khoảng thời gian này đã có cuộc hẹn nào chưa
+                            bool isTimeSlotBooked = await _db.AppointmentCalendars
+                                .Where(c =>
+                                    c.DoctorId == selectedDoctor.DoctorId &&
+                                    c.Date == appointmentDate &&
+                                    (
+                                        c.StartTime <= startTime && startTime < c.EndTime ||
+                                        c.StartTime < startTime.Add(duration) && startTime.Add(duration) <= c.EndTime ||
+                                        startTime <= c.StartTime && c.EndTime <= startTime.Add(duration)
+                                    ) &&
+                                    (
+                                        c.Status == CalendarStatus.Booked ||
+                                        c.Status == CalendarStatus.Waiting
+                                    )
+                                )
+                                .AnyAsync();
+
+                            if (!isTimeSlotBooked)
+                            {
+                                slotFound = true;
+                            }
+
+                            attempts++;
+                            if (attempts > 10) // Giới hạn số lần thử để tránh vòng lặp vô tận
+                            {
+                                break;
+                            }
+
+                        } while (!slotFound);
+
+                        if (!slotFound)
+                        {
+                            continue; // Không tìm được thời gian trống cho ngày này
+                        }
 
                         var patientId = patients[random.Next(patients.Count)];
-                        var doctorId = doctor[random.Next(doctor.Count)];
                         var service = serviceProcedures[random.Next(serviceProcedures.Count)];
 
                         AppointmentStatus status;
-                        bool canProvideFeeback = false;
+                        bool canProvideFeedback = false;
 
-                        // Xác định status dựa vào ngày
                         if (dayOffset < 0)
                         {
                             status = AppointmentStatus.Come;
-                            canProvideFeeback = true;
+                            canProvideFeedback = true;
                         }
                         else if (dayOffset == 0)
                         {
@@ -805,7 +883,7 @@ internal class ApplicationDbSeeder
                             if (startTime < currentTime)
                             {
                                 status = AppointmentStatus.Come;
-                                canProvideFeeback = true;
+                                canProvideFeedback = true;
                             }
                             else
                             {
@@ -820,31 +898,30 @@ internal class ApplicationDbSeeder
                         var appointment = new Appointment
                         {
                             PatientId = patientId.PatientID,
-                            DentistId = doctorId.DoctorId,
+                            DentistId = selectedDoctor.DoctorId,
                             ServiceId = service.ServiceID.Value,
                             AppointmentDate = appointmentDate,
                             StartTime = startTime,
                             Duration = duration,
                             Status = status,
                             SpamCount = 0,
-                            canFeedback = canProvideFeeback,
+                            canFeedback = canProvideFeedback,
                             CreatedOn = DateTime.Now.AddDays(dayOffset - random.Next(0, 3)),
                             CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
                         };
 
-                        var entry = _db.Appointments.Add(appointment).Entity;
-
+                        _db.Appointments.Add(appointment);
                         await _db.SaveChangesAsync();
-
-                        _logger.LogInformation($"Successfully seeded {appointments.Count} appointments.");
-                    //}
+                        _logger.LogInformation($"Appointment For {selectedDoctor.DoctorId} Date {appointmentDate} at {startTime} - {startTime.Add(duration)} seeding completed successfully.");
+                    }
                 }
-            }
 
+                _logger.LogInformation("Appointments seeding completed successfully.");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex.Message, ex);
+            _logger.LogError(ex, "Error seeding appointments");
             throw;
         }
     }
@@ -1177,7 +1254,7 @@ internal class ApplicationDbSeeder
                 }
                 _db.SaveChanges();
                 await SeedNonDoctorAppointmentAsync();
-                await SeedPatientDemoAsync();
+                //await SeedPatientDemoAsync();
             }
             _logger.LogInformation($"Seeded Payment");
         }
@@ -1222,6 +1299,7 @@ internal class ApplicationDbSeeder
                     doctors[d_profile_index].DoctorId = entry.Id;
                     doctors[d_profile_index].TypeServiceID = t.Id;
                     doctors[d_profile_index].WorkingType = WorkingType.FullTime;
+                    doctors[d_profile_index].IsActive = true;
                     doctor.Add(entry);
                     flash++;
                     d_profile_index++;
@@ -1231,6 +1309,7 @@ internal class ApplicationDbSeeder
                     doctors[d_profile_index].DoctorId = entry.Id;
                     doctors[d_profile_index].TypeServiceID = t.Id;
                     doctors[d_profile_index].WorkingType = WorkingType.PartTime;
+                    doctors[d_profile_index].IsActive = true;
                     doctor.Add(entry);
                     flash++;
                     d_profile_index++;
@@ -1278,7 +1357,107 @@ internal class ApplicationDbSeeder
             _logger.LogInformation("Seeded Users.");
         }
     }
+    private async Task SeedWorkingCalendar()
+    {
+        _logger.LogInformation("Seeding Working Calendar data...");
+        try
+        {
+            if (!_db.WorkingCalendars.Any())
+            {
+                var doctors = await _db.DoctorProfiles
+                    .Where(d => d.IsActive && d.WorkingType != WorkingType.None)
+                    .ToListAsync();
 
+                var rooms = await _db.Rooms
+                    .Where(r => r.Status)
+                    .ToListAsync();
+
+                if (!doctors.Any() || !rooms.Any())
+                {
+                    _logger.LogWarning("No active doctors or rooms found for seeding calendar");
+                    return;
+                }
+
+                var allShifts = new List<(TimeSpan Start, TimeSpan End, string ShiftName)>
+            {
+                (new TimeSpan(8, 0, 0), new TimeSpan(12, 0, 0), "Morning"),
+                (new TimeSpan(13, 0, 0), new TimeSpan(17, 0, 0), "Afternoon"),
+                (new TimeSpan(18, 0, 0), new TimeSpan(22, 0, 0), "Evening")
+            };
+                var startDate = new DateOnly(2024, 3, 1);
+                var endDate = new DateOnly(2024, 12, 31);
+
+                foreach (var doctor in doctors)
+                {
+                    var room = rooms[doctors.IndexOf(doctor) % rooms.Count];
+
+                    for (var date = startDate; date <= endDate; date = date.AddDays(1))
+                    {
+                        // Skip only Sundays
+                        if (date.DayOfWeek != DayOfWeek.Sunday)
+                        {
+                            var c = new WorkingCalendar
+                            {
+                                DoctorID = doctor.Id,
+                                RoomID = room.Id,
+                                Date = date,
+                                Status = WorkingStatus.Accept,
+                                Note = $"Schedule for {doctor.DoctorId}"
+                            };
+                            var calendar = _db.WorkingCalendars.Add(c).Entity;
+
+                            // Xác định ca làm việc dựa trên WorkingType
+                            var shiftsForDoctor = GetShiftsBasedOnWorkingType(doctor.WorkingType, allShifts, date.DayOfWeek);
+
+                            foreach (var shift in shiftsForDoctor)
+                            {
+                                _db.TimeWorkings.Add(new TimeWorking
+                                {
+                                    CalendarID = calendar.Id,
+                                    StartTime = shift.Start,
+                                    EndTime = shift.End,
+                                    IsActive = true
+                                });
+                            }
+                        }
+                    }
+                }
+                await _db.SaveChangesAsync();
+
+                _logger.LogInformation($"Successfully seeded calendars and time slots");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while seeding working calendar data");
+            throw;
+        }
+    }
+
+    private List<(TimeSpan Start, TimeSpan End, string ShiftName)> GetShiftsBasedOnWorkingType(
+        WorkingType workingType,
+        List<(TimeSpan Start, TimeSpan End, string ShiftName)> allShifts,
+        DayOfWeek dayOfWeek)
+    {
+        var shiftsToAssign = new List<(TimeSpan Start, TimeSpan End, string ShiftName)>();
+
+        switch (workingType)
+        {
+            case WorkingType.FullTime:
+                shiftsToAssign.Add(allShifts[0]);
+                shiftsToAssign.Add(allShifts[1]);
+                break;
+
+            case WorkingType.PartTime:
+                shiftsToAssign.Add(allShifts[2]);
+                break;
+
+            default:
+                break;
+        }
+
+        return shiftsToAssign;
+    }
     private async Task SeedPatientDemoAsync()
     {
         if(_db.Users.Count() <= 5)
