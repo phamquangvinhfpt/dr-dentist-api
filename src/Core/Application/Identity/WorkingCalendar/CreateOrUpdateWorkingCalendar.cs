@@ -8,6 +8,6 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Identity.WorkingCalendar;
 public class CreateOrUpdateWorkingCalendar : IRequest<string>
 {
-    public DateOnly Date { get; set; }
+    public DateTime Date { get; set; }
     public List<TimeWorkingRequest>? TimeWorkings { get; set; }
 }

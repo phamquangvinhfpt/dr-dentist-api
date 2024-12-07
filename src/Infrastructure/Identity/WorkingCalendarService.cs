@@ -21,6 +21,7 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -71,7 +72,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
             foreach (var item in request)
             {
-                var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
+                var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == DateOnly.FromDateTime(item.Date));
                 if (existing) {
                     throw new Exception($"Date: {item.Date} has been taken in your working calendar");
                 }
@@ -79,7 +80,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 var calendar = _db.WorkingCalendars.Add(new Domain.Identity.WorkingCalendar
                 {
                     DoctorID = dProfile.Id,
-                    Date = item.Date,
+                    Date = DateOnly.FromDateTime(item.Date),
                     Status = WorkingStatus.Waiting,
                 }).Entity;
 
@@ -129,9 +130,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
     }
 
-    private int GetWeekOfMonth(DateOnly date)
+    private int GetWeekOfMonth(DateTime date)
     {
-        return ((date.Day - 1) / 7) + 1;
+        return ISOWeek.GetWeekOfYear(date); ;
     }
 
     public async Task<string> FullTimeRegistDateWorking(string doctorID, DateTime date, CancellationToken cancellationToken)
@@ -204,7 +205,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             {
                 int totalTimeInDay = 0;
 
-                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == item.Date);
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == DateOnly.FromDateTime(item.Date));
                 if (calendar == null) {
                     //throw new Exception("Warning: Error when find calendar");
                     _logger.LogInformation("Warning: Error when find calendar at UpdateWorkingCalendar. To Processing create new working time.");
