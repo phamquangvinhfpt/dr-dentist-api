@@ -12,8 +12,10 @@ using FSH.WebApi.Shared.Authorization;
 using FSH.WebApi.Shared.Multitenancy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection;
@@ -31,8 +33,9 @@ internal class ApplicationDbSeeder
     private readonly ILogger<ApplicationDbSeeder> _logger;
     private readonly ApplicationDbContext _db;
     private readonly ISerializerService _serializerService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public ApplicationDbSeeder(ISerializerService serializerService, ApplicationDbContext db, FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger)
+    public ApplicationDbSeeder(ISerializerService serializerService, ApplicationDbContext db, FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger, IServiceScopeFactory scopeFactory)
     {
         _currentTenant = currentTenant;
         _roleManager = roleManager;
@@ -41,6 +44,7 @@ internal class ApplicationDbSeeder
         _logger = logger;
         _db = db;
         _serializerService = serializerService;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task SeedDatabaseAsync(ApplicationDbContext dbContext, CancellationToken cancellationToken)
@@ -117,7 +121,7 @@ internal class ApplicationDbSeeder
 
                 if (_currentTenant.Id == MultitenancyConstants.Root.Id)
                 {
-                   await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.All, role);
+                    await AssignPermissionsToRoleAsync(dbContext, FSHPermissions.All, role);
                 }
             }
             else if (roleName == FSHRoles.Staff)
@@ -353,7 +357,7 @@ internal class ApplicationDbSeeder
         foreach (var i in services)
         {
             var procedure = _db.Procedures.Add(i).Entity;
-            if(ser != null)
+            if (ser != null)
             {
                 ser.TotalPrice += procedure.Price;
                 _db.ServiceProcedures.Add(new ServiceProcedures
@@ -753,57 +757,65 @@ internal class ApplicationDbSeeder
         _logger.LogInformation("Seeding Appointments...");
         try
         {
-            if (!_db.Appointments.Any())
+            using var scope = _scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            if (!await dbContext.Appointments.AnyAsync())
             {
-                var serviceProcedures = _db.ServiceProcedures
+                var serviceProcedures = await dbContext.ServiceProcedures
                     .GroupBy(p => p.ServiceId)
                     .Select(p => new
                     {
                         ServiceID = p.Key,
                         ProcedureIDs = p.Select(p => p.ProcedureId).ToList(),
                     })
-                    .ToList();
+                    .ToListAsync();
 
-                var patients = _db.PatientProfiles.Select(p => new { PatientID = p.Id }).ToList();
-                var random = new Random();
+                var patients = await dbContext.PatientProfiles.Select(p => new { PatientID = p.Id }).ToListAsync();
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
 
-                for (int dayOffset = -270; dayOffset <= 0; dayOffset++)
+                var appointmentsToAdd = new ConcurrentBag<Appointment>();
+
+                await Parallel.ForEachAsync(Enumerable.Range(-270, 271), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async (dayOffset, ct) =>
                 {
+                    using var innerScope = _scopeFactory.CreateScope();
+                    var innerDbContext = innerScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                    var random = new Random(Guid.NewGuid().GetHashCode());
                     var appointmentDate = currentDate.AddDays(dayOffset);
 
                     if (appointmentDate.DayOfWeek == DayOfWeek.Sunday)
                     {
-                        continue;
+                        return;
                     }
 
-                    var availableDoctors = await _db.WorkingCalendars
+                    var availableDoctors = await innerDbContext.WorkingCalendars
                         .Where(w => w.Date == appointmentDate && w.Status == WorkingStatus.Accept)
                         .Select(w => new
                         {
                             DoctorId = w.DoctorID,
                             CalendarId = w.Id
                         })
-                        .ToListAsync();
+                        .ToListAsync(ct);
 
                     if (!availableDoctors.Any())
                     {
-                        continue; // Bỏ qua ngày nếu không có bác sĩ nào làm việc
+                        return;
                     }
 
                     var appointmentsPerDay = random.Next(4, 7);
 
                     for (int i = 0; i < appointmentsPerDay; i++)
                     {
-                        var selectedDoctor = availableDoctors[random.Next(availableDoctors.Count)];
+                        var selectedDoctor = availableDoctors[random.Next(availableDoctors.Count())];
 
-                        var doctorTimeSlots = await _db.TimeWorkings
+                        var doctorTimeSlots = await innerDbContext.TimeWorkings
                             .Where(t => t.CalendarID == selectedDoctor.CalendarId && t.IsActive)
-                            .ToListAsync();
+                            .ToListAsync(ct);
 
                         if (!doctorTimeSlots.Any())
                         {
-                            continue; // Không có khung thời gian nào khả dụng cho bác sĩ này
+                            continue;
                         }
 
                         TimeSpan startTime = TimeSpan.Zero;
@@ -813,27 +825,15 @@ internal class ApplicationDbSeeder
 
                         do
                         {
-                            // Lấy ngẫu nhiên một ca làm việc
-                            var selectedTimeSlot = doctorTimeSlots[random.Next(doctorTimeSlots.Count)];
-
-                            // Tính khoảng thời gian tối đa có thể lấy (có trừ thời lượng của cuộc hẹn)
+                            var selectedTimeSlot = doctorTimeSlots[random.Next(doctorTimeSlots.Count())];
                             var maxStartTime = selectedTimeSlot.EndTime - duration;
 
-                            //// Kiểm tra nếu khoảng thời gian không đủ 30 phút thì bỏ qua
-                            //if (maxStartTime <= selectedTimeSlot.StartTime)
-                            //{
-                            //    attempts++;
-                            //    continue;
-                            //}
-
-                            // Random thời gian bắt đầu trong khoảng từ StartTime đến maxStartTime
-                            int availableMinutes = (int)(maxStartTime - selectedTimeSlot.StartTime).TotalHours;
+                            int availableMinutes = (int)(maxStartTime - selectedTimeSlot.StartTime).TotalMinutes;
                             int randomOffsetMinutes = random.Next(0, availableMinutes);
                             startTime = selectedTimeSlot.StartTime.Add(TimeSpan.FromMinutes(randomOffsetMinutes));
 
-                            // Kiểm tra xem khoảng thời gian này đã có cuộc hẹn nào chưa
-                            bool isTimeSlotBooked = await _db.AppointmentCalendars
-                                .Where(c =>
+                            bool isTimeSlotBooked = await innerDbContext.AppointmentCalendars
+                                .AnyAsync(c =>
                                     c.DoctorId == selectedDoctor.DoctorId &&
                                     c.Date == appointmentDate &&
                                     (
@@ -844,9 +844,7 @@ internal class ApplicationDbSeeder
                                     (
                                         c.Status == CalendarStatus.Booked ||
                                         c.Status == CalendarStatus.Waiting
-                                    )
-                                )
-                                .AnyAsync();
+                                    ), ct);
 
                             if (!isTimeSlotBooked)
                             {
@@ -854,7 +852,7 @@ internal class ApplicationDbSeeder
                             }
 
                             attempts++;
-                            if (attempts > 10) // Giới hạn số lần thử để tránh vòng lặp vô tận
+                            if (attempts > 10)
                             {
                                 break;
                             }
@@ -863,11 +861,11 @@ internal class ApplicationDbSeeder
 
                         if (!slotFound)
                         {
-                            continue; // Không tìm được thời gian trống cho ngày này
+                            continue;
                         }
 
-                        var patientId = patients[random.Next(patients.Count)];
-                        var service = serviceProcedures[random.Next(serviceProcedures.Count)];
+                        var patientId = patients[random.Next(patients.Count())];
+                        var service = serviceProcedures[random.Next(serviceProcedures.Count())];
 
                         AppointmentStatus status;
                         bool canProvideFeedback = false;
@@ -910,13 +908,23 @@ internal class ApplicationDbSeeder
                             CreatedBy = Guid.Parse("f56b04ea-d95d-4fab-be50-2fd2ca1561ff")
                         };
 
-                        _db.Appointments.Add(appointment);
-                        await _db.SaveChangesAsync();
-                        _logger.LogInformation($"Appointment For {selectedDoctor.DoctorId} Date {appointmentDate} at {startTime} - {startTime.Add(duration)} seeding completed successfully.");
+                        appointmentsToAdd.Add(appointment);
                     }
+                });
+
+                // Batch insert
+                var batchSize = 1000;
+                var appointmentsList = appointmentsToAdd.ToList();
+                for (int i = 0; i < appointmentsList.Count; i += batchSize)
+                {
+                    var batch = appointmentsList.Skip(i).Take(batchSize);
+                    await dbContext.Appointments.AddRangeAsync(batch);
+                    await dbContext.SaveChangesAsync();
+
+                    _logger.LogInformation($"Batch {i / batchSize + 1} inserted. Total {batch.Count()} appointments.");
                 }
 
-                _logger.LogInformation("Appointments seeding completed successfully.");
+                _logger.LogInformation($"Appointments seeding completed successfully. Total: {appointmentsList.Count}");
             }
         }
         catch (Exception ex)
@@ -1170,7 +1178,7 @@ internal class ApplicationDbSeeder
                             Description = "Sâu Răng"
                         });
 
-                        if(appointment.Status == AppointmentStatus.Done)
+                        if (appointment.Status == AppointmentStatus.Done)
                         {
                             _db.Feedbacks.Add(new Feedback
                             {
@@ -1303,7 +1311,8 @@ internal class ApplicationDbSeeder
                     doctor.Add(entry);
                     flash++;
                     d_profile_index++;
-                }else if(flash < 10)
+                }
+                else if (flash < 10)
                 {
                     var t = type[next.Next(type.Count)];
                     doctors[d_profile_index].DoctorId = entry.Id;
@@ -1460,7 +1469,7 @@ internal class ApplicationDbSeeder
     }
     private async Task SeedPatientDemoAsync()
     {
-        if(_db.Users.Count() <= 5)
+        if (_db.Users.Count() <= 5)
         {
             //patient demo 1
             var patientDemo1 = new ApplicationUser

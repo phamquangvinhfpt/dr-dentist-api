@@ -129,7 +129,7 @@ public static class FSHPermissions
         new("Search Feedback", FSHAction.Search, FSHResource.Feedback, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Patient Messages
-        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { PATIENT, STAFF, DENTIST }),
         new("Create Patient Messages", FSHAction.Create, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
         new("Update Patient Messages", FSHAction.Update, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
         new("Delete Patient Messages", FSHAction.Delete, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
