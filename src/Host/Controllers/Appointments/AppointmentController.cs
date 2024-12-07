@@ -2,6 +2,7 @@
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Identity.AppointmentCalendars;
+using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Infrastructure.Redis;
@@ -42,6 +43,16 @@ public class AppointmentController : VersionNeutralApiController
         DeleteRedisCode();
         return await _appointmentService.CreateReExamination(request, cancellationToken);
     }
+
+    //checked
+    [HttpPost("doctor/available")]
+    [OpenApiOperation("Get Doctors Available for service at Date and Time", "")]
+    public async Task<List<GetDoctorResponse>> GetAvailableDoctor(GetAvailableDoctor request, CancellationToken cancellationToken)
+    {
+        DeleteRedisCode();
+        return await _appointmentService.GetAvailableDoctorAsync(request, cancellationToken);
+    }
+
     [HttpPost("cancel")]
     [MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Cancel Appointment", "")]

@@ -10,6 +10,7 @@ using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.AppointmentCalendars;
+using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
@@ -1369,6 +1370,51 @@ internal class AppointmentService : IAppointmentService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<List<GetDoctorResponse>> GetAvailableDoctorAsync(GetAvailableDoctor request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<GetDoctorResponse>();
+
+            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+
+            if (service == null) {
+                throw new Exception("Warning: Service Not Found");
+            }
+            if(request.Date == default)
+            {
+                throw new Exception("Warning: The Date should be available");
+            }
+
+            var doctors = await _db.DoctorProfiles.Where(p => p.TypeServiceID == service.TypeServiceID).ToListAsync();
+
+            foreach (var doctor in doctors) {
+                bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.DoctorId);
+
+                if (check) {
+                    var user = await _userManager.FindByIdAsync(doctor.DoctorId);
+                    result.Add(new GetDoctorResponse
+                    {
+                        DoctorProfile = doctor,
+                        Email = user.Email,
+                        FirstName = user.FirstName,
+                        Gender = user.Gender,
+                        Id = user.Id,
+                        ImageUrl = user.ImageUrl,
+                        LastName = user.LastName,
+                        PhoneNumber = user.PhoneNumber,
+                        UserName = user.UserName,
+                    });
+                }
+            }
+            return result;
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
     }

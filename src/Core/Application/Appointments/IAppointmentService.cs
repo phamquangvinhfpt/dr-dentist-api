@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Identity.AppointmentCalendars;
+using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Application.TreatmentPlan;
 using System;
@@ -31,4 +32,5 @@ public interface IAppointmentService : ITransientService
     Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);
     Task<PaginationResponse<GetWorkingDetailResponse>> GetReExamAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);
     Task<string> CreateReExamination(AddReExamination request, CancellationToken cancellationToken);
+    Task<List<GetDoctorResponse>> GetAvailableDoctorAsync(GetAvailableDoctor request, CancellationToken cancellationToken);
 }
