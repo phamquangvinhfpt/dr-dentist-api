@@ -25,6 +25,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Xceed.Document.NET;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -927,6 +928,48 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task<List<GetDoctorResponse>> GetAllDoctorHasNonCalendar(DateTime date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<GetDoctorResponse>();
+            var targetMonth = date.Month;
+            var targetYear = date.Year;
+
+            // Lấy danh sách doctors chưa có lịch trong tháng specified
+            var doctorsWithNoSchedule = await _db.DoctorProfiles
+                .Where(d => !_db.WorkingCalendars.Any(w =>
+                    w.DoctorID == d.Id &&
+                    w.Date.Value.Month == targetMonth &&
+                    w.Date.Value.Year == targetYear))
+                .ToListAsync(cancellationToken);
+
+            foreach(var doctor in doctorsWithNoSchedule)
+            {
+                var user = await _userManager.FindByIdAsync(doctor.DoctorId);
+                result.Add(new GetDoctorResponse
+                {
+                    DoctorProfile = doctor,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    Gender = user.Gender,
+                    Id = user.Id,
+                    ImageUrl = user.ImageUrl,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                    UserName = user.UserName,
+                });
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
             throw;
         }
     }

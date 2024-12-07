@@ -1,5 +1,7 @@
-﻿using FSH.WebApi.Application.Appointments;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Identity.AppointmentCalendars;
+using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Domain.Examination;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +38,15 @@ public class WorkingCalendarController : VersionNeutralApiController
         CancellationToken cancellationToken)
     {
         return await _workingCalendarService.GetWorkingCalendarPagination(filter, startDate, endDate, cancellationToken);
+    }
+
+    [HttpGet("get/non-calendar")]
+    [OpenApiOperation("Get Doctors has non calendar in this month.", "")]
+    public async Task<List<GetDoctorResponse>> RegisterFullTimeWorkingAsync(
+        [FromQuery] DateTime date,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetAllDoctorHasNonCalendar(date, cancellationToken);
     }
 
     [HttpPost("part-time/non-accept")]

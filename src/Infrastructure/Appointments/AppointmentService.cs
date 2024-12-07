@@ -364,6 +364,17 @@ internal class AppointmentService : IAppointmentService
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
                 };
+                //var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
+
+                //if (calendar != null)
+                //{
+                //    if (calendar.RoomID != default)
+                //    {
+                //        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                //        r.RoomID = room.Id;
+                //        r.RoomName = room.RoomName;
+                //    }
+                //}
                 result.Add(r);
             }
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
@@ -1203,7 +1214,8 @@ internal class AppointmentService : IAppointmentService
                         Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
                         Step= s.StepOrder
                     }).FirstOrDefaultAsync();
-                result.Add(new GetWorkingDetailResponse
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
+                var r = new GetWorkingDetailResponse
                 {
                     AppointmentId = a.Appointment.AppointmentId.Value,
                     AppointmentType = a.Appointment.Type,
@@ -1223,7 +1235,17 @@ internal class AppointmentService : IAppointmentService
                     StartTime = a.Appointment.StartTime.Value,
                     Status = a.Appointment.Status,
                     Step = sp.Step,
-                });
+                };
+                if (calendar != null)
+                {
+                    if (calendar.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                        r.RoomID = room.Id;
+                        r.RoomName = room.RoomName;
+                    }
+                }
+                result.Add(r);
             }
             return new PaginationResponse<GetWorkingDetailResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
@@ -1300,22 +1322,34 @@ internal class AppointmentService : IAppointmentService
                     Status = a.Appointment.Status,
                 };
 
-                if (a.Appointment.PlanID != null)
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
+
+                if(calendar != null)
                 {
-                    var plan = await _db.TreatmentPlanProcedures.FirstOrDefaultAsync(p => p.Id == a.Appointment.PlanID);
-                    var sp = await _db.ServiceProcedures.Where(p => p.Id == plan.ServiceProcedureId)
-                    .Select(s => new
+                    if(calendar.RoomID != default)
                     {
-                        Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
-                        Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
-                        Step = s.StepOrder
-                    }).FirstOrDefaultAsync();
-                    r.ServiceID = sp.Service.Id;
-                    r.ProcedureID = sp.Procedure.Id;
-                    r.ServiceName = sp.Service.ServiceName;
-                    r.ProcedureName = sp.Procedure.Name;
-                    r.Step = sp.Step;
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                        r.RoomID = room.Id;
+                        r.RoomName = room.RoomName;
+                    }
                 }
+
+                //if (a.Appointment.PlanID != null)
+                //{
+                //    var plan = await _db.TreatmentPlanProcedures.FirstOrDefaultAsync(p => p.Id == a.Appointment.PlanID);
+                //    var sp = await _db.ServiceProcedures.Where(p => p.Id == plan.ServiceProcedureId)
+                //    .Select(s => new
+                //    {
+                //        Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
+                //        Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                //        Step = s.StepOrder
+                //    }).FirstOrDefaultAsync();
+                //    r.ServiceID = sp.Service.Id;
+                //    r.ProcedureID = sp.Procedure.Id;
+                //    r.ServiceName = sp.Service.ServiceName;
+                //    r.ProcedureName = sp.Procedure.Name;
+                //    r.Step = sp.Step;
+                //}
                 result.Add(r);
             }
             return new PaginationResponse<GetWorkingDetailResponse>(result, count, filter.PageNumber, filter.PageSize);
