@@ -364,17 +364,17 @@ internal class AppointmentService : IAppointmentService
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
                 };
-                //var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
 
-                //if (calendar != null)
-                //{
-                //    if (calendar.RoomID != default)
-                //    {
-                //        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
-                //        r.RoomID = room.Id;
-                //        r.RoomName = room.RoomName;
-                //    }
-                //}
+                if (calendar != null)
+                {
+                    if (calendar.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                        r.RoomID = room.Id;
+                        r.RoomName = room.RoomName;
+                    }
+                }
                 result.Add(r);
             }
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
@@ -717,6 +717,17 @@ internal class AppointmentService : IAppointmentService
                     var d = await _userManager.FindByIdAsync(dentist.DoctorId);
                     result.DentistId = dentist.Id;
                     result.DentistName = $"{d.FirstName} {d.LastName}";
+                }
+                var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dentist.Id && p.Date == appointments.Appointment.AppointmentDate && p.Status == WorkingStatus.Accept);
+
+                if (calendar != null)
+                {
+                    if (calendar.RoomID != default)
+                    {
+                        var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                        result.RoomID = room.Id;
+                        result.RoomName = room.RoomName;
+                    }
                 }
             }
 

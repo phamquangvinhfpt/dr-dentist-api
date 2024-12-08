@@ -40,6 +40,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly ILogger<WorkingCalendarService> _logger;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private static string APPOINTMENT = "APPOINTMENT";
     public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService)
     {
         _db = db;
@@ -133,7 +134,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
     private int GetWeekOfMonth(DateTime date)
     {
-        return ISOWeek.GetWeekOfYear(date); ;
+        return ISOWeek.GetWeekOfYear(date);
     }
 
     public async Task<string> FullTimeRegistDateWorking(string doctorID, DateTime date, CancellationToken cancellationToken)
@@ -416,6 +417,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             calendar.Calendar.RoomID = request.RoomID;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)
@@ -1011,6 +1013,26 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
         catch (Exception ex) {
             _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+    public async Task DeleteRedisCode()
+    {
+        try
+        {
+            var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+            if (keys == null)
+            {
+                return;
+            }
+            foreach (string key in keys)
+            {
+                _cacheService.Remove(key);
+            }
+            _cacheService.Remove(APPOINTMENT);
+        }
+        catch (Exception ex)
+        {
             throw new Exception(ex.Message);
         }
     }

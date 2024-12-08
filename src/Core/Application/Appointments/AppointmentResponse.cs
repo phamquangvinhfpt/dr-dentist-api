@@ -30,4 +30,6 @@ public class AppointmentResponse
     public double ServicePrice { get; set; }
     public bool canFeedback { get; set; }
     public bool isFeedback { get; set; }
+    public Guid RoomID { get; set; }
+    public string? RoomName { get; set; }
 }
