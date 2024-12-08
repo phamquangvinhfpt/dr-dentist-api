@@ -175,10 +175,20 @@ public class WorkingCalendarController : VersionNeutralApiController
     {
         return await _workingCalendarService.GetAllNonAcceptWithPagination(filter, startDate, endDate, cancellationToken);
     }
+
+    [HttpPost("time/get")]
+    [OpenApiOperation("Get Time Working of Doctor", "")]
+    public async Task<List<TimeDetail>> GetTimeWorkingAsync(
+        GetTimeWorkingRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.GetTimeWorkingAsync(request, cancellationToken);
+    }
+
     //[HttpPost("part-time/confirm")]
     //[OpenApiOperation("Confirm time working for part time.", "")]
     //public async Task<PaginationResponse<WorkingCalendarResponse>> AddTimeWorkingAsync(
-        
+
     //    CancellationToken cancellationToken)
     //{
     //    return await _workingCalendarService.GetAllNonAcceptWithPagination(filter, startDate, endDate, cancellationToken);

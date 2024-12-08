@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
@@ -972,6 +973,45 @@ internal class WorkingCalendarService : IWorkingCalendarService
         {
             _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
             throw;
+        }
+    }
+
+    public async Task<List<TimeDetail>> GetTimeWorkingAsync(GetTimeWorkingRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if(request.UserID == null)
+            {
+                throw new Exception("Warning: user information should be include.");
+            }
+            if(request.Date == default)
+            {
+                throw new Exception("Warning: The Date is default.");
+            }
+
+            var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.UserID);
+
+            if (dProfile == null) {
+                throw new Exception("Warning: Can not identify doctor.");
+            }
+            var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == request.Date);
+            if(calendar == null)
+            {
+                throw new Exception("Warning: User do not have work at this day.");
+            }
+            var times = await _db.TimeWorkings.Where(p => p.CalendarID == calendar.Id)
+                .Select(c => new TimeDetail
+                {
+                    EndTime = c.EndTime,
+                    StartTime = c.StartTime,
+                    TimeID = c.Id,
+                    IsActive = c.IsActive,
+                }).ToListAsync();
+            return times;
+        }
+        catch (Exception ex) {
+            _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
+            throw new Exception(ex.Message);
         }
     }
 }
