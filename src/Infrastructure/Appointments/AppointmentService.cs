@@ -318,9 +318,9 @@ internal class AppointmentService : IAppointmentService
                 var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 appointmentsQuery = appointmentsQuery.Where(p => p.PatientId == patientProfile.Id);
             }
-            if (currentUser == FSHRoles.Staff) {
-                appointmentsQuery = appointmentsQuery.Where(w => w.Status == AppointmentStatus.Come || w.Status == AppointmentStatus.Confirmed);
-            }
+            //if (currentUser == FSHRoles.Staff) {
+            //    appointmentsQuery = appointmentsQuery.Where(w => w.Status == AppointmentStatus.Come || w.Status == AppointmentStatus.Confirmed);
+            //}
             int count = appointmentsQuery.Count();
             appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.AppointmentDate).WithSpecification(spec);
 
