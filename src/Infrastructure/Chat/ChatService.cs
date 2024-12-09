@@ -52,7 +52,7 @@ public class ChatService : IChatService
         foreach( var user in users)
         {
             var latestMessage = await _dbContext.PatientMessages
-                .Where(pm => pm.SenderId == user.Id)
+                .Where(pm => pm.SenderId == user.Id && pm.ReceiverId == currentUser)
                 .OrderByDescending(pm => pm.CreatedOn)
                 .Select(pm => new ListUserDto
                 {
@@ -62,7 +62,7 @@ public class ChatService : IChatService
                     IsRead = pm.IsRead,
                     CreatedOn = pm.CreatedOn,
                     SenderName = $"{user.FirstName} {user.LastName}",
-                    ImageUrl = user.ImageUrl
+                    ImageUrl = user.ImageUrl,
                 })
                 .FirstOrDefaultAsync();
 
@@ -74,19 +74,18 @@ public class ChatService : IChatService
                     SenderName = $"{user.FirstName} {user.LastName}",
                     ImageUrl = user.ImageUrl,
                     LatestMessage = string.Empty,
-                    CreatedOn = DateTime.UtcNow.AddHours(7)
                 };
             }
 
             latestMessages.Add(latestMessage);
         }
 
-        return latestMessages;
+        return latestMessages.OrderByDescending(lm => lm.CreatedOn).ToList();
     }
 
     public async Task<ListMessageDto> SendMessageAsync(SendMessageDto send, CancellationToken cancellationToken)
     {
-        // send.Images có ảnh
+
         string senderId = _currentUser.GetUserId().ToString();
         var patientMessage = new PatientMessages
         {
