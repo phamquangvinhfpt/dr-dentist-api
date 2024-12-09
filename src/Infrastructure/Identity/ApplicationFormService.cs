@@ -155,6 +155,7 @@ internal class ApplicationFormService : IApplicationFormService
                 }
                 result.Add(new FormDetailResponse
                 {
+                    FormID = form.Id,
                     CalendarID = form.CalendarID,
                     Description = form.Description,
                     Status = form.Status,

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Identity.ApplicationForms;
 public class FormDetailResponse
 {
+    public Guid FormID { get; set; }
     public string? UserID { get; set; }
     public string? Name { get; set; }
     public Guid CalendarID { get; set; }
