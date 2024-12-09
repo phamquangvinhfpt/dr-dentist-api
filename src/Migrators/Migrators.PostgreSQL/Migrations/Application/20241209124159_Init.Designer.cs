@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241206152850_Init")]
+    [Migration("20241209124159_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -630,8 +630,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasKey("Id");
 
                     b.HasIndex("CalendarID");
-
-                    b.HasIndex("TimeID");
 
                     b.HasIndex("UserID");
 
@@ -2169,10 +2167,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasForeignKey("CalendarID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("FSH.WebApi.Domain.Identity.TimeWorking", null)
-                        .WithMany()
-                        .HasForeignKey("TimeID");
 
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()

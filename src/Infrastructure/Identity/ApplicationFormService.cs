@@ -194,27 +194,73 @@ internal class ApplicationFormService : IApplicationFormService
             existingForm.Note = form.Note;
 
             var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.Id == existingForm.CalendarID);
-            if(existingForm.TimeID != default)
+
+            if (form.Status == FormStatus.Accepted)
             {
-                var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == existingForm.TimeID);
-                time.IsActive = false;
-            }
-            else
-            {
-                var ts = await _db.TimeWorkings.Where(p => p.CalendarID == existingForm.CalendarID).ToListAsync();
-                foreach (var time in ts)
+                if (existingForm.TimeID != default)
                 {
+                    var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == existingForm.TimeID);
                     time.IsActive = false;
+                    bool isOffAllDay = await _db.TimeWorkings.AnyAsync(p => p.CalendarID == calendar.Id && p.IsActive);
+                    if (!isOffAllDay)
+                    {
+                        calendar.Status = WorkingStatus.Off;
+                    }
                 }
-                calendar.Status = WorkingStatus.Off;
+                else
+                {
+                    var ts = await _db.TimeWorkings.Where(p => p.CalendarID == existingForm.CalendarID).ToListAsync();
+                    foreach (var time in ts)
+                    {
+                        time.IsActive = false;
+                    }
+                    calendar.Status = WorkingStatus.Off;
+                }
+
             }
             await _db.SaveChangesAsync(cancellationToken);
+            await SendAppointmentActionNotification(existingForm.UserID, calendar.Date.Value, form.Status, cancellationToken);
             return "Success";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, ex.Message);
             throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task SendAppointmentActionNotification(string DoctorID, DateOnly Date, FormStatus type, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var doctor = await _userManager.FindByIdAsync(DoctorID);
+            switch (type)
+            {
+                case FormStatus.Failed:
+                    await _notificationService.SendNotificationToUser(doctor.Id,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Information,
+                            Message = $"Đơn xin nghỉ ngày {Date} đã không thông qua",
+                            Title = "Thông báo",
+                            Url = null,
+                        }, null, cancellationToken);
+                    break;
+                case FormStatus.Accepted:
+                    await _notificationService.SendNotificationToUser(doctor.Id,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Information,
+                            Message = $"Đơn xin nghỉ ngày {Date} đã được thông qua",
+                            Title = "Thông báo",
+                            Url = null,
+                        }, null, cancellationToken);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
         }
     }
 }

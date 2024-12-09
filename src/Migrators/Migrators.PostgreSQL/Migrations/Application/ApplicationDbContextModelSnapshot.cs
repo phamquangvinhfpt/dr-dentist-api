@@ -628,8 +628,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasIndex("CalendarID");
 
-                    b.HasIndex("TimeID");
-
                     b.HasIndex("UserID");
 
                     b.ToTable("ApplicationForm", "Identity");
@@ -2166,10 +2164,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasForeignKey("CalendarID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("FSH.WebApi.Domain.Identity.TimeWorking", null)
-                        .WithMany()
-                        .HasForeignKey("TimeID");
 
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()

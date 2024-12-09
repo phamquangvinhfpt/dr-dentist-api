@@ -64,11 +64,6 @@ public class ApplicationFormConfig : IEntityTypeConfiguration<ApplicationForm>
             .HasOne<WorkingCalendar>()
             .WithMany()
             .HasForeignKey(b => b.CalendarID);
-
-        builder
-            .HasOne<TimeWorking>()
-            .WithMany()
-            .HasForeignKey(b => b.TimeID).IsRequired(false);
     }
 }
 
