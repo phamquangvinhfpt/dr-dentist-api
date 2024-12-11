@@ -64,7 +64,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
         bool time = await _db.TimeWorkings.Where(p =>
             p.CalendarID == workingTime.Id &&
             p.StartTime <= start &&
-            p.EndTime <= end &&
+            p.EndTime >= end &&
             p.IsActive
         ).AnyAsync();
 
@@ -104,7 +104,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
         bool time = await _db.TimeWorkings.Where(p =>
             p.CalendarID == workingTime.Id &&
             p.StartTime <= start &&
-            p.EndTime <= end &&
+             p.EndTime >= end &&
             p.IsActive
         ).AnyAsync();
 
@@ -156,7 +156,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
 
     public async Task<bool> CheckAvailableTimeSlotToReschedule(DefaultIdType appointmentID, DateOnly appointmentDate, TimeSpan startTime, TimeSpan endTime)
     {
-        var existingCalendar = await _db.AppointmentCalendars.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");
+        var existingCalendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointmentID) ?? throw new KeyNotFoundException("Calendar not found.");
         if (existingCalendar.Status != CalendarStatus.Booked)
         {
             return false;
@@ -174,7 +174,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
         bool time = await _db.TimeWorkings.Where(p =>
             p.CalendarID == workingTime.Id &&
             p.StartTime <= startTime &&
-            p.EndTime <= endTime &&
+            p.EndTime >= endTime &&
             p.IsActive
         ).AnyAsync();
 

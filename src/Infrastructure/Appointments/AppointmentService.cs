@@ -434,7 +434,7 @@ internal class AppointmentService : IAppointmentService
                     return;
                 }
             }
-            if (appointment.DentistId != null && user_role != FSHRoles.Patient)
+            if (appointment.DentistId != null)
             {
                 bool check = _workingCalendarService.CheckAvailableTimeSlotToReschedule(appointment.Id,
                     request.AppointmentDate,
@@ -470,6 +470,7 @@ internal class AppointmentService : IAppointmentService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
         }
     }
 
@@ -555,6 +556,7 @@ internal class AppointmentService : IAppointmentService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
         }
     }
 
@@ -605,6 +607,7 @@ internal class AppointmentService : IAppointmentService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message, ex);
         }
     }
 
@@ -842,6 +845,7 @@ internal class AppointmentService : IAppointmentService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message);
+            throw new Exception(ex.Message, ex);
         }
         return result;
     }
