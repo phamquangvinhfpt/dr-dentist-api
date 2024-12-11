@@ -10,6 +10,7 @@ public class CreateFeedbackRequest : IRequest<string>
     //public Guid? PatientProfileId { get; set; }
     //public Guid? DoctorProfileId { get; set; }
     //public Guid ServiceId { get; set; }
+    public Guid FeedbackID { get; set; }
     public Guid AppointmentID { get; set; }
     public string Message { get; set; } = string.Empty;
     public int Rating { get; set; }
@@ -31,9 +32,15 @@ public class CreateFeedbackRequestValidator : CustomValidator<CreateFeedbackRequ
         //    .NotNull()
         //    .WithMessage("The service information should be include");
 
+        RuleFor(p => p.FeedbackID)
+            .NotNull()
+            .When(p => p.AppointmentID == default)
+            .WithMessage("The Feedback information should be include");
+
         RuleFor(p => p.AppointmentID)
             .NotNull()
-            .WithMessage("The appointment information should be include");
+            .When(p => p.FeedbackID == default)
+            .WithMessage("The Appointment information should be include");
 
         When(p => !string.IsNullOrEmpty(p.Message), () =>
         {

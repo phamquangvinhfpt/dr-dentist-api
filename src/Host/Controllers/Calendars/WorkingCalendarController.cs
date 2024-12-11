@@ -146,6 +146,15 @@ public class WorkingCalendarController : VersionNeutralApiController
         return Ok("Success");
     }
 
+    [HttpPost("add-room/auto")]
+    [OpenApiOperation("Auto Add Room to Working Calendar.", "")]
+    public async Task<string> AutoAddRoomToWorkingAsync(
+        List<Guid> request,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.AutoAddRoomForWorkingAsync(request, cancellationToken); ;
+    }
+
     [HttpPost("create-room")]
     [OpenApiOperation("Create Room.", "")]
     public async Task<IActionResult> CreateRoomAsync(

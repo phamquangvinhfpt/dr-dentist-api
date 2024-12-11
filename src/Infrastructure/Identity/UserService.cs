@@ -752,6 +752,7 @@ internal partial class UserService : IUserService
                     f.Message,
                     f.Rating,
                     f.CreatedOn,
+                    Appointment = _db.Appointments.FirstOrDefault(p => p.Id == f.AppointmentId)
                 }).ToList()
             })
             .OrderByDescending(x => x.Rating)
@@ -793,13 +794,15 @@ internal partial class UserService : IUserService
 
                     var feedbackResponse = new FeedBackResponse
                     {
+                        FeedbackID = feedback.Id,
                         ServiceID = feedback.ServiceId,
                         ServiceName = service?.ServiceName,
                         PatientID = patientUser.Id,
                         PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
                         CreateDate = feedback.CreatedOn,
                         Ratings = feedback.Rating,
-                        Message = feedback.Message
+                        Message = feedback.Message,
+                        CanFeedback = feedback.Appointment.canFeedback
                     };
 
                     feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);

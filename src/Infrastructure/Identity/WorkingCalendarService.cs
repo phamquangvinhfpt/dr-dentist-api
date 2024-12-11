@@ -28,6 +28,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Xceed.Document.NET;
+using static FSH.WebApi.Shared.Multitenancy.MultitenancyConstants;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -69,8 +70,14 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorID);
 
             var weeklyHours = request
-                .GroupBy(r => GetWeekOfMonth(r.Date))
-                .ToDictionary(g => g.Key, g => 0);
+            .GroupBy(r => new { Month = r.Date.Month, Week = GetWeekOfMonth(r.Date) })
+            .ToDictionary(g => g.Key, g => new WeeklyData
+            {
+                Hours = 0,
+                FirstDate = g.Min(x => x.Date),
+                LastDate = g.Max(x => x.Date),
+                WorkDays = g.Count()
+            });
 
             foreach (var item in request)
             {
@@ -109,16 +116,21 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 }
 
                 // Add daily hours to weekly total
-                int weekNumber = GetWeekOfMonth(item.Date);
-                weeklyHours[weekNumber] += totalTimeInDay;
+                var key = new { Month = item.Date.Month, Week = GetWeekOfMonth(item.Date) };
+                weeklyHours[key].Hours += totalTimeInDay;
             }
 
             // Validate each week's total hours
             foreach (var weekHours in weeklyHours)
             {
-                if (weekHours.Value != 20)
+                if(weekHours.Key.Week == 1 && weekHours.Value.FirstDate.DayOfWeek > DayOfWeek.Tuesday)
                 {
-                    throw new Exception($"Total time working for week {weekHours.Key} is {weekHours.Value} hours. Must be exactly 20 hours per week.");
+                    continue;
+                }
+                if (weekHours.Value.Hours < 20)
+                {
+                    throw new Exception($"Total time working for week {weekHours.Key.Week} in month {weekHours.Key.Month} " +
+                    $"is {weekHours.Value.Hours} hours. Must be at least 20 hours for {weekHours.Value.WorkDays} working days.");
                 }
             }
             await _db.SaveChangesAsync(cancellationToken);
@@ -399,9 +411,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 foreach (var item2 in calendar.Times) {
                     flag = await _db.TimeWorkings.AnyAsync(c =>
                         c.CalendarID == item.Id && (
-                        c.StartTime < item2.StartTime && item2.StartTime < c.EndTime ||
-                        c.StartTime < item2.EndTime && item2.EndTime < c.EndTime ||
-                        item2.EndTime <= c.StartTime && c.EndTime <= item2.EndTime
+                        c.StartTime <= item2.StartTime && item2.StartTime < c.EndTime ||
+                        c.StartTime < item2.EndTime && item2.EndTime <= c.EndTime ||
+                        item2.StartTime <= c.StartTime && c.EndTime <= item2.EndTime
                     ));
                     if (flag) {
                         throw new Exception($"Warning: the room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
@@ -1034,6 +1046,108 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> AutoAddRoomForWorkingAsync(List<Guid> request, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            foreach(var item in request)
+            {
+                var calendar = await _db.WorkingCalendars
+                    .Where(p => p.Id == item)
+                    .Select(c => new
+                    {
+                        Calendar = c,
+                        Times = _db.TimeWorkings.Where(p => p.CalendarID == c.Id).ToList(),
+                        Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.DoctorID)
+                    })
+                    .FirstOrDefaultAsync();
+                if (calendar == null)
+                {
+                    throw new Exception("Warning: Error when find calendar");
+                }
+                if (calendar.Times.Count() == 0)
+                {
+                    throw new Exception("Warning: Time was not selected.");
+                }
+                if (calendar.Doctor.WorkingType == WorkingType.FullTime && calendar.Calendar.Status != WorkingStatus.Accept)
+                {
+                    throw new Exception("Warning: Time working that is not set to doctor full time.");
+                }
+                var room_id = Guid.Empty;
+                foreach (var item2 in calendar.Times)
+                {
+                    var wasUse = await _db.WorkingCalendars
+                        .Where(p => p.Id != calendar.Calendar.Id &&
+                        p.Date == calendar.Calendar.Date &&
+                        p.Status == WorkingStatus.Accept &&
+                        p.RoomID != default &&
+                        _db.TimeWorkings.Any(c =>
+                            c.CalendarID != calendar.Calendar.Id && (
+                            c.StartTime <= item2.StartTime && item2.StartTime < c.EndTime ||
+                            c.StartTime < item2.EndTime && item2.EndTime <= c.EndTime ||
+                            item2.StartTime <= c.StartTime && c.EndTime <= item2.EndTime
+                        ))).ToListAsync();
+
+                    if(wasUse == null)
+                    {
+                        if (room_id == Guid.Empty)
+                        {
+                            var room = await _db.Rooms.FirstOrDefaultAsync();
+                            room_id = room.Id;
+                            calendar.Calendar.RoomID = room.Id;
+                        }
+                        else
+                        {
+                            calendar.Calendar.RoomID = room_id;
+                        }
+
+                    }
+                    else
+                    {
+                        bool isUse = wasUse.Any(p => p.Status == WorkingStatus.Accept && p.RoomID == room_id);
+                        if (!isUse && room_id != default)
+                        {
+                            calendar.Calendar.RoomID = room_id;
+                        }
+                        else
+                        {
+                            var room = await _db.Rooms.ToListAsync();
+                            foreach (var r in wasUse)
+                            {
+                                room.RemoveAll(v => v.Id == r.RoomID);
+                            }
+                            if (room.Count() == 0)
+                            {
+                                throw new Exception($"Warning: All room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
+                            }
+                            calendar.Calendar.RoomID = room[0].Id;
+                            room_id = calendar.Calendar.RoomID;
+                        }
+                    }
+                }
+                if (calendar.Doctor.WorkingType == WorkingType.PartTime)
+                {
+                    calendar.Calendar.Status = WorkingStatus.Accept;
+                    foreach (var i in calendar.Times)
+                    {
+                        i.IsActive = true;
+                    }
+                }
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message, ex);
+            throw;
         }
     }
 }

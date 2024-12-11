@@ -7,6 +7,7 @@ using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Application.TreatmentPlan.Prescriptions;
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -241,6 +242,15 @@ internal class TreatmentPlanService : ITreatmentPlanService
             {
                 appointment.canFeedback = true;
                 appointment.Status = AppointmentStatus.Done;
+                var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+                await _notificationService.SendNotificationToUser(patient.UserId,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Information,
+                            Message = $"Cảm ơn đã sử dụng dịch vụ của chúng tôi, chúng tôi mong bạn có thể đánh giá để chúng tôi có thể tốt hơn.",
+                            Title = "Chúc mừng đã hoàn thành lộ trình dịch vụ",
+                            Url = null,
+                        }, null, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);

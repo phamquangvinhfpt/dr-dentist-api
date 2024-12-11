@@ -1123,7 +1123,8 @@ internal class ServiceService : IServiceService
                         f.DoctorProfileId,
                         f.Message,
                         f.Rating,
-                        f.CreatedOn
+                        f.CreatedOn,
+                        Appointment = _db.Appointments.FirstOrDefault(p => p.Id == f.AppointmentId)
                     }).ToList()
                 })
                 .OrderByDescending(x => x.Rating)
@@ -1198,13 +1199,15 @@ internal class ServiceService : IServiceService
 
                     var feedbackDetail = new FeedbackServiceDetail
                     {
+                        FeedbackId = feedback.Id,
                         DoctorID = doctorProfile?.DoctorId,
                         DoctorName = doctorUser != null ? $"{doctorUser.FirstName} {doctorUser.LastName}" : null,
                         PatientID = patientProfile?.UserId,
                         PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
                         CreateDate = feedback.CreatedOn,
                         Ratings = feedback.Rating,
-                        Message = feedback.Message
+                        Message = feedback.Message,
+                        CanFeedback = feedback.Appointment.canFeedback
                     };
 
                     feedbackServiceResponse.Feedbacks.Add(feedbackDetail);

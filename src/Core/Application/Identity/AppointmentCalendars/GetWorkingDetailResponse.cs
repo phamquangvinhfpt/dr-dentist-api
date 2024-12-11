@@ -14,6 +14,7 @@ public class GetWorkingDetailResponse
     public Guid CalendarID { get; set; }
     public string? PatientName { get; set; }
     public string? PatientCode { get; set; }
+    public string? PatientPhone { get; set; }
     public Guid PatientProfileID { get; set; }
     public Guid DoctorProfileID { get; set; }
     public string? DoctorName { get; set; }

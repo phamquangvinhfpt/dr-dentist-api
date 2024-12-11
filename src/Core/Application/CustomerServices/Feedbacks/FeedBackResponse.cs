@@ -2,6 +2,7 @@
 
 public class FeedBackResponse
 {
+    public Guid FeedbackID { get; set; }
     public Guid ServiceID { get; set; }
     public string? ServiceName { get; set; }
     public string? PatientID { get; set; }
@@ -9,5 +10,6 @@ public class FeedBackResponse
     public DateTime CreateDate { get; set; }
     public int Ratings { get; set; }
     public string? Message { get; set; }
+    public bool CanFeedback { get; set; }
 
 }

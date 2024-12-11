@@ -99,24 +99,18 @@ internal class FeedbackService : IFeedbackService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            if (appointment == null)
-            {
-                throw new InvalidOperationException("Error when found appointment.");
-            }
-
-            if (!appointment.canFeedback)
-            {
-                throw new InvalidOperationException("Can not feedback when you have not done treatment plan.");
-            }
-
-            var feedback = await _db.Feedbacks.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
+            var feedback = await _db.Feedbacks.FirstOrDefaultAsync(p => p.Id == request.FeedbackID);
 
             if (feedback == null)
             {
                 throw new InvalidOperationException("Error when found feedback.");
             }
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == feedback.AppointmentId);
 
+            if (!appointment.canFeedback)
+            {
+                throw new InvalidOperationException("Can not feedback when you have not done treatment plan.");
+            }
             feedback.Message = request.Message;
             feedback.Rating = request.Rating;
 
