@@ -88,7 +88,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
         _cacheService.Set(key, result);
-        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null) {
             keys.Add(key);
             _cacheService.Remove(APPOINTMENT);
@@ -96,7 +96,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         else
         {
-            List<string> list = new List<string> { key };
+            HashSet<string> list = new HashSet<string> { key };
             _cacheService.Set(APPOINTMENT, list);
         }
         return result;
@@ -168,7 +168,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
         _cacheService.Set(key, result);
-        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null)
         {
             keys.Add(key);
@@ -177,7 +177,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         else
         {
-            List<string> list = new List<string> { key };
+            HashSet<string> list = new HashSet<string> { key };
             _cacheService.Set(APPOINTMENT, list);
         }
         return result;
@@ -211,7 +211,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
         _cacheService.SetAsync(key, result);
-        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null)
         {
             keys.Add(key);
@@ -220,7 +220,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         else
         {
-            List<string> list = new List<string> { key };
+            HashSet<string> list = new HashSet<string> { key };
             _cacheService.Set(APPOINTMENT, list);
         }
         return result;
@@ -245,7 +245,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
         _cacheService.SetAsync(key, result);
-        var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null)
         {
             keys.Add(key);
@@ -254,7 +254,7 @@ public class AppointmentController : VersionNeutralApiController
         }
         else
         {
-            List<string> list = new List<string> { key };
+            HashSet<string> list = new HashSet<string> { key };
             _cacheService.Set(APPOINTMENT, list);
         }
         return result;
@@ -263,7 +263,7 @@ public class AppointmentController : VersionNeutralApiController
     {
         try
         {
-            var keys = _cacheService.Get<List<string>>(APPOINTMENT);
+            var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
             if(keys == null)
             {
                 return;
