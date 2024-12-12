@@ -46,7 +46,7 @@ public interface IUserService : ITransientService
     Task<bool> CheckBirthDayValid(DateOnly? date, string? role);
     Task UpdateDoctorProfile(UpdateDoctorProfile request, CancellationToken cancellationToken);
     Task<UserProfileResponse> GetUserProfileAsync(CancellationToken cancellationToken);
-    Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request);
+    Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request, DateOnly date);
     Task UpdateOrCreatePatientProfile(UpdateOrCreatePatientProfile request, CancellationToken cancellationToken);
     Task<PaginationResponse<ListUserDTO>> GetListPatientAsync(UserListFilter request, CancellationToken cancellationToken);
     Task<List<GetDoctorResponse>> GetTop4Doctors();

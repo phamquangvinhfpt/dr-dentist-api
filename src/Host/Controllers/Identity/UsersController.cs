@@ -87,9 +87,9 @@ public class UsersController : VersionNeutralApiController
     [TenantIdHeader]
     [AllowAnonymous]
     [OpenApiOperation("Get All Doctor For Customer.", "")]
-    public Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request)
+    public Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request, [FromQuery] DateOnly date)
     {
-        return _userService.GetAllDoctor(request);
+        return _userService.GetAllDoctor(request, date);
     }
 
     //checked

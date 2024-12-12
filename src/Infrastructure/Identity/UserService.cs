@@ -402,7 +402,7 @@ internal partial class UserService : IUserService
         return profile;
     }
 
-    public async Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request)
+    public async Task<PaginationResponse<GetDoctorResponse>> GetAllDoctor(UserListFilter request, DateOnly date)
     {
         var doctorResponses = new List<GetDoctorResponse>();
         int totalRecords = 0;
@@ -440,20 +440,18 @@ internal partial class UserService : IUserService
                 var doctor = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
                 double rating = await GetDoctorRating(doctor.Id);
                 bool check = false;
-                var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == doctor.Id && p.Date == DateOnly.FromDateTime(DateTime.Now) && p.Status == WorkingStatus.Accept);
-                if (workingTime != null)
+                if(date != default)
                 {
-                    var current_time = DateTime.Now.TimeOfDay;
-                    bool time = await _db.TimeWorkings.Where(p =>
-                    p.CalendarID == workingTime.Id &&
-                    p.StartTime <= current_time &&
-                    p.EndTime >= current_time &&
-                    p.IsActive
-                    ).AnyAsync();
-
-                    if (time)
+                    var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == doctor.Id && p.Date == date && p.Status == WorkingStatus.Accept);
+                    if (workingTime != null)
                     {
-                        check = true;
+                        var current_time = DateTime.Now.TimeOfDay;
+                        check = await _db.TimeWorkings.Where(p =>
+                        p.CalendarID == workingTime.Id &&
+                        p.StartTime <= current_time &&
+                        p.EndTime >= current_time &&
+                        p.IsActive
+                        ).AnyAsync();
                     }
                 }
                 doctorResponses.Add(new GetDoctorResponse
