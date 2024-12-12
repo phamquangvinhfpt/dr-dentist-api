@@ -11,18 +11,17 @@ public class CreateMedicalRecordRequest : IRequest<string>
     public BasicExaminationRequest? BasicExamination { get; set; }
 
     // Diagnosis
-    public DiagnosisRequest? Diagnosis { get; set; }
+    public List<DiagnosisRequest>? Diagnosis { get; set; }
 
     // Indication
     public IndicationRequest? Indication { get; set; }
 
-    // Indication Images
     public List<IndicationImageRequest>? IndicationImages { get; set; }
 }
 
 public class CreateMedicalRecordValidator : CustomValidator<CreateMedicalRecordRequest>
 {
-    public CreateMedicalRecordValidator(IUserService userService, ICurrentUser currentUser, IAppointmentService appointmentService)
+    public CreateMedicalRecordValidator(IUserService userService, ICurrentUser currentUser, IAppointmentService appointmentService, IMedicalRecordService medicalRecordService)
     {
         //RuleFor(p => p.PatientId)
         //    .MustAsync(async (id, _) => await userService.ExistsWithUserIDAsync(id))
@@ -46,16 +45,22 @@ public class CreateMedicalRecordValidator : CustomValidator<CreateMedicalRecordR
             .WithMessage((_, id) => $"Appointment {id} is not valid.");
 
         RuleFor(x => x.Diagnosis)
-            .SetValidator(new DiagnosisRequestValidator());
+            .NotEmpty()
+            .WithMessage("Dianosis information should be include");
+
+        RuleForEach(x => x.Diagnosis)
+            .SetValidator(new DiagnosisRequestValidator(medicalRecordService));
 
         RuleFor(x => x.BasicExamination)
             .SetValidator(new BasicExaminationValidator());
 
         RuleFor(x => x.Indication)
+            .NotEmpty()
+            .WithMessage("Indication information should be include")
             .SetValidator(new IndicationRequestValidator());
 
         RuleFor(x => x.IndicationImages)
-            .ForEach(item => item.SetValidator(new IndicationImageRequestValidator()));
+            .ForEach(item => item.SetValidator(new IndicationImageRequestValidator())).When(p => p.IndicationImages != null);
     }
 }
 

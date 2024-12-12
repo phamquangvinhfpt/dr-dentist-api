@@ -12,6 +12,7 @@ using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
@@ -1045,7 +1046,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
         catch (Exception ex)
         {
-            throw new Exception(ex.Message);
+            _logger.LogError(ex.Message);
         }
     }
 
@@ -1148,6 +1149,44 @@ internal class WorkingCalendarService : IWorkingCalendarService
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw;
+        }
+    }
+
+    public async Task<string> SendNotiReminderAsync(string id, DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if(date == default)
+            {
+                throw new Exception("The date information should be include.");
+            }
+            var user = await _db.Users.FirstOrDefaultAsync(p => p.Id == id) ?? throw new Exception("User Not Found");
+            var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == user.Id) ?? throw new Exception("Error when found doctor information");
+
+            int r = await _db.WorkingCalendars.CountAsync(p => p.DoctorID == dprofile.Id && p.Date.Value.Month == date.Month && p.Status != WorkingStatus.Off);
+            string message = "";
+            if(r == 0)
+            {
+                message = $"Bạn chưa đăng ký lịch làm cho {date.Month}/{date.Year}";
+            }
+            else
+            {
+                message = $"Bạn mới đăng ký {r} ngày cho {date.Month}/{date.Year}";
+            }
+            await _notificationService.SendNotificationToUser(dprofile.DoctorId,
+                       new Shared.Notifications.BasicNotification
+                       {
+                           Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                           Message = message,
+                           Title = "Nhắc nhở đăng ký lịch làm",
+                           Url = "/working-calendar",
+                       }, null, cancellationToken);
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
         }
     }
 }

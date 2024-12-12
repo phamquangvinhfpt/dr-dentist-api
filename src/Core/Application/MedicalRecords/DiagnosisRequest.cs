@@ -6,13 +6,13 @@ public class DiagnosisRequest
 }
 public class DiagnosisRequestValidator : CustomValidator<DiagnosisRequest>
 {
-    public DiagnosisRequestValidator()
+    public DiagnosisRequestValidator(IMedicalRecordService medicalRecordService)
     {
         RuleFor(x => x.ToothNumber)
             .NotEmpty()
             .WithMessage("Tooth number is required")
-            .InclusiveBetween(1, 32)
-            .WithMessage("Tooth number must be between 1 and 32");
+            .MustAsync(async (i, _) => await medicalRecordService.CheckToothNumberValidAsync(i))
+            .WithMessage((_, i) => $"Invalid tooth number. Tooth number at: {i}");
 
         RuleFor(x => x.TeethConditions)
             .NotEmpty()

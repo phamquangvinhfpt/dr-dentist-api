@@ -194,12 +194,13 @@ public class WorkingCalendarController : VersionNeutralApiController
         return await _workingCalendarService.GetTimeWorkingAsync(request, cancellationToken);
     }
 
-    //[HttpPost("part-time/confirm")]
-    //[OpenApiOperation("Confirm time working for part time.", "")]
-    //public async Task<PaginationResponse<WorkingCalendarResponse>> AddTimeWorkingAsync(
-
-    //    CancellationToken cancellationToken)
-    //{
-    //    return await _workingCalendarService.GetAllNonAcceptWithPagination(filter, startDate, endDate, cancellationToken);
-    //}
+    [HttpPost("part-time/reminder/{id}")]
+    [OpenApiOperation("Send notification reminder to part time.", "")]
+    public async Task<string> SendNotiReminderAsync(
+        string id,
+        [FromQuery] DateOnly date,
+        CancellationToken cancellationToken)
+    {
+        return await _workingCalendarService.SendNotiReminderAsync(id, date, cancellationToken);
+    }
 }

@@ -254,7 +254,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                             Label = Shared.Notifications.BasicNotification.LabelType.Information,
                             Message = $"Cảm ơn đã sử dụng dịch vụ của chúng tôi, chúng tôi mong bạn có thể đánh giá để chúng tôi có thể tốt hơn.",
                             Title = "Chúc mừng đã hoàn thành lộ trình dịch vụ",
-                            Url = $"feedback/{appointment.Id}",
+                            Url = $"/feedback/{appointment.Id}",
                         }, null, cancellationToken);
             }
 

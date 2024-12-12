@@ -14,6 +14,7 @@ public class MedicalRecordResponse
     public string? AppointmentNotes { get; set; }
     public DateTime Date { get; set; }
     public BasicExaminationRequest? BasicExamination { get; set; }
-    public DiagnosisRequest? Diagnosis { get; set; }
+    public List<DiagnosisRequest> Diagnosis { get; set; }
     public IndicationRequest? Indication { get; set; }
+    public List<IndicationImageResponse>? IndicationImages { get; set; }
 }

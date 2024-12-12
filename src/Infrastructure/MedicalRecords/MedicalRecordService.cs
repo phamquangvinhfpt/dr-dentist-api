@@ -25,7 +25,13 @@ public class MedicalRecordService : IMedicalRecordService
     private readonly ICurrentUser _currentUser;
     private readonly ILogger<MedicalRecordService> _logger;
     private readonly IFileStorageService _fileStorageService;
-
+    private static readonly int[] ValidToothNumbers = new[]
+    {
+        11, 12, 13, 14, 15, 16, 17, 18,
+        21, 22, 23, 24, 25, 26, 27, 28,
+        31, 32, 33, 34, 35, 36, 37, 38,
+        41, 42, 43, 44, 45, 46, 47, 48
+    };
     public MedicalRecordService(ApplicationDbContext db, IStringLocalizer<MedicalRecord> t, UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager, ICurrentUser currentUser, ILogger<MedicalRecordService> logger, IFileStorageService fileStorageService)
     {
         _db = db;
@@ -67,15 +73,15 @@ public class MedicalRecordService : IMedicalRecordService
                 var examination = _db.BasicExaminations.Add(basic).Entity;
             }
 
-            if (request.Diagnosis != null)
+            foreach(var item in request.Diagnosis)
             {
                 var dia = new Diagnosis
                 {
                     RecordId = medical.Id,
-                    ToothNumber = request.Diagnosis.ToothNumber,
-                    TeethConditions = request.Diagnosis.TeethConditions
+                    ToothNumber = item.ToothNumber,
+                    TeethConditions = item.TeethConditions
                 };
-                var diagnosis = _db.Diagnoses.Add(dia).Entity;
+                _db.Diagnoses.Add(dia);
             }
 
             if (request.Indication != null)
@@ -139,13 +145,16 @@ public class MedicalRecordService : IMedicalRecordService
                         {
                             TeethConditions = x.TeethConditions,
                             ToothNumber = x.ToothNumber
-                        }).FirstOrDefault(),
+                        }).ToList(),
                     Indication = _db.Indications
                         .Where(x => x.RecordId == medical.Id)
-                        .Select(x => new IndicationRequest
+                        .Select(x => new
                         {
-                            IndicationType = x.IndicationType,
-                            Description = x.Description
+                            x.IndicationType,
+                            x.Description,
+                            Image = _db.PatientImages
+                            .Where(p => p.IndicationId == x.Id)
+                            .ToList()
                         }).FirstOrDefault()
 
                 })
@@ -157,7 +166,7 @@ public class MedicalRecordService : IMedicalRecordService
             }
             var patient = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId);
             var doctor = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId);
-            return new MedicalRecordResponse
+            var result = new MedicalRecordResponse
             {
                 RecordId = medicalRecord.MedicalRecord.Id,
                 PatientId = medicalRecord.MedicalRecord.PatientProfileId,
@@ -172,8 +181,22 @@ public class MedicalRecordService : IMedicalRecordService
 
                 BasicExamination = medicalRecord.BasicExamination,
                 Diagnosis = medicalRecord.Diagnosis,
-                Indication = medicalRecord?.Indication
+                Indication = new IndicationRequest
+                {
+                    Description = medicalRecord.Indication.Description,
+                    IndicationType = medicalRecord.Indication.IndicationType,
+                },
+                IndicationImages = new List<IndicationImageResponse>()
             };
+            foreach(var item in medicalRecord.Indication.Image)
+            {
+                result.IndicationImages.Add(new IndicationImageResponse
+                {
+                    ImageType = item.ImageType,
+                    ImageUrl = item.ImageUrl,
+                });
+            }
+            return result;
         }
         catch (Exception ex)
         {
@@ -207,13 +230,16 @@ public class MedicalRecordService : IMedicalRecordService
                         {
                             TeethConditions = x.TeethConditions,
                             ToothNumber = x.ToothNumber
-                        }).FirstOrDefault(),
+                        }).ToList(),
                     Indication = _db.Indications
                         .Where(x => x.RecordId == medical.Id)
-                        .Select(x => new IndicationRequest
+                        .Select(x => new
                         {
-                            IndicationType = x.IndicationType,
-                            Description = x.Description
+                            x.IndicationType,
+                            x.Description,
+                            Image = _db.PatientImages
+                            .Where(p => p.IndicationId == x.Id)
+                            .ToList()
                         }).FirstOrDefault()
 
                 })
@@ -225,7 +251,7 @@ public class MedicalRecordService : IMedicalRecordService
             }
             var patient = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Patient.UserId);
             var doctor = await _db.Users.FirstOrDefaultAsync(x => x.Id == medicalRecord.Doctor.DoctorId);
-            return new MedicalRecordResponse
+            var result = new MedicalRecordResponse
             {
                 RecordId = medicalRecord.MedicalRecord.Id,
                 PatientId = medicalRecord.MedicalRecord.PatientProfileId,
@@ -236,12 +262,26 @@ public class MedicalRecordService : IMedicalRecordService
                 PatientCode = medicalRecord.Patient?.PatientCode,
                 PatientName = $"{patient.FirstName} {patient.LastName}",
                 DentistName = $"{doctor.FirstName} {doctor.LastName}",
-                AppointmentNotes = _db.Appointments.FirstOrDefaultAsync(x => x.Id == medicalRecord.Appointment.Id).Result.Notes,
+                AppointmentNotes = medicalRecord.Appointment.Notes,
 
                 BasicExamination = medicalRecord.BasicExamination,
                 Diagnosis = medicalRecord.Diagnosis,
-                Indication = medicalRecord?.Indication
+                Indication = new IndicationRequest
+                {
+                    Description = medicalRecord.Indication.Description,
+                    IndicationType = medicalRecord.Indication.IndicationType,
+                },
+                IndicationImages = new List<IndicationImageResponse>()
             };
+            foreach (var item in medicalRecord.Indication.Image)
+            {
+                result.IndicationImages.Add(new IndicationImageResponse
+                {
+                    ImageType = item.ImageType,
+                    ImageUrl = item.ImageUrl,
+                });
+            }
+            return result;
         }
         catch (Exception ex)
         {
@@ -306,17 +346,30 @@ public class MedicalRecordService : IMedicalRecordService
                         {
                             TeethConditions = x.TeethConditions,
                             ToothNumber = x.ToothNumber
-                        }).FirstOrDefault(),
-                    Indication = _db.Indications
-                        .Where(x => x.RecordId == medical.Id)
-                        .Select(x => new IndicationRequest
-                        {
-                            IndicationType = x.IndicationType,
-                            Description = x.Description
-                        }).FirstOrDefault()
-
+                        }).ToList(),
                 })
                 .ToListAsync(cancellationToken);
+
+            foreach(var item in result)
+            {
+                var indication = _db.Indications
+                        .Where(x => x.RecordId == item.RecordId).FirstOrDefault();
+                var images = _db.PatientImages.Where(p => p.IndicationId == indication.Id).ToList();
+                item.Indication = new IndicationRequest
+                {
+                    Description = indication.Description,
+                    IndicationType = indication.IndicationType
+                };
+                item.IndicationImages = new List<IndicationImageResponse>();
+                foreach(var image in images)
+                {
+                    item.IndicationImages.Add(new IndicationImageResponse
+                    {
+                        ImageType = image.ImageType,
+                        ImageUrl = image.ImageUrl
+                    });
+                }
+            }
 
             return result;
 
@@ -324,6 +377,18 @@ public class MedicalRecordService : IMedicalRecordService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<bool> CheckToothNumberValidAsync(int i)
+    {
+        try
+        {
+            return ValidToothNumbers.Contains(i);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
     }
