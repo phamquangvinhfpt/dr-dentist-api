@@ -134,7 +134,28 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
 
     public async Task<bool> CheckAvailableTimeSlotToAddFollowUp(DefaultIdType doctorID, DateOnly treatmentDate, TimeSpan treatmentTime)
     {
+        var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == doctorID);
         var endTime = treatmentTime.Add(TimeSpan.FromMinutes(30));
+        var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == doctor.Id && p.Date == treatmentDate && p.Status == WorkingStatus.Accept);
+        if (workingTime == null)
+        {
+            return false;
+        }
+        else if (workingTime.Status != WorkingStatus.Accept)
+        {
+            return false;
+        }
+        bool time = await _db.TimeWorkings.Where(p =>
+            p.CalendarID == workingTime.Id &&
+            p.StartTime <= treatmentTime &&
+            p.EndTime >= endTime &&
+            p.IsActive
+        ).AnyAsync();
+
+        if (!time)
+        {
+            return false;
+        }
         bool calendars = await _db.AppointmentCalendars
             .Where(c =>
                 c.DoctorId == doctorID &&
@@ -162,7 +183,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
             return false;
         }
 
-        var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == existingCalendar.DoctorId && p.Date == appointmentDate && p.Status == WorkingStatus.Accept);
+        var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == existingCalendar.DoctorId && p.Date == appointmentDate && p.Status != WorkingStatus.Off);
         if (workingTime == null)
         {
             return false;

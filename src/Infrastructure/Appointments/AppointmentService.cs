@@ -49,6 +49,7 @@ internal class AppointmentService : IAppointmentService
     private static string APPOINTMENT = "APPOINTMENT";
     private static string FOLLOW = "FOLLOW";
     private static string NON = "NON";
+    private static string RESCHEDULE = "RESCHEDULE";
     public AppointmentService(
         ApplicationDbContext db,
         ICacheService cacheService,
@@ -364,6 +365,7 @@ internal class AppointmentService : IAppointmentService
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                    Type = AppointmentType.Appointment
                 };
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.AppointmentDate && p.Status == WorkingStatus.Accept);
 
@@ -395,54 +397,59 @@ internal class AppointmentService : IAppointmentService
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
 
-            if (user_role == FSHRoles.Patient)
+            if (appointment.SpamCount < 3)
+            {
+                appointment.SpamCount += 1;
+            }
+            else if(appointment.SpamCount == 3 && user_role == FSHRoles.Patient)
             {
                 var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 if (appointment.PatientId != patientProfile.Id)
                 {
                     throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
                 }
-                if (appointment.SpamCount < 3)
-                {
-                    appointment.SpamCount += 1;
-                }
-                else
-                {
-                    var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
-                    await _userManager.SetLockoutEnabledAsync(user, true);
-                    await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
-                    appointment.Status = AppointmentStatus.Failed;
-                    var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
-                    calendar.Status = CalendarStatus.Failed;
-                    var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
-                    pay.Status = Domain.Payments.PaymentStatus.Canceled;
-                    await _db.SaveChangesAsync(cancellationToken);
+                var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
+                await _userManager.SetLockoutEnabledAsync(user, true);
+                await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+                appointment.Status = AppointmentStatus.Failed;
+                var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+                calendar.Status = CalendarStatus.Failed;
+                var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == appointment.Id);
+                pay.Status = Domain.Payments.PaymentStatus.Canceled;
 
-                    await transaction.CommitAsync(cancellationToken);
+                await _db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
 
-                    RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
-                    {
-                        Email = user.Email,
-                        UserName = $"{user.FirstName} {user.LastName}",
-                        BanReason = "Tài khoản của bạn gần đây có hành động bất thường nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
-                    };
-                    var mailRequest = new MailRequest(
-                                new List<string> { user.Email },
-                                "Tài khoản tạm khóa",
-                                _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
-                    _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
-                    return;
-                }
+                RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                {
+                    Email = user.Email,
+                    UserName = $"{user.FirstName} {user.LastName}",
+                    BanReason = "Tài khoản của bạn gần đây có hành động bất thường nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày"
+                };
+                var mailRequest = new MailRequest(
+                            new List<string> { user.Email },
+                            "Tài khoản tạm khóa",
+                            _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+                _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                return;
+            }else if(appointment.SpamCount == 3 && user_role != FSHRoles.Patient)
+            {
+                throw new Exception($"Warning: User had done reschedule 3 times");
             }
+
             if (appointment.DentistId != null)
             {
-                bool check = _workingCalendarService.CheckAvailableTimeSlotToReschedule(appointment.Id,
+                bool r = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == appointment.DentistId && p.Date.Value.Month == request.AppointmentDate.Month && p.Status != WorkingStatus.Off);
+                if (r)
+                {
+                    bool check = _workingCalendarService.CheckAvailableTimeSlotToReschedule(appointment.Id,
                     request.AppointmentDate,
                     request.StartTime,
                     request.StartTime.Add(request.Duration)).Result;
-                if (!check)
-                {
-                    throw new Exception("The selected time slot overlaps with an existing appointment");
+                    if (!check)
+                    {
+                        throw new Exception("The selected time slot overlaps with an existing appointment");
+                    }
                 }
             }
             appointment.AppointmentDate = request.AppointmentDate;
@@ -585,18 +592,23 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new Exception("Appointment is not in status to schedule.");
             }
+            var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
 
-            bool check = _workingCalendarService.CheckAvailableTimeSlot(
+            bool r = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dprofile.Id && p.Date.Value.Month == appointment.AppointmentDate.Month && p.Status != WorkingStatus.Off);
+            if (r)
+            {
+                bool check = _workingCalendarService.CheckAvailableTimeSlot(
                 appointment.AppointmentDate,
                 appointment.StartTime,
                 appointment.StartTime.Add(appointment.Duration),
                 request.DoctorID).Result;
 
-            if (!check)
-            {
-                throw new InvalidDataException("The selected time slot overlaps with an existing appointment");
+                if (!check)
+                {
+                    throw new InvalidDataException("The selected time slot overlaps with an existing appointment or doctor do not work this day");
+                }
             }
-            var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.DoctorID);
+
             var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
             appointment.DentistId = dprofile.Id;
             calendar.DoctorId = dprofile.Id;
@@ -1389,7 +1401,12 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception("Warning: Error when find appointment");
             }
 
-            var check = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == request.DoctorId && p.Date == request.Date);
+            if(!await CheckAppointmentDateValid(request.Date.Value))
+            {
+                throw new Exception("Warning: The Day is not available");
+            }
+
+            var check = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == request.DoctorId && p.Date == request.Date && p.Status == WorkingStatus.Accept);
             if (check != null) {
                 bool t = await _db.TimeWorkings.AnyAsync(c => c.CalendarID == check.Id && (
                     c.StartTime <= request.StartTime && c.EndTime >= request.EndTime
@@ -1397,6 +1414,14 @@ internal class AppointmentService : IAppointmentService
                 if (!t)
                 {
                     throw new Exception("Warning: The time line is not in doctor's time working");
+                }
+            }
+            else
+            {
+                bool r = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == request.DoctorId && p.Date.Value.Month == request.Date.Value.Month && p.Status != WorkingStatus.Off);
+                if (r)
+                {
+                    throw new Exception("Warning: You should choose the day you work!!!");
                 }
             }
 
@@ -1460,6 +1485,7 @@ internal class AppointmentService : IAppointmentService
                         LastName = user.LastName,
                         PhoneNumber = user.PhoneNumber,
                         UserName = user.UserName,
+                        isWorked = check
                     });
                 }
             }
@@ -1468,6 +1494,31 @@ internal class AppointmentService : IAppointmentService
         catch (Exception ex) {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> ToggleFollowAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.Id == id) ?? throw new KeyNotFoundException("Calendar Not Found.");
+            if (calendar.Date != DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new Exception("The date is not follow up date.");
+            }
+            if (calendar.Status != CalendarStatus.Booked)
+            {
+                throw new Exception("Can not verify the follow up appointment.");
+            }
+            calendar.Status = CalendarStatus.Success;
+            return "Success";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message, ex);
         }
     }
 }

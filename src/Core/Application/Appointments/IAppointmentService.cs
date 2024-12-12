@@ -33,4 +33,5 @@ public interface IAppointmentService : ITransientService
     Task<PaginationResponse<GetWorkingDetailResponse>> GetReExamAppointments(PaginationFilter filter, DateOnly date, CancellationToken cancellationToken);
     Task<string> CreateReExamination(AddReExamination request, CancellationToken cancellationToken);
     Task<List<GetDoctorResponse>> GetAvailableDoctorAsync(GetAvailableDoctor request, CancellationToken cancellationToken);
+    Task<string> ToggleFollowAppointment(DefaultIdType id, CancellationToken cancellationToken);
 }

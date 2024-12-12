@@ -17,5 +17,6 @@ public class GetDoctorResponse
     public string? PhoneNumber { get; set; }
     public string? ImageUrl { get; set; }
     public double? Rating { get; set; }
+    public bool isWorked { get; set; }
     public DoctorProfile? DoctorProfile { get; set; }
 }

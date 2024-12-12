@@ -10,6 +10,6 @@ public enum CalendarStatus
     Failed,
     Waiting,
     Booked,
-    Completed,
+    Success,
     Canceled
 }

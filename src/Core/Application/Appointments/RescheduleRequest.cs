@@ -44,7 +44,7 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
                     return false;
                 }
@@ -52,9 +52,9 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
             })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(20))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
-                     return "Start time must be between 8:00 AM and 8:00 PM";
+                     return "Start time must be between 8:00 AM and 10:00 PM";
                 }
                 return "Start time must be greater than current time";
             });
@@ -64,8 +64,8 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
            .Must(duration => duration >= TimeSpan.FromMinutes(30) && duration <= TimeSpan.FromHours(1))
            .WithMessage("Duration must be between 30 minutes and 1 hours")
            .Must((request, duration) =>
-               (request.StartTime + duration) <= TimeSpan.FromHours(20))
-           .WithMessage("Appointment must end before 5:00 PM");
+               (request.StartTime + duration) <= TimeSpan.FromHours(22))
+           .WithMessage("Appointment must end before 10:00 PM");
     }
 }
 

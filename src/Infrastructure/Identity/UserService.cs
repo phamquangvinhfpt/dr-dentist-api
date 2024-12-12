@@ -37,6 +37,7 @@ using Microsoft.Extensions.Options;
 using System.Numerics;
 using System.Threading;
 using static QRCoder.PayloadGenerator;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -438,6 +439,23 @@ internal partial class UserService : IUserService
             {
                 var doctor = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
                 double rating = await GetDoctorRating(doctor.Id);
+                bool check = false;
+                var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == doctor.Id && p.Date == DateOnly.FromDateTime(DateTime.Now) && p.Status == WorkingStatus.Accept);
+                if (workingTime != null)
+                {
+                    var current_time = DateTime.Now.TimeOfDay;
+                    bool time = await _db.TimeWorkings.Where(p =>
+                    p.CalendarID == workingTime.Id &&
+                    p.StartTime <= current_time &&
+                    p.EndTime >= current_time &&
+                    p.IsActive
+                    ).AnyAsync();
+
+                    if (time)
+                    {
+                        check = true;
+                    }
+                }
                 doctorResponses.Add(new GetDoctorResponse
                 {
                     Id = user.Id,
@@ -450,6 +468,7 @@ internal partial class UserService : IUserService
                     UserName = user.UserName,
                     DoctorProfile = doctor,
                     Rating = Math.Round(rating, 0),
+                    isWorked = check
                 });
             }
         }catch(Exception ex)
@@ -649,6 +668,23 @@ internal partial class UserService : IUserService
                     var doctorProfile = await _db.DoctorProfiles
                         .FirstOrDefaultAsync(d => d.Id == item.DoctorId);
                     var user = await _userManager.FindByIdAsync(doctorProfile.DoctorId);
+                    bool check = false;
+                    var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == doctorProfile.Id && p.Date == DateOnly.FromDateTime(DateTime.Now) && p.Status == WorkingStatus.Accept);
+                    if (workingTime != null)
+                    {
+                        var current_time = DateTime.Now.TimeOfDay;
+                        bool time = await _db.TimeWorkings.Where(p =>
+                        p.CalendarID == workingTime.Id &&
+                        p.StartTime <= current_time &&
+                        p.EndTime >= current_time &&
+                        p.IsActive
+                        ).AnyAsync();
+
+                        if (time)
+                        {
+                            check = true;
+                        }
+                    }
                     if (user.IsActive && !_userManager.IsLockedOutAsync(user).Result)
                     {
                         doctorResponses.Add(new GetDoctorResponse
@@ -663,6 +699,7 @@ internal partial class UserService : IUserService
                             UserName = user.UserName,
                             DoctorProfile = doctorProfile,
                             Rating = Math.Round(item.AverageRating, 0),
+                            isWorked = check
                         });
                     }
                 }

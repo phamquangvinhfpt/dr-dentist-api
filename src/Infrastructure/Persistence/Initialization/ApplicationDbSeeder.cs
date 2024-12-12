@@ -1116,7 +1116,7 @@ internal class ApplicationDbSeeder
                                 Date = t.StartDate,
                                 StartTime = t.StartTime,
                                 EndTime = t.StartTime.Value.Add(TimeSpan.FromMinutes(30)),
-                                Status = c ? Domain.Identity.CalendarStatus.Booked : CalendarStatus.Completed,
+                                Status = c ? Domain.Identity.CalendarStatus.Booked : CalendarStatus.Success,
                                 Type = item.SP.StepOrder == 1 ? AppointmentType.Appointment : AppointmentType.FollowUp,
                             });
 

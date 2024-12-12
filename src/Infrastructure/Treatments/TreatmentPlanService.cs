@@ -7,6 +7,7 @@ using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.TreatmentPlan;
 using FSH.WebApi.Application.TreatmentPlan.Prescriptions;
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Identity;
@@ -198,9 +199,13 @@ internal class TreatmentPlanService : ITreatmentPlanService
     {
         var plan = await _db.TreatmentPlanProcedures.FirstOrDefaultAsync(p => p.Id == treatmentId);
 
-        var check = await _workingCalendarService.CheckAvailableTimeSlotToAddFollowUp(plan.DoctorID.Value, treatmentDate, treatmentTime);
-
-        return check;
+        bool r = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == plan.DoctorID.Value && p.Date.Value.Month == treatmentDate.Month && p.Status != WorkingStatus.Off);
+        if (r)
+        {
+            bool check = await _workingCalendarService.CheckAvailableTimeSlotToAddFollowUp(plan.DoctorID.Value, treatmentDate, treatmentTime);
+            return check;
+        }
+        return true;
 
     }
 
@@ -233,7 +238,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 ?? throw new Exception("Calendar is not found.");
 
             plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
-            cal.Status = Domain.Identity.CalendarStatus.Completed;
+            cal.Status = Domain.Identity.CalendarStatus.Success;
 
             var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
             var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed);

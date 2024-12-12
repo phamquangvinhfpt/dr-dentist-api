@@ -126,6 +126,15 @@ public class AppointmentController : VersionNeutralApiController
         return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 
+    [HttpGet("followup/checkin/{id}")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
+    [OpenApiOperation("Toggle Follow up Appointment Status. Use CalendarID", "")]
+    public Task<string> VerifyFollowUpAppointment(Guid id, CancellationToken cancellationToken)
+    {
+        DeleteRedisCode();
+        return _appointmentService.ToggleFollowAppointment(id, cancellationToken);
+    }
+
     [HttpGet("payment/{id}")]
     //[MustHavePermission(FSHAction.Update, FSHResource.Appointment)]
     [OpenApiOperation("Get Remaining Amount Of Appointment By AppointmentID", "")]
@@ -210,7 +219,7 @@ public class AppointmentController : VersionNeutralApiController
             return r;
         }
         var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
-        _cacheService.SetAsync(key, result);
+        _cacheService.Set(key, result);
         var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null)
         {
