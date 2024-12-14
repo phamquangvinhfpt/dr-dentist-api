@@ -53,4 +53,20 @@ public class CustomerContactController : VersionNeutralApiController
     {
         return Mediator.Send(request);
     }
+
+    [HttpPost("call/image")]
+    [MustHavePermission(FSHAction.Update, FSHResource.ContactInformation)]
+    [OpenApiOperation("Staff update phone call image.", "")]
+    public async Task<string> StaffUpdatePhoneCallImageContactAsync([FromForm] UpdatePhoneCallImageRequest request, CancellationToken cancellationToken)
+    {
+        return await _customerInformationService.StaffUpdatePhoneCallImageContactAsync(request, cancellationToken);
+    }
+
+    [HttpPost("send/email")]
+    //[MustHavePermission(FSHAction.Update, FSHResource.ContactInformation)]
+    [OpenApiOperation("Staff update email context.", "")]
+    public async Task<string> StaffUpdateEmailContactAsync(UpdateEmailContextRequest request, CancellationToken cancellationToken)
+    {
+        return await _customerInformationService.StaffEmailContextContactAsync(request, cancellationToken);
+    }
 }

@@ -14,4 +14,6 @@ public interface ICustomerInformationService : ITransientService
     Task AddStaffForContact(AddStaffForContactRequest request, CancellationToken cancellationToken);
     Task<PaginationResponse<ContactResponse>> GetAllContactRequestNonStaff(PaginationFilter request, CancellationToken cancellationToken);
     Task<PaginationResponse<ContactResponse>> GetAllContactRequestForStaff(PaginationFilter request, CancellationToken cancellationToken);
+    Task<string> StaffUpdatePhoneCallImageContactAsync(UpdatePhoneCallImageRequest request, CancellationToken cancellationToken);
+    Task<string> StaffEmailContextContactAsync(UpdateEmailContextRequest request, CancellationToken cancellationToken);
 }

@@ -35,7 +35,6 @@ internal static class Startup
             .UseFilter(new FSHJobFilter(provider))
             .UseFilter(new LogJobFilter())
             .UseConsole());
-
         return services;
     }
 

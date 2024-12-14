@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241209124159_Init")]
+    [Migration("20241214091758_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -122,6 +122,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("EmailContext")
+                        .HasColumnType("text");
+
+                    b.Property<string[]>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -134,6 +141,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<string>("StaffId")
                         .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TenantId")
                         .IsRequired()

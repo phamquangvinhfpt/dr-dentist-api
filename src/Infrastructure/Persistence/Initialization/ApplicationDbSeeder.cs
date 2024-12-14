@@ -1120,25 +1120,23 @@ internal class ApplicationDbSeeder
                                 Type = item.SP.StepOrder == 1 ? AppointmentType.Appointment : AppointmentType.FollowUp,
                             });
 
-                            // seed prescription
-
-                            var pre = _db.Prescriptions.Add(new Domain.Treatment.Prescription
-                            {
-                                TreatmentID = t.Id,
-                                DoctorID = appointment.DentistId,
-                                PatientID = appointment.PatientId,
-                                Notes = "Use every day"
-                            }).Entity;
-
-                            var preItem = _db.PrescriptionItems.Add(new Domain.Treatment.PrescriptionItem
-                            {
-                                PrescriptionId = pre.Id,
-                                MedicineName = "Chống viêm",
-                                Dosage = "1 viên 1 lần",
-                                Frequency = "1 lần 1 ngày",
-                            });
                             if (!c)
                             {
+                                var pre = _db.Prescriptions.Add(new Domain.Treatment.Prescription
+                                {
+                                    TreatmentID = t.Id,
+                                    DoctorID = appointment.DentistId,
+                                    PatientID = appointment.PatientId,
+                                    Notes = "Use every day"
+                                }).Entity;
+
+                                var preItem = _db.PrescriptionItems.Add(new Domain.Treatment.PrescriptionItem
+                                {
+                                    PrescriptionId = pre.Id,
+                                    MedicineName = "Chống viêm",
+                                    Dosage = "1 viên 1 lần",
+                                    Frequency = "1 lần 1 ngày",
+                                });
                                 appointment.Status = AppointmentStatus.Done;
                             }
                             else
