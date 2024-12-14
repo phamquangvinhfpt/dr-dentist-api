@@ -53,6 +53,14 @@ public class MedicalRecordService : IMedicalRecordService
                      || x.Status == Domain.Appointments.AppointmentStatus.Come))
                     ?? throw new BadRequestException("Appointment not found");
 
+            var existingMedicalRecord = await _db.MedicalRecords
+                .FirstOrDefaultAsync(x => x.AppointmentId == request.AppointmentId);
+
+            if (existingMedicalRecord != null)
+            {
+                throw new BadRequestException("Medical record for this appointment already exists.");
+            }
+
             var app = new MedicalRecord
             {
                 PatientProfileId = appointment.PatientId,
@@ -73,7 +81,7 @@ public class MedicalRecordService : IMedicalRecordService
                 var examination = _db.BasicExaminations.Add(basic).Entity;
             }
 
-            foreach(var item in request.Diagnosis)
+            foreach (var item in request.Diagnosis)
             {
                 var dia = new Diagnosis
                 {
@@ -188,7 +196,7 @@ public class MedicalRecordService : IMedicalRecordService
                 },
                 IndicationImages = new List<IndicationImageResponse>()
             };
-            foreach(var item in medicalRecord.Indication.Image)
+            foreach (var item in medicalRecord.Indication.Image)
             {
                 result.IndicationImages.Add(new IndicationImageResponse
                 {
@@ -299,7 +307,7 @@ public class MedicalRecordService : IMedicalRecordService
 
             var medicalRecords = _db.MedicalRecords.Where(x => x.PatientProfileId == patient.Id);
 
-            if(sDate != default)
+            if (sDate != default)
             {
                 medicalRecords = medicalRecords.Where(p => p.Date >= DateTime.Parse(sDate.ToString()));
             }
@@ -350,7 +358,7 @@ public class MedicalRecordService : IMedicalRecordService
                 })
                 .ToListAsync(cancellationToken);
 
-            foreach(var item in result)
+            foreach (var item in result)
             {
                 var indication = _db.Indications
                         .Where(x => x.RecordId == item.RecordId).FirstOrDefault();
@@ -361,7 +369,7 @@ public class MedicalRecordService : IMedicalRecordService
                     IndicationType = indication.IndicationType
                 };
                 item.IndicationImages = new List<IndicationImageResponse>();
-                foreach(var image in images)
+                foreach (var image in images)
                 {
                     item.IndicationImages.Add(new IndicationImageResponse
                     {
@@ -387,7 +395,8 @@ public class MedicalRecordService : IMedicalRecordService
         {
             return ValidToothNumbers.Contains(i);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
