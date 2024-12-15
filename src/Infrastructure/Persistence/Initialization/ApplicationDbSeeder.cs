@@ -1164,7 +1164,7 @@ internal class ApplicationDbSeeder
                         _db.Diagnoses.Add(new Domain.Examination.Diagnosis
                         {
                             RecordId = medical.Id,
-                            ToothNumber = 5,
+                            ToothNumber = 28,
                             TeethConditions = new[] { "Sâu Răng" }
                         });
 
