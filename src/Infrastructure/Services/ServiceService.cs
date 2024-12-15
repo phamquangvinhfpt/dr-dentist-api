@@ -292,7 +292,7 @@ internal class ServiceService : IServiceService
 
             if (existing.TotalPrice == 0)
             {
-                var check = await _db.Services.Where(p => p.ServiceName == request.Name && p.IsActive && p.TotalPrice > 0).FirstOrDefaultAsync();
+                var check = await _db.Services.Where(p => p.ServiceName == request.Name && p.IsActive).FirstOrDefaultAsync();
                 if (check != null)
                 {
                     throw new BadRequestException("Service Name is existing!!!");
@@ -310,6 +310,11 @@ internal class ServiceService : IServiceService
             }
             else
             {
+                var check = await _db.Services.Where(p => p.ServiceName == request.Name && p.IsActive).FirstOrDefaultAsync();
+                if (check != null)
+                {
+                    throw new BadRequestException("Service Name is existing!!!");
+                }
                 bool wasUse = await _db.Appointments.AnyAsync(p => p.ServiceId ==  request.ServiceID);
                 var type = await _db.TypeServices.FirstOrDefaultAsync(p => p.Id == existing.TypeServiceID);
                 if (type == null)
@@ -611,6 +616,18 @@ internal class ServiceService : IServiceService
         try
         {
             var service = await _db.Services.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id) ?? throw new BadRequestException("Service Not Found.");
+
+            if(service == null)
+            {
+                throw new BadRequestException("Service is not existing!!!");
+            }
+
+            var check = await _db.Services.Where(p => p.ServiceName == service.ServiceName && p.IsActive).FirstOrDefaultAsync();
+            if (check != null)
+            {
+                throw new BadRequestException("Existing same service!!!");
+            }
+
             service.DeletedBy = null;
             service.DeletedOn = null;
             service.LastModifiedBy = _currentUserService.GetUserId();
@@ -926,6 +943,18 @@ internal class ServiceService : IServiceService
     public async Task<string> RestoreProcedureAsync(DefaultIdType id, CancellationToken cancellationToken)
     {
         var procedure = await _db.Procedures.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == id) ?? throw new BadRequestException("Procedure Not Found.");
+
+        if(procedure == null)
+        {
+            throw new BadRequestException("Procedure Not Found!!!");
+        }
+
+        var check = await _db.Procedures.Where(p => p.Name == procedure.Name).FirstOrDefaultAsync();
+        if (check != null)
+        {
+            throw new BadRequestException("Existing same procedure!!!");
+        }
+
         procedure.DeletedBy = null;
         procedure.DeletedOn = null;
         procedure.LastModifiedBy = _currentUserService.GetUserId();
