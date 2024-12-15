@@ -467,16 +467,47 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
     }
 
-    public async Task<PaginationResponse<Room>> GetRoomsWithPagination(PaginationFilter filter, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<RoomDetail>> GetRoomsWithPagination(PaginationFilter filter, CancellationToken cancellationToken)
     {
         try
         {
+            var result = new List<RoomDetail>();
             var spec = new EntitiesByPaginationFilterSpec<Room>(filter);
             var query = await _db.Rooms
                 .AsNoTracking().WithSpecification(spec).ToListAsync();
             int count = _db.Rooms.Count();
 
-            return new PaginationResponse<Room>(query, count, filter.PageNumber, filter.PageSize);
+            var date = DateTime.Now;
+            var time = date.TimeOfDay;
+
+            foreach(var item in query)
+            {
+                var r = new RoomDetail
+                {
+                    CreateDate = DateOnly.FromDateTime(item.CreatedOn),
+                    RoomID = item.Id,
+                    RoomName = item.RoomName,
+                };
+                var isUse = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.RoomID == item.Id &&
+                    p.Status == WorkingStatus.Accept && p.Date == DateOnly.FromDateTime(date) &&
+                    _db.TimeWorkings.Any(t => t.CalendarID == p.Id &&
+                    t.StartTime <= time && t.EndTime >= time && t.IsActive));
+                if (isUse != null) {
+                    var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == isUse.DoctorID);
+                    var doctor = await _userManager.FindByIdAsync(dProfile.DoctorId);
+                    r.DoctorID = doctor.Id;
+                    r.DoctorName = $"{doctor.FirstName} {doctor.LastName}";
+                    r.Status = true;
+                    item.Status = true;
+                }
+                else
+                {
+                    item.Status = false;
+                }
+                result.Add(r);
+            }
+            await _db.SaveChangesAsync(cancellationToken);
+            return new PaginationResponse<RoomDetail>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
         {

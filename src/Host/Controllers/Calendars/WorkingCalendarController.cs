@@ -167,7 +167,7 @@ public class WorkingCalendarController : VersionNeutralApiController
 
     [HttpPost("room/get-all")]
     [OpenApiOperation("Get Room with Pagination.", "")]
-    public async Task<PaginationResponse<Room>> GetRoomsAsync(
+    public async Task<PaginationResponse<RoomDetail>> GetRoomsAsync(
         PaginationFilter filter,
         CancellationToken cancellationToken)
     {
