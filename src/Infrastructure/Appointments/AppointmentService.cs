@@ -94,7 +94,8 @@ internal class AppointmentService : IAppointmentService
             .Where(p => p.PatientId == patient.Id &&
             (p.Status == Domain.Appointments.AppointmentStatus.Pending || p.Status == AppointmentStatus.Confirmed)
             ).AnyAsync();
-        return !appointment;
+        bool isSunday = DateOnly.FromDateTime(DateTime.Now).DayOfWeek == DayOfWeek.Sunday;
+        return !appointment && isSunday;
     }
 
     public async Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
@@ -223,11 +224,14 @@ internal class AppointmentService : IAppointmentService
             payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
             await _db.SaveChangesAsync(cancellationToken);
-            _jobService.Schedule(
-                () => SendAppointmentActionNotification(appointment.PatientId,
-                appointment.DentistId,
-                appointment.AppointmentDate,
-                TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
+           if(appointment.DentistId != default)
+            {
+                _jobService.Schedule(
+               () => SendAppointmentActionNotification(appointment.PatientId,
+               appointment.DentistId,
+               appointment.AppointmentDate,
+               TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
+            }
             var notification = new BasicNotification
             {
                 Message = "Your appointment has been confirmed!",
@@ -397,7 +401,7 @@ internal class AppointmentService : IAppointmentService
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
 
-            if (appointment.SpamCount < 3)
+            if (appointment.SpamCount < 3 && user_role == FSHRoles.Patient)
             {
                 appointment.SpamCount += 1;
             }
@@ -437,7 +441,7 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception($"Warning: User had done reschedule 3 times");
             }
 
-            if (appointment.DentistId != null)
+            if (appointment.DentistId != default)
             {
                 bool r = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == appointment.DentistId && p.Date.Value.Month == request.AppointmentDate.Month && p.Status != WorkingStatus.Off);
                 if (r)
@@ -465,7 +469,7 @@ internal class AppointmentService : IAppointmentService
 
             await transaction.CommitAsync(cancellationToken);
 
-            if (appointment.DentistId != null)
+            if (appointment.DentistId != default)
             {
                 _jobService.Schedule(() => SendAppointmentActionNotification(appointment.PatientId,
                 appointment.DentistId,
@@ -529,7 +533,7 @@ internal class AppointmentService : IAppointmentService
                 calendar.Status = CalendarStatus.Canceled;
                 var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
                 payment.Status = Domain.Payments.PaymentStatus.Canceled;
-                if(appoint.DentistId != Guid.Empty)
+                if(appoint.DentistId != default)
                 {
                     _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
                         appoint.DentistId,
@@ -627,6 +631,7 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
+
             var dprofile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == DoctorID);
             var doctor = await _userManager.FindByIdAsync(dprofile.DoctorId);
             var pprofile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == patientID);

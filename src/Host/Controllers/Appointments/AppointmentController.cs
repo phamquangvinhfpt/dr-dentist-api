@@ -38,10 +38,10 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("re/create")]
     [MustHavePermission(FSHAction.Create, FSHResource.Appointment)]
     [OpenApiOperation("Create ReExamination Appointment", "")]
-    public async Task<string> CreateReAppointment(AddReExamination request, CancellationToken cancellationToken)
+    public Task<string> CreateReAppointment(AddReExamination request, CancellationToken cancellationToken)
     {
         DeleteRedisCode();
-        return await _appointmentService.CreateReExamination(request, cancellationToken);
+        return _appointmentService.CreateReExamination(request, cancellationToken);
     }
 
     //checked
@@ -49,7 +49,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Get Doctors Available for service at Date and Time", "")]
     public async Task<List<GetDoctorResponse>> GetAvailableDoctor(GetAvailableDoctor request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
+        //DeleteRedisCode();
         return await _appointmentService.GetAvailableDoctorAsync(request, cancellationToken);
     }
 
@@ -153,10 +153,10 @@ public class AppointmentController : VersionNeutralApiController
 
     [HttpDelete("payment/cancel/{code}")]
     [OpenApiOperation("Cancel request for payment", "")]
-    public async Task<string> CancelPaymentForAppointment(string code, CancellationToken cancellationToken)
+    public Task<string> CancelPaymentForAppointment(string code, CancellationToken cancellationToken)
     {
-        await DeleteRedisCode();
-        return await _appointmentService.CancelPayment(code, cancellationToken);
+        DeleteRedisCode();
+        return _appointmentService.CancelPayment(code, cancellationToken);
     }
 
     [HttpPost("non-doctor/get-all")]
@@ -195,10 +195,10 @@ public class AppointmentController : VersionNeutralApiController
     [HttpPost("non-doctor/add-doctor")]
     [MustHavePermission(FSHAction.View, FSHResource.Appointment)]
     [OpenApiOperation("Add Doctor to Appointments that have non-doctor", "")]
-    public async Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
+    public Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
     {
-        await DeleteRedisCode();
-        return await _appointmentService.AddDoctorToAppointments(request, cancellationToken);
+        DeleteRedisCode();
+        return _appointmentService.AddDoctorToAppointments(request, cancellationToken);
     }
 
     //checked
@@ -253,7 +253,7 @@ public class AppointmentController : VersionNeutralApiController
             return r;
         }
         var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
-        _cacheService.SetAsync(key, result);
+        _cacheService.Set(key, result);
         var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
         if (keys != null)
         {
@@ -268,19 +268,20 @@ public class AppointmentController : VersionNeutralApiController
         }
         return result;
     }
-    public async Task DeleteRedisCode()
+    public Task DeleteRedisCode()
     {
         try
         {
             var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if(keys == null)
+            if(keys != null)
             {
-                return;
+                foreach (string key in keys)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(APPOINTMENT);
             }
-            foreach (string key in keys) {
-                _cacheService.Remove(key);
-            }
-            _cacheService.Remove(APPOINTMENT);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

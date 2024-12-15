@@ -60,7 +60,6 @@ internal class ApplicationDbSeeder
         await SeedServiceAsync();
         await SeedAppointmentAsync();
         await SeedAppointmentInforAsync();
-        await SeedPatientDemoAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
     }
 
@@ -1260,7 +1259,7 @@ internal class ApplicationDbSeeder
                 }
                 _db.SaveChanges();
                 await SeedNonDoctorAppointmentAsync();
-                //await SeedPatientDemoAsync();
+                await SeedPatientDemoAsync();
             }
             _logger.LogInformation($"Seeded Payment");
         }
