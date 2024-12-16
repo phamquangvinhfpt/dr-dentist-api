@@ -30,7 +30,7 @@ internal static class Startup
     internal static IApplicationBuilder UseCurrentUser(this IApplicationBuilder app)
     {
         app.UseMiddleware<CurrentUserMiddleware>();
-        app.UseMiddleware<CheckBanMiddleware>();
+        //app.UseMiddleware<CheckBanMiddleware>();
 
         return app;
     }
@@ -39,7 +39,7 @@ internal static class Startup
         services
             .AddScoped<CurrentUserMiddleware>()
             .AddScoped<ICurrentUser, CurrentUser>()
-            .AddScoped<CheckBanMiddleware>()
+            //.AddScoped<CheckBanMiddleware>()
             .AddScoped(sp => (ICurrentUserInitializer)sp.GetRequiredService<ICurrentUser>());
 
     private static IServiceCollection AddPermissions(this IServiceCollection services) =>

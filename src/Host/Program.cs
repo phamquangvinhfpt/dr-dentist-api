@@ -5,6 +5,7 @@ using FSH.WebApi.Infrastructure;
 using FSH.WebApi.Infrastructure.BackgroundJobs;
 using FSH.WebApi.Infrastructure.Common;
 using FSH.WebApi.Infrastructure.Common.Services;
+using FSH.WebApi.Infrastructure.Filters;
 using FSH.WebApi.Infrastructure.Logging.Serilog;
 using Hangfire;
 using Serilog;
@@ -19,8 +20,12 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.AddConfigurations().RegisterSerilog();
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<BanFilter>();
+    });
     builder.Services.AddInfrastructure(builder.Configuration);
+    //builder.Services.AddScoped<BanFilter>();
     builder.Services.AddApplication();
 
     var app = builder.Build();

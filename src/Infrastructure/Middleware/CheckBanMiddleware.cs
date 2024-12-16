@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -13,26 +14,26 @@ namespace FSH.WebApi.Infrastructure.Middleware;
 
 public class CheckBanMiddleware : IMiddleware
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ApplicationDbContext _db;
     private readonly ICurrentUser _currentUser;
 
-    public CheckBanMiddleware(UserManager<ApplicationUser> userManager, ICurrentUser currentUser)
+    public CheckBanMiddleware(ApplicationDbContext db, ICurrentUser currentUser)
     {
-        _userManager = userManager;
+        _db = db;
         _currentUser = currentUser;
     }
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
         var id = _currentUser.GetUserId();
-        var user = await _userManager.FindByIdAsync(id.ToString());
-        if (await _userManager.IsLockedOutAsync(user))
+        if(id != default)
         {
-            throw new UnauthorizedAccessException("Unauthorization: You was ban");
+            var user = _db.Users.FirstOrDefault(p => p.Id == id.ToString());
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Unauthorization: You was ban");
+            }
         }
-        else
-        {
-            await next(context);
-        }
+        await next(context);
     }
 }
