@@ -3,11 +3,6 @@ using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FSH.WebApi.Infrastructure.Filters;
 public class BanFilter : IActionFilter

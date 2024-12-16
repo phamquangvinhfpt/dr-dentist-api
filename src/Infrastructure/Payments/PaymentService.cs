@@ -383,6 +383,12 @@ public class PaymentService : IPaymentService
         {
             foreach (var trans in transaction.data)
             {
+                var existingTransaction = _context.Transactions.Local.FirstOrDefault(t => t.Id == trans.Id);
+                if (existingTransaction != null)
+                {
+                    _context.Entry(existingTransaction).State = EntityState.Detached;
+                }
+
                 var add_transaction = new Transaction
                 {
                     Id = trans.Id,
