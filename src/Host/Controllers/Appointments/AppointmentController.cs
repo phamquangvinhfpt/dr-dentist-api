@@ -268,6 +268,17 @@ public class AppointmentController : VersionNeutralApiController
         }
         return result;
     }
+
+    [HttpGet("cache/delete")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Delete cache", "")]
+    public Task<string> DeleteCache()
+    {
+        DeleteRedisCode();
+        return Task.FromResult("Success");
+    }
+
     public Task DeleteRedisCode()
     {
         try
