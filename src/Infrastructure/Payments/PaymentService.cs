@@ -168,18 +168,6 @@ public class PaymentService : IPaymentService
         try
         {
             var currentUser = _currentUserService.GetRole();
-            if (currentUser.Equals(FSHRoles.Patient))
-            {
-                if (filter.AdvancedSearch == null)
-                {
-                    filter.AdvancedSearch = new Search();
-                    filter.AdvancedSearch.Fields = new List<string>();
-                }
-                filter.AdvancedSearch.Fields.Add("PatientProfileId");
-                var patientProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-                filter.AdvancedSearch.Keyword = patientProfile.Id.ToString();
-            }
-
             var result = new List<PaymentResponse>();
 
             var paymentQuery = _context.Payments.IgnoreQueryFilters()
@@ -195,6 +183,12 @@ public class PaymentService : IPaymentService
             }
             var count = paymentQuery.Count();
             var spec = new EntitiesByPaginationFilterSpec<Payment>(filter);
+            if (currentUser.Equals(FSHRoles.Patient))
+            {
+                var patientProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                paymentQuery = paymentQuery.Where(p => p.PatientProfileId == patientProfile.Id);
+            }
+
             paymentQuery = paymentQuery.OrderByDescending(p => p.CreatedOn).WithSpecification(spec);
 
             var payments = await paymentQuery

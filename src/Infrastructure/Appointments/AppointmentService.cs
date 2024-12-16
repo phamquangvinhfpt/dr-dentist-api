@@ -942,6 +942,7 @@ internal class AppointmentService : IAppointmentService
                     {
                         Payment = a,
                         Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList(),
+                        Profile = _db.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId)
                     })
                     .FirstOrDefaultAsync();
 
@@ -958,6 +959,16 @@ internal class AppointmentService : IAppointmentService
                 }
 
                 await _db.SaveChangesAsync(cancellationToken);
+                var notification = new BasicNotification
+                {
+                    Message = "Payment has been completed!",
+                    Label = BasicNotification.LabelType.Success,
+                    Title = "Payment Successfully!",
+                    Url = "/appointment",
+                };
+
+                var user = await _userManager.FindByIdAsync(query.Profile.UserId);
+                await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
             }
             else if(!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
             {
