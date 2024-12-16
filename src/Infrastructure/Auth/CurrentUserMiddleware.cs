@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using FSH.WebApi.Infrastructure.Identity;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 namespace FSH.WebApi.Infrastructure.Auth;
 
@@ -6,8 +10,10 @@ public class CurrentUserMiddleware : IMiddleware
 {
     private readonly ICurrentUserInitializer _currentUserInitializer;
 
-    public CurrentUserMiddleware(ICurrentUserInitializer currentUserInitializer) =>
+    public CurrentUserMiddleware(ICurrentUserInitializer currentUserInitializer)
+    {
         _currentUserInitializer = currentUserInitializer;
+    }
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {

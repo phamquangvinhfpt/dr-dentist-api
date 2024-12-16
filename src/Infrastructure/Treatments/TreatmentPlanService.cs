@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Vml.Office;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.TreatmentPlan;
@@ -37,8 +38,10 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly IAppointmentCalendarService _workingCalendarService;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private readonly IEmailTemplateService _templateService;
+    private readonly IMailService _mailService;
 
-    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService)
+    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService)
     {
         _db = db;
         _t = t;
@@ -49,6 +52,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
         _workingCalendarService = workingCalendarService;
         _cacheService = cacheService;
         _notificationService = notificationService;
+        _templateService = templateService;
+        _mailService = mailService;
     }
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
@@ -512,6 +517,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
     public async Task<string> UpdateTreamentPlan(AddTreatmentDetail request, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var plan = await _db.TreatmentPlanProcedures
@@ -519,6 +525,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 .Select(b => new
                 {
                     Plan = b,
+                    Appointment = _db.Appointments.FirstOrDefault(a => a.Id == b.AppointmentID),
                     SP = _db.ServiceProcedures.FirstOrDefault(p => p.Id == b.ServiceProcedureId)
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -526,6 +533,48 @@ internal class TreatmentPlanService : ITreatmentPlanService
             if(plan == null)
             {
                 throw new Exception("Can not find plan");
+            }
+            if(plan.Plan.RescheduleTime < 3)
+            {
+                plan.Plan.RescheduleTime += 1;
+            }else
+            {
+                if(_currentUserService.GetRole() == FSHRoles.Patient)
+                {
+                    var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                    if (plan.Appointment.PatientId != patientProfile.Id)
+                    {
+                        throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
+                    }
+                    var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
+                    await _userManager.SetLockoutEnabledAsync(user, true);
+                    await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
+                    plan.Appointment.Status = AppointmentStatus.Failed;
+                    var c = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == plan.Appointment.Id);
+                    c.Status = CalendarStatus.Failed;
+                    var pay = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == plan.Appointment.Id);
+                    pay.Status = Domain.Payments.PaymentStatus.Canceled;
+
+                    await _db.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+
+                    RegisterUserEmailModel eMailModel = new RegisterUserEmailModel()
+                    {
+                        Email = user.Email,
+                        UserName = $"{user.FirstName} {user.LastName}",
+                        BanReason = "Tài khoản của bạn gần đây đã hẹn lại lịch khám quá 3 lần nên chúng tôi tạm khóa tài khoản của bạn trong 7 ngày. Nếu bạn có lí do gì hãy liên hệ với nhân viên chúng tôi để được hỗ trợ"
+                    };
+                    var mailRequest = new MailRequest(
+                                new List<string> { user.Email },
+                                "Tài khoản tạm khóa",
+                                _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
+                    _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+                    return "Reschedule Failed";
+                }
+                else
+                {
+                    throw new Exception("Warning: The Follow Up had been reschedule 3 times");
+                }
             }
             var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID && p.PlanID == request.TreatmentId);
             if (calendar == null) {
@@ -567,6 +616,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
         }

@@ -3,6 +3,7 @@ using FSH.WebApi.Infrastructure.Auth.AzureAd;
 using FSH.WebApi.Infrastructure.Auth.Jwt;
 using FSH.WebApi.Infrastructure.Auth.Permissions;
 using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -26,13 +27,19 @@ internal static class Startup
             : services.AddJwtAuth();
     }
 
-    internal static IApplicationBuilder UseCurrentUser(this IApplicationBuilder app) =>
+    internal static IApplicationBuilder UseCurrentUser(this IApplicationBuilder app)
+    {
         app.UseMiddleware<CurrentUserMiddleware>();
+        app.UseMiddleware<CheckBanMiddleware>();
+
+        return app;
+    }
 
     private static IServiceCollection AddCurrentUser(this IServiceCollection services) =>
         services
             .AddScoped<CurrentUserMiddleware>()
             .AddScoped<ICurrentUser, CurrentUser>()
+            .AddScoped<CheckBanMiddleware>()
             .AddScoped(sp => (ICurrentUserInitializer)sp.GetRequiredService<ICurrentUser>());
 
     private static IServiceCollection AddPermissions(this IServiceCollection services) =>

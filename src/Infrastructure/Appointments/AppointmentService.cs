@@ -400,18 +400,17 @@ internal class AppointmentService : IAppointmentService
         {
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
-
+            var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+            if (appointment.PatientId != patientProfile.Id)
+            {
+                throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
+            }
             if (appointment.SpamCount < 3)
             {
                 appointment.SpamCount += 1;
             }
             else if(appointment.SpamCount == 3 && user_role == FSHRoles.Patient)
             {
-                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-                if (appointment.PatientId != patientProfile.Id)
-                {
-                    throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
-                }
                 var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
