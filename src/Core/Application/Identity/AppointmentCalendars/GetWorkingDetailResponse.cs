@@ -10,6 +10,7 @@ namespace FSH.WebApi.Application.Identity.AppointmentCalendars;
 public class GetWorkingDetailResponse
 {
     public Guid RoomID { get; set; }
+    public Guid TreatmentID { get; set; }
     public string? RoomName { get; set; }
     public Guid CalendarID { get; set; }
     public string? PatientName { get; set; }

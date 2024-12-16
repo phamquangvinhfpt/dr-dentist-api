@@ -1252,6 +1252,7 @@ internal class AppointmentService : IAppointmentService
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
                 var r = new GetWorkingDetailResponse
                 {
+                    TreatmentID = a.TreatmentPlan.Id,
                     AppointmentId = a.Appointment.AppointmentId.Value,
                     AppointmentType = a.Appointment.Type,
                     CalendarID = a.Appointment.Id,
