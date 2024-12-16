@@ -123,7 +123,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("text");
 
                     b.Property<string[]>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("text[]");
 
                     b.Property<Guid>("LastModifiedBy")

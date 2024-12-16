@@ -325,7 +325,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     Phone = table.Column<string>(type: "text", nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     EmailContext = table.Column<string>(type: "text", nullable: true),
-                    ImageUrl = table.Column<string[]>(type: "text[]", nullable: false),
+                    ImageUrl = table.Column<string[]>(type: "text[]", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     TenantId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),

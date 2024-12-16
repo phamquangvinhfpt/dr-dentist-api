@@ -8,14 +8,14 @@ public class ContactInfor : AuditableEntity, IAggregateRoot
     public string Phone { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string? EmailContext { get; set; }
-    public string[] ImageUrl { get; set; }
+    public string[]? ImageUrl { get; set; }
     public ContactStatus Status { get; set; }
 
     public ContactInfor()
     {
     }
 
-    public ContactInfor(string? staffId, string title, string email, string phone, string content, string? emailContext, string[] imageUrl, ContactStatus status)
+    public ContactInfor(string? staffId, string title, string email, string phone, string content, string? emailContext, string[]? imageUrl, ContactStatus status)
     {
         StaffId = staffId;
         Title = title;

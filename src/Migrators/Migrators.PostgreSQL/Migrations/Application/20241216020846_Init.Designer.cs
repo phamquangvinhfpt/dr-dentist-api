@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Migrators.PostgreSQL.Migrations.Application
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241214091758_Init")]
+    [Migration("20241216020846_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -126,7 +126,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("text");
 
                     b.Property<string[]>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("text[]");
 
                     b.Property<Guid>("LastModifiedBy")

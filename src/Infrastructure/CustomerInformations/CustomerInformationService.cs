@@ -62,6 +62,7 @@ internal class CustomerInformationService : ICustomerInformationService
                 Phone = request.Phone,
                 Email = request.Email,
                 Status = ContactStatus.Pending,
+
             });
             await _db.SaveChangesAsync();
         }
