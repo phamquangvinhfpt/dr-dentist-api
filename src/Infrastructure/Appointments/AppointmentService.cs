@@ -401,7 +401,7 @@ internal class AppointmentService : IAppointmentService
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
 
-            if (appointment.SpamCount < 3 && user_role == FSHRoles.Patient)
+            if (appointment.SpamCount < 3)
             {
                 appointment.SpamCount += 1;
             }
@@ -789,6 +789,8 @@ internal class AppointmentService : IAppointmentService
                 var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
 
                 appointment.Status = AppointmentStatus.Come;
+
+                appointment.ComeAt = DateTime.Now.TimeOfDay;
 
                 foreach (var item in groupService.Procedures)
                 {
@@ -1210,7 +1212,7 @@ internal class AppointmentService : IAppointmentService
             if (currentUser == FSHRoles.Dentist)
             {
                 var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
-                appointmentsQuery = appointmentsQuery.Where(p => p.DoctorId == dProfile.Id);
+                appointmentsQuery = appointmentsQuery.Where(p => p.DoctorId == dProfile.Id && p.Status == CalendarStatus.Checkin);
             }
             else if (currentUser == FSHRoles.Patient)
             {
@@ -1516,7 +1518,7 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new Exception("Can not verify the follow up appointment.");
             }
-            calendar.Status = CalendarStatus.Success;
+            calendar.Status = CalendarStatus.Checkin;
             return "Success";
         }
         catch (Exception ex)
