@@ -14,6 +14,9 @@ public class TreatmentPlanController : VersionNeutralApiController
     private readonly ICacheService _cacheService;
     private readonly ICurrentUser _currentUserService;
     private static string APPOINTMENT = "APPOINTMENT";
+    private static string FOLLOW = "FOLLOW";
+    private static string REEXAM = "REEXAM";
+    private static string NON = "NON";
     public TreatmentPlanController(ICacheService cacheService, ITreatmentPlanService treatmentPlanService, ICurrentUser currentUserService)
     {
         _treatmentPlanService = treatmentPlanService;
@@ -103,16 +106,47 @@ public class TreatmentPlanController : VersionNeutralApiController
         DeleteRedisCode();
         return _treatmentPlanService.ExaminationAndChangeTreatmentStatus(id, cancellationToken);
     }
-    public async Task DeleteRedisCode()
+    public Task DeleteRedisCode()
     {
         try
         {
-            var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
-            foreach (string key in keys)
+            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+            if (key1a != null)
             {
-                _cacheService.Remove(key);
+                foreach (string key in key1a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(APPOINTMENT);
             }
-            _cacheService.Remove(APPOINTMENT);
+            var key2a = _cacheService.Get<HashSet<string>>(NON);
+            if (key2a != null)
+            {
+                foreach (string key in key2a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(NON);
+            }
+            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
+            if (key3a != null)
+            {
+                foreach (string key in key3a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(FOLLOW);
+            }
+            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
+            if (key4a != null)
+            {
+                foreach (string key in key4a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(REEXAM);
+            }
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {

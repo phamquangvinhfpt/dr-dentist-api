@@ -177,17 +177,17 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
         _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(NON);
         if (keys != null)
         {
             keys.Add(key);
-            _cacheService.Remove(APPOINTMENT);
-            _cacheService.Set(APPOINTMENT, keys);
+            _cacheService.Remove(NON);
+            _cacheService.Set(NON, keys);
         }
         else
         {
             HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(APPOINTMENT, list);
+            _cacheService.Set(NON, list);
         }
         return result;
     }
@@ -220,17 +220,17 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
         _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(FOLLOW);
         if (keys != null)
         {
             keys.Add(key);
-            _cacheService.Remove(APPOINTMENT);
-            _cacheService.Set(APPOINTMENT, keys);
+            _cacheService.Remove(FOLLOW);
+            _cacheService.Set(FOLLOW, keys);
         }
         else
         {
             HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(APPOINTMENT, list);
+            _cacheService.Set(FOLLOW, list);
         }
         return result;
     }
@@ -254,17 +254,17 @@ public class AppointmentController : VersionNeutralApiController
         }
         var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
         _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+        var keys = _cacheService.Get<HashSet<string>>(REEXAM);
         if (keys != null)
         {
             keys.Add(key);
-            _cacheService.Remove(APPOINTMENT);
-            _cacheService.Set(APPOINTMENT, keys);
+            _cacheService.Remove(REEXAM);
+            _cacheService.Set(REEXAM, keys);
         }
         else
         {
             HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(APPOINTMENT, list);
+            _cacheService.Set(REEXAM, list);
         }
         return result;
     }
@@ -283,14 +283,41 @@ public class AppointmentController : VersionNeutralApiController
     {
         try
         {
-            var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if(keys != null)
+            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+            if(key1a != null)
             {
-                foreach (string key in keys)
+                foreach (string key in key1a)
                 {
                     _cacheService.Remove(key);
                 }
                 _cacheService.Remove(APPOINTMENT);
+            }
+            var key2a = _cacheService.Get<HashSet<string>>(NON);
+            if (key2a != null)
+            {
+                foreach (string key in key2a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(NON);
+            }
+            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
+            if (key3a != null)
+            {
+                foreach (string key in key3a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(FOLLOW);
+            }
+            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
+            if (key4a != null)
+            {
+                foreach (string key in key4a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(REEXAM);
             }
             return Task.CompletedTask;
         }
