@@ -1,6 +1,6 @@
 {
   "SignalRSettings": {
-    "UseBackplane": false,
+    "UseBackplane": true,
     "Backplane": {
       "Provider": "redis",
       "StringConnection": "localhost:6379"

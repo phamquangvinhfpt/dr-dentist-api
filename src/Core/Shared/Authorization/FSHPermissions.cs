@@ -87,6 +87,7 @@ public static class FSHPermissions
 
         // FILES
         new("Upload files", FSHAction.Upload, FSHResource.Files, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+        new("Export files", FSHAction.Export, FSHResource.Files, new[] { ROOT, ADMIN }),
 
         // NOTIFICATIONS
         new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, DENTIST, STAFF, PATIENT }),
