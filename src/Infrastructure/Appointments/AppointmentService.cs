@@ -18,9 +18,7 @@ using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Identity;
-using FSH.WebApi.Infrastructure.Persistence.Configuration;
 using FSH.WebApi.Infrastructure.Persistence.Context;
-using FSH.WebApi.Infrastructure.Redis;
 using FSH.WebApi.Shared.Authorization;
 using FSH.WebApi.Shared.Notifications;
 using Microsoft.AspNetCore.Identity;
@@ -95,7 +93,7 @@ internal class AppointmentService : IAppointmentService
             (p.Status == Domain.Appointments.AppointmentStatus.Pending || p.Status == AppointmentStatus.Confirmed)
             ).AnyAsync();
         bool isSunday = DateOnly.FromDateTime(DateTime.Now).DayOfWeek == DayOfWeek.Sunday;
-        return !appointment && isSunday;
+        return !appointment && !isSunday;
     }
 
     public async Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
@@ -398,6 +396,7 @@ internal class AppointmentService : IAppointmentService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            Console.WriteLine(_currentUserService.GetUserId());
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
