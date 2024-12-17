@@ -1,0 +1,30 @@
+[
+  {
+    "id": "b6a9c2e4-4f7d-4349-8b1c-3e5f6d8a9c7f",
+    "name": "Khám Lâm Sàng Khoang Miệng",
+    "description": "Bác sĩ khám chi tiết toàn bộ khoang miệng, bao gồm kiểm tra môi, má trong, lưỡi, nướu, vòm miệng để phát hiện các bất thường như vết loét, đốm trắng/đỏ, hoặc các tổn thương nghi ngờ",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 400000.00
+  },
+  {
+    "id": "d2f3b4e6-5c8a-41b3-9d6c-8a7e9f1b2c4d",
+    "name": "Chụp X-quang Cắt Lớp CT Cone Beam",
+    "description": "Chụp CT 3D độ phân giải cao để đánh giá chi tiết cấu trúc xương hàm, các tổn thương trong xương và mô mềm không nhìn thấy được bằng mắt thường",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "e7d4b6c3-9f1a-4b2c-8d5e-3a6c7f9e8b4d",
+    "name": "Soi Khoang Miệng Huỳnh Quang",
+    "description": "Sử dụng công nghệ ánh sáng huỳnh quang đặc biệt để phát hiện các tổn thương tiền ung thư và ung thư giai đoạn sớm không thể nhìn thấy bằng mắt thường",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 600000.00
+  },
+  {
+    "id": "c3d7f2a9-b5e4-40f9-8a2c-7e6b4d9f1c3a",
+    "name": "Sinh Thiết Tế Bào Niêm Mạc",
+    "description": "Lấy mẫu tế bào từ các vị trí nghi ngờ có tổn thương để xét nghiệm tế bào học (chỉ thực hiện khi có chỉ định của bác sĩ)",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 500000.00
+  }
+]

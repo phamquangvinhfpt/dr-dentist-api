@@ -1,6 +1,9 @@
 ﻿using FluentValidation;
 using FluentValidation.Results;
+using FSH.WebApi.Application.DentalServices.Services;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Shared.Authorization;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,54 +14,32 @@ namespace FSH.WebApi.Application.Identity.Users;
 public class UpdateDoctorProfile : IRequest<string>
 {
     public string? DoctorID { get; set; }
+    public Guid TypeServiceID { get; set; }
     public string? Education { get; set; }
     public string? College { get; set; }
     public string? Certification { get; set; }
     public string? YearOfExp { get; set; }
     public string? SeftDescription { get; set; }
+    [AllowedExtensions(FileType.Image)]
+    [MaxFileSize(5 * 1024 * 1024)]
+    public IFormFile[]? CertificationImage { get; set; }
+    public WorkingType WorkingType { get; set; }
 }
 public class UpdateDoctorProfileVaidator : CustomValidator<UpdateDoctorProfile>
 {
-    public UpdateDoctorProfileVaidator(IUserService userService, ICurrentUser currentUser)
+    public UpdateDoctorProfileVaidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService)
     {
-        RuleFor(p => p)
-            .CustomAsync(async (profile, context, cancellationToken) =>
-            {
-                if (currentUser.IsInRole(FSHRoles.Admin))
-                {
-                    return;
-                }
-
-                if (currentUser.IsInRole(FSHRoles.Dentist))
-                {
-                    if (currentUser.GetUserId().ToString() != profile.DoctorID)
-                    {
-                        context.AddFailure(new ValidationFailure(nameof(profile.DoctorID),
-                            "You can only update your own profile.")
-                        {
-                            ErrorCode = "Unauthorized"
-                        });
-                    }
-                    if(!await userService.ExistsWithUserIDAsync(profile.DoctorID))
-                    {
-                        context.AddFailure(new ValidationFailure(nameof(profile.DoctorID),
-                            $"Doctor {profile.DoctorID} is unavailable.")
-                        {
-                            ErrorCode = "BadRequest"
-                        });
-                    }
-                    return;
-                }
-
-                context.AddFailure(new ValidationFailure(string.Empty,
-                    "Unauthorized access. Only Admin or the Doctor themselves can update doctor profile.")
-                {
-                    ErrorCode = "Unauthorized"
-                });
-            });
+        RuleFor(p => p.TypeServiceID)
+            .NotNull()
+            .WithMessage("Type service should be choose")
+            .MustAsync(async (id, _) => await serviceService.CheckTypeServiceExisting(id))
+            .WithMessage((_, id) => "Type service is unavailable.");
 
         RuleFor(p => p.Education)
                 .NotEmpty().WithMessage("Education is required for Doctor.");
+
+        RuleFor(p => p.College)
+                .NotEmpty().WithMessage("College is required for Doctor.");
 
         RuleFor(p => p.Certification)
             .NotEmpty().WithMessage("Certification is required for Doctor.");

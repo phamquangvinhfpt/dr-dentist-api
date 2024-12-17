@@ -4,9 +4,11 @@ using FSH.WebApi.Application.Identity.Tokens;
 using FSH.WebApi.Infrastructure.Auth;
 using FSH.WebApi.Infrastructure.Auth.Jwt;
 using FSH.WebApi.Infrastructure.Multitenancy;
+using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using FSH.WebApi.Shared.Multitenancy;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -26,8 +28,10 @@ internal class TokenService : ITokenService
     private readonly JwtSettings _jwtSettings;
     private readonly FSHTenantInfo? _currentTenant;
     private readonly IReCAPTCHAv3Service _reCAPTCHAv3Service;
+    private readonly ApplicationDbContext _db;
 
     public TokenService(
+        ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         IOptions<JwtSettings> jwtSettings,
@@ -43,6 +47,7 @@ internal class TokenService : ITokenService
         _currentTenant = currentTenant;
         _reCAPTCHAv3Service = reCAPTCHAv3Service;
         _securitySettings = securitySettings.Value;
+        _db = db;
     }
 
     public async Task<TokenResponse> GetTokenAsync(TokenRequest request, string ipAddress, CancellationToken cancellationToken)
@@ -135,17 +140,6 @@ internal class TokenService : ITokenService
         var roles = _userManager.GetRolesAsync(user).Result;
 
         var roleClaims = new List<Claim>();
-        foreach (string role in roles)
-        {
-            var applicationRole = _roleManager.FindByNameAsync(role).Result;
-            if (applicationRole is not null)
-            {
-                var roleC = _roleManager.GetClaimsAsync(applicationRole).Result;
-                var roleB = _userManager.GetClaimsAsync(user).Result;
-                roleClaims.AddRange(roleC);
-                roleClaims.AddRange(roleB);
-            }
-        }
 
         var claims = new List<Claim>
         {
@@ -161,7 +155,25 @@ internal class TokenService : ITokenService
             new(ClaimTypes.MobilePhone, user.PhoneNumber ?? string.Empty),
             new(ClaimTypes.Role, string.Join(',', roles)),
         };
-
+        foreach (string role in roles)
+        {
+            var applicationRole = _roleManager.FindByNameAsync(role).Result;
+            if (applicationRole is not null)
+            {
+                var roleC = _roleManager.GetClaimsAsync(applicationRole).Result;
+                var roleB = _userManager.GetClaimsAsync(user).Result;
+                roleClaims.AddRange(roleC);
+                roleClaims.AddRange(roleB);
+            }
+            if(role == FSHRoles.Dentist)
+            {
+                var profile = _db.DoctorProfiles.FirstOrDefault(p => p.DoctorId == user.Id);
+                if (profile != null)
+                {
+                    claims.Add(new(FSHClaims.DType, profile.WorkingType.ToString()));
+                }
+            }
+        }
         claims.AddRange(roleClaims);
 
         return claims;

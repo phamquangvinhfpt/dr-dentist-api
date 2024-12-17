@@ -52,7 +52,7 @@ public class AddTreatmentDetailValidator : CustomValidator<AddTreatmentDetail>
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
                     return false;
                 }
@@ -61,9 +61,9 @@ public class AddTreatmentDetailValidator : CustomValidator<AddTreatmentDetail>
             })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime >= TimeSpan.FromHours(22))
                 {
-                    return "Start time must be between 8:00 AM and 5:00 PM";
+                    return "Start time must be between 8:00 AM and 10:00 PM";
                 }
                 return "Start time must be greater than current time";
             });

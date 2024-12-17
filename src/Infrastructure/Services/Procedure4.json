@@ -1,0 +1,23 @@
+[
+  {
+    "id": "e81b64c2-37f0-4d49-b327-28f6a89d2ab3",
+    "name": "Chụp X-quang Toàn Hàm và Sọ Mặt",
+    "description": "Chụp X-quang toàn cảnh và X-quang sọ nghiêng để phân tích cấu trúc xương hàm, vị trí răng và mối quan hệ xương hàm trên-dưới",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "a58d7f29-3e62-451c-a094-d12c3e3b7a63",
+    "name": "Lấy Dấu Răng và Đổ Mẫu Hàm",
+    "description": "Lấy dấu răng bằng vật liệu silicon chuyên dụng và đổ mẫu hàm thạch cao để phân tích chi tiết và lên kế hoạch điều trị",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 600000.00
+  },
+  {
+    "id": "b60f912e-405d-41c8-937b-3fa7ef2c6d8a",
+    "name": "Scan 3D Hàm Răng",
+    "description": "Quét 3D toàn bộ hàm răng bằng máy scan kỹ thuật số, tạo mô phỏng 3D chi tiết giúp lập kế hoạch điều trị chính xác",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1000000.00
+  }
+]

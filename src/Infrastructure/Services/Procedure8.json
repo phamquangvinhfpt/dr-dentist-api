@@ -1,0 +1,58 @@
+[
+  {
+    "id": "1f2e3d4c-1122-3344-5566-778899aabbcc",
+    "name": "Khám tổng quát Nha Khoa Trẻ Em",
+    "description": "Bác sĩ chuyên khoa nhi thăm khám tổng quát, đánh giá tình trạng răng miệng, tư vấn cho phụ huynh về kế hoạch chăm sóc răng phù hợp với độ tuổi của trẻ",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "2a3b4c5d-6677-8899-aabb-ccddeeff0011",
+    "name": "Chụp X-quang Răng Trẻ Em",
+    "description": "Chụp X-quang với liều lượng phù hợp cho trẻ em để kiểm tra răng, mầm răng và xương hàm, phát hiện sớm các vấn đề về răng miệng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 150000.00
+  },
+  {
+    "id": "3c4d5e6f-1122-3344-5566-778899aabbcc",
+    "name": "Vệ Sinh Răng Miệng Chuyên Sâu",
+    "description": "Làm sạch cao răng, mảng bám bằng phương pháp nhẹ nhàng, sử dụng các dụng cụ và thuốc đánh bóng phù hợp với trẻ em",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 400000.00
+  },
+  {
+    "id": "4d5e6f7g-2233-4455-6677-8899aabbccdd",
+    "name": "Điều Trị Sâu Răng Sữa",
+    "description": "Điều trị sâu răng sữa bằng phương pháp trám răng thẩm mỹ, sử dụng vật liệu an toàn cho trẻ em và có độ bền phù hợp với thời gian tồn tại của răng sữa",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  },
+  {
+    "id": "5e6f7g8h-3344-5566-7788-99aabbccddeeff",
+    "name": "Điều Trị Tủy Răng Sữa",
+    "description": "Điều trị tủy răng sữa bằng phương pháp chuyên biệt cho trẻ em, giúp bảo tồn răng sữa đến khi răng vĩnh viễn mọc lên",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "6f7g8h9i-4455-6677-8899-aabbccddeeff00",
+    "name": "Dán Fluoride Phòng Ngừa Sâu Răng",
+    "description": "Thực hiện dán fluoride chuyên nghiệp để tăng cường men răng và phòng ngừa sâu răng, đặc biệt hiệu quả cho răng mới mọc",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 350000.00
+  },
+  {
+    "id": "7g8h9i0j-5566-7788-99aa-bbccddeeff1122",
+    "name": "Trám Bít Hố Rãnh",
+    "description": "Trám bít các hố rãnh sâu trên bề mặt răng hàm để phòng ngừa sâu răng, đặc biệt quan trọng cho răng vĩnh viễn mới mọc",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 250000.00
+  },
+  {
+    "id": "9i0j1k2l-7788-99aa-bbcc-ddeeff334455",
+    "name": "Nhổ Răng Sữa",
+    "description": "Nhổ răng sữa khi cần thiết với phương pháp nhẹ nhàng, giảm thiểu lo lắng cho trẻ, đảm bảo quá trình mọc răng vĩnh viễn",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  }
+]

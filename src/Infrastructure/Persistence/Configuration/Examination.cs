@@ -50,9 +50,9 @@ public class DiagnosisConfig : IEntityTypeConfiguration<Diagnosis>
               .IsMultiTenant();
 
         builder
-            .HasOne(b => b.MedicalRecord)
-            .WithOne(b => b.Diagnosis)
-            .HasForeignKey<Diagnosis>(b => b.RecordId);
+            .HasOne<MedicalRecord>()
+            .WithMany(p => p.Diagnosises)
+            .HasForeignKey(b => b.RecordId);
 
         builder
             .Property(b => b.TeethConditions)
@@ -74,6 +74,42 @@ public class ServicesConfig : IEntityTypeConfiguration<Service>
 
         builder
             .Property(b => b.ServiceDescription)
+                .HasMaxLength(256);
+        builder
+            .HasOne<TypeService>()
+            .WithMany()
+            .HasForeignKey(p => p.TypeServiceID).IsRequired(false);
+    }
+}
+
+public class TypeServiceConfig : IEntityTypeConfiguration<TypeService>
+{
+    public void Configure(EntityTypeBuilder<TypeService> builder)
+    {
+        builder
+              .ToTable("TypeService", SchemaNames.Service)
+              .IsMultiTenant();
+
+        builder
+            .Property(b => b.TypeName)
+                .HasMaxLength(256);
+
+        builder
+            .Property(b => b.TypeDescription)
+                .HasMaxLength(256);
+    }
+}
+
+public class RoomConfig : IEntityTypeConfiguration<Room>
+{
+    public void Configure(EntityTypeBuilder<Room> builder)
+    {
+        builder
+              .ToTable("Room", SchemaNames.Treatment)
+              .IsMultiTenant();
+
+        builder
+            .Property(b => b.RoomName)
                 .HasMaxLength(256);
     }
 }
@@ -160,10 +196,19 @@ public class PrescriptionsConfig : IEntityTypeConfiguration<Prescription>
                 .HasMaxLength(256);
 
         builder
-            .HasOne(b => b.MedicalRecord)
+            .HasOne(b => b.TreatmentPlanProcedures)
             .WithOne(b => b.Prescription)
-            .HasForeignKey<Prescription>(b => b.RecordId)
+            .HasForeignKey<Prescription>(b => b.TreatmentID)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasOne<PatientProfile>()
+            .WithMany(b => b.Prescriptions)
+            .HasForeignKey(b => b.PatientID).IsRequired(false);
+        builder
+            .HasOne<DoctorProfile>()
+            .WithMany(b => b.Prescriptions)
+            .HasForeignKey(b => b.DoctorID).IsRequired(false);
     }
 }
 
@@ -263,7 +308,7 @@ public class PatientMessagesConfig : IEntityTypeConfiguration<PatientMessages>
         builder
             .HasOne<ApplicationUser>()
             .WithMany()
-            .HasForeignKey(b => b.receiverId)
+            .HasForeignKey(b => b.ReceiverId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder
@@ -301,6 +346,11 @@ public class FeedbackConfig : IEntityTypeConfiguration<Feedback>
         builder
             .Property(b => b.Message)
                 .HasMaxLength(256);
+
+        builder
+            .HasOne<Appointment>()
+            .WithOne()
+            .HasForeignKey<Feedback>("AppointmentId").IsRequired(false);
     }
 }
 
@@ -314,8 +364,11 @@ public class ContactInforConfig : IEntityTypeConfiguration<ContactInfor>
 
         builder
             .HasOne<ApplicationUser>()
-            .WithOne()
-            .HasForeignKey<ContactInfor>("StaffId").IsRequired(false);
+            .WithMany()
+            .HasForeignKey(p => p.StaffId).IsRequired(false);
+
+        builder
+            .Property(b => b.ImageUrl).IsRequired(false);
     }
 }
 

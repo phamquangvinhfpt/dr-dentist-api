@@ -1,0 +1,30 @@
+[
+  {
+    "id": "10af3c72-5698-4e0a-b2d4-1f5a3f781c9a",
+    "name": "Khám sơ bộ",
+    "description": "Bác sĩ thăm khám tổng quát, kiểm tra màu sắc răng hiện tại, đánh giá tình trạng nướu và mức độ ê buốt để tư vấn phương pháp tẩy trắng phù hợp",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 200000.00
+  },
+  {
+    "id": "3d49c8a0-4b7c-41e2-93f8-4a79e4f7d92a",
+    "name": "Chụp Ảnh và Xác Định Màu Răng",
+    "description": "Chụp ảnh và ghi nhận màu răng ban đầu bằng bảng màu chuẩn, làm cơ sở đánh giá kết quả sau khi tẩy trắng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 300000.00
+  },
+  {
+    "id": "482c97fa-94f0-429b-8505-dc1e47b89e4c",
+    "name": "Tẩy Trắng Răng Chuyên Nghiệp",
+    "description": "Thực hiện quy trình tẩy trắng răng bằng công nghệ đèn plasma/laser kết hợp gel tẩy trắng cao cấp, bao gồm 2-3 chu kỳ chiếu đèn",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 3500000.00
+  },
+  {
+    "id": "56b2c7a9-8504-4ea3-93cd-7c01a4f8e2d9",
+    "name": "Điều Trị Giảm Ê Buốt",
+    "description": "Ứng dụng các chất chống ê buốt và fluoride để bảo vệ men răng và giảm thiểu tình trạng ê buốt sau tẩy trắng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 400000.00
+  }
+]

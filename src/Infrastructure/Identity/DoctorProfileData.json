@@ -38,5 +38,45 @@
     "Certification": "American Board of Psychiatry and Neurology",
     "YearOfExp": "10",
     "SeftDescription": "Experienced psychiatrist specializing in mood disorders and anxiety treatment. Integrates traditional psychiatric approaches with modern therapeutic techniques for comprehensive mental health care."
+  },
+  {
+    "Id": "9b2e23f1-8c4d-4baf-9d31-2f7b470c0123",
+    "Education": "Doctor of Medicine (MD)",
+    "College": "Duke University School of Medicine",
+    "Certification": "American Board of Orthopedic Surgery",
+    "YearOfExp": "18",
+    "SeftDescription": "Orthopedic surgeon specializing in sports medicine and joint replacement procedures. Expert in minimally invasive surgical techniques and rehabilitation protocols."
+  },
+  {
+    "Id": "1d4e5f2a-7b8c-9d0e-1f2a-3b4c5d6e7f89",
+    "Education": "Doctor of Medicine (MD), MPH",
+    "College": "University of California, San Francisco",
+    "Certification": "American Board of Obstetrics and Gynecology",
+    "YearOfExp": "14",
+    "SeftDescription": "OB/GYN specialist focusing on high-risk pregnancies and reproductive endocrinology. Committed to women's health education and preventive care throughout all life stages."
+  },
+  {
+    "Id": "3c4d5e6f-8a9b-0c1d-2e3f-4a5b6c7d8e9f",
+    "Education": "Doctor of Medicine (MD)",
+    "College": "Mayo Clinic Alix School of Medicine",
+    "Certification": "American Board of Emergency Medicine",
+    "YearOfExp": "11",
+    "SeftDescription": "Emergency medicine physician with extensive trauma center experience. Skilled in critical care management and disaster response protocols."
+  },
+  {
+    "Id": "17bfc71a-9f9f-4421-94be-cba1b9662e10",
+    "Education": "Doctor of Medicine (MD), PhD",
+    "College": "University of Pennsylvania School of Medicine",
+    "Certification": "American Board of Oncology",
+    "YearOfExp": "16",
+    "SeftDescription": "Medical oncologist specializing in breast cancer treatment. Combines clinical practice with research in immunotherapy and targeted molecular treatments."
+  },
+  {
+    "Id": "e44369b3-5dba-4f72-aac7-cd549db75b07",
+    "Education": "Doctor of Osteopathic Medicine (DO)",
+    "College": "Northwestern University Feinberg School of Medicine",
+    "Certification": "American Board of Physical Medicine and Rehabilitation",
+    "YearOfExp": "9",
+    "SeftDescription": "Physical medicine and rehabilitation specialist focused on neurological recovery and sports injuries. Expertise in non-surgical treatment approaches and pain management."
   }
 ]

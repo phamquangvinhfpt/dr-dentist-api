@@ -1,0 +1,23 @@
+[
+  {
+    "id": "f2b3c4d5-e6g7-8h9i-0j1k-2l3m4n5o6p7q",
+    "name": "Lấy Cao Răng Chuyên Sâu",
+    "description": "Sử dụng máy siêu âm và dụng cụ chuyên dụng để làm sạch cao răng trên và dưới nướu, loại bỏ các mảng bám cứng bám chặt vào chân răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  },
+  {
+    "id": "g3c4d5e6-f7h8-9i0j-1k2l-3m4n5o6p7q8r",
+    "name": "Nạo Túi Nha Chu",
+    "description": "Tiến hành nạo và làm sạch túi nha chu sâu, loại bỏ mô viêm và mô hoại tử, làm nhẵn bề mặt chân răng để giúp nướu tái sinh và bám chặt vào chân răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1200000.00
+  },
+  {
+    "id": "i5e6f7g8-h9j0-1k2l-3m4n-5o6p7q8r9s0t",
+    "name": "Điều Trị Phục Hồi Nướu",
+    "description": "Sử dụng laser hoặc các kỹ thuật phẫu thuật để tái tạo mô nướu và xương ổ răng (nếu cần), giúp phục hồi tổ chức nha chu bị tổn thương",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1500000.00
+  }
+]

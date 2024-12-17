@@ -11,9 +11,7 @@ public class Indication : AuditableEntity, IAggregateRoot
     // navigation
     [JsonIgnore]
     public ICollection<PatientImage> Images { get; set; } = new List<PatientImage>();
-    [JsonIgnore]
-    public MedicalRecord? MedicalRecord { get; set; }
-
+    public MedicalRecord MedicalRecord { get; set; }
     public Indication()
     {
     }

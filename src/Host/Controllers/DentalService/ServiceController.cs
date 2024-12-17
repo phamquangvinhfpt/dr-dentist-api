@@ -19,7 +19,7 @@ public class ServiceController : VersionNeutralApiController
     [HttpPost("pagination/get-all")]
     [MustHavePermission(FSHAction.View, FSHResource.Service)]
     [OpenApiOperation("Get Services with pagination.", "")]
-    public async Task<PaginationResponse<Service>> GetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<ServiceDTOs>> GetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         return await _serviceService.GetServicesPaginationAsync(request, cancellationToken);
     }
@@ -35,7 +35,7 @@ public class ServiceController : VersionNeutralApiController
     [HttpPost("toggle")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Toggle Service Status.", "")]
-    public async Task<string> DeleteServiceAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
+    public async Task<string> ToggleServiceAsync(ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         return await _serviceService.ToggleServiceAsync(request, cancellationToken);
     }
@@ -51,10 +51,20 @@ public class ServiceController : VersionNeutralApiController
     [HttpPost("bin")]
     [MustHavePermission(FSHAction.View, FSHResource.Service)]
     [OpenApiOperation("Get all service that was deleted.", "")]
-    public async Task<PaginationResponse<Service>> GetDeleteServicesAsync(PaginationFilter request, CancellationToken cancellationToken)
+    public async Task<PaginationResponse<ServiceDTOs>> GetDeleteServicesAsync(PaginationFilter request, CancellationToken cancellationToken)
     {
         return await _serviceService.GetDeletedServiceAsync(request, cancellationToken);
     }
+
+    //checked
+    [HttpGet("bin/get/{id}")]
+    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [OpenApiOperation("Get Deleted Service Detail.", "")]
+    public async Task<ServiceDTO> GetDeletedServiceAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetDeleteServiceByID(id, cancellationToken);
+    }
+
     //checked
     [HttpGet("{id}/restore")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
@@ -136,7 +146,7 @@ public class ServiceController : VersionNeutralApiController
     [HttpPost("add-delete-procedure")]
     [MustHavePermission(FSHAction.Update, FSHResource.Service)]
     [OpenApiOperation("Add or Delete Procedure throw Service.", "")]
-    public Task<string> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
+    public Task<ServiceDTO> AddProcedureToServiceAsync(AddOrDeleteProcedureToService request, CancellationToken cancellationToken)
     {
         return Mediator.Send(request);
     }
@@ -164,6 +174,20 @@ public class ServiceController : VersionNeutralApiController
         return await _serviceService.RestoreProcedureAsync(id, cancellationToken);
     }
 
+    [HttpPost("type")]
+    [OpenApiOperation("Get Type Service.", "")]
+    [TenantIdHeader]
+    [AllowAnonymous]
+    public async Task<PaginationResponse<TypeService>> GetTypeServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetTypeServiceAsync(request, cancellationToken);
+    }
+    [HttpPost("type/add")]
+    [OpenApiOperation("Add Type Service.", "")]
+    public Task<string> AddTypeServiceAsync(AddTypeServiceRequest request)
+    {
+        return Mediator.Send(request);
+    }
     ////checked
     //[HttpGet("{id}/get-by-service")]
     //[MustHavePermission(FSHAction.View, FSHResource.Procedure)]
@@ -172,4 +196,14 @@ public class ServiceController : VersionNeutralApiController
     //{
     //    return await _serviceService.GetProceduresByServiceID(id, cancellationToken);
     //}
+
+    //checked
+    [HttpGet("customer/get/{id}")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Customer Get Service Detail, have feedback.", "")]
+    public async Task<ServiceHaveFeedback> GetServiceDetailHaveFeedback(Guid id, CancellationToken cancellationToken)
+    {
+        return await _serviceService.GetServiceDetailHaveFeedback(id, cancellationToken);
+    }
 }

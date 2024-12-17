@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FSH.WebApi.Domain.CustomerServices;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,4 +16,7 @@ public class ContactResponse
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
+    public string? EmailContext { get; set; }
+    public string[]? ImageUrl { get; set; }
+    public ContactStatus Status { get; set; }
 }

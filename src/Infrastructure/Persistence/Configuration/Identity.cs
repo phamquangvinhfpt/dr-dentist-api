@@ -2,6 +2,7 @@
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Domain.Treatment;
 using FSH.WebApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -43,6 +44,26 @@ public class MedicalHistoryConfig : IEntityTypeConfiguration<MedicalHistory>
         builder
             .Property(b => b.Note)
             .HasMaxLength(256);
+    }
+}
+
+public class ApplicationFormConfig : IEntityTypeConfiguration<ApplicationForm>
+{
+    public void Configure(EntityTypeBuilder<ApplicationForm> builder)
+    {
+        builder
+            .ToTable("ApplicationForm", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(b => b.UserID);
+
+        builder
+            .HasOne<WorkingCalendar>()
+            .WithMany()
+            .HasForeignKey(b => b.CalendarID);
     }
 }
 
@@ -128,8 +149,47 @@ public class DoctorProfileConfig : IEntityTypeConfiguration<DoctorProfile>
             .HasForeignKey<DoctorProfile>("DoctorId");
 
         builder
+            .HasOne<TypeService>()
+            .WithMany()
+            .HasForeignKey(p => p.TypeServiceID).IsRequired(false);
+
+        builder
             .Property(b => b.SeftDescription)
             .HasColumnType("text");
+    }
+}
+
+public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
+{
+    public void Configure(EntityTypeBuilder<WorkingCalendar> builder)
+    {
+        builder
+            .ToTable("WorkingCalendar", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<DoctorProfile>()
+            .WithMany()
+            .HasForeignKey(b => b.DoctorID);
+
+        builder
+            .Property(b => b.Note)
+            .HasColumnType("text");
+    }
+}
+
+public class TimeWorkingConfig : IEntityTypeConfiguration<TimeWorking>
+{
+    public void Configure(EntityTypeBuilder<TimeWorking> builder)
+    {
+        builder
+            .ToTable("TimeWorking", SchemaNames.Identity)
+            .IsMultiTenant();
+
+        builder
+            .HasOne<WorkingCalendar>()
+            .WithMany()
+            .HasForeignKey(b => b.CalendarID);
     }
 }
 
@@ -148,18 +208,23 @@ public class PatientProfileConfig : IEntityTypeConfiguration<PatientProfile>
     }
 }
 
-public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
+public class AppointmentCalendarConfig : IEntityTypeConfiguration<AppointmentCalendar>
 {
-    public void Configure(EntityTypeBuilder<WorkingCalendar> builder)
+    public void Configure(EntityTypeBuilder<AppointmentCalendar> builder)
     {
         builder
-            .ToTable("WorkingCalendar", SchemaNames.Identity)
+            .ToTable("AppointmentCalendar", SchemaNames.Identity)
             .IsMultiTenant();
 
         builder
             .HasOne<DoctorProfile>()
             .WithMany()
             .HasForeignKey("DoctorId");
+
+        builder
+            .HasOne<PatientProfile>()
+            .WithMany()
+            .HasForeignKey("PatientId");
 
         builder
             .HasOne<Appointment>()
@@ -169,6 +234,6 @@ public class WorkingCalendarConfig : IEntityTypeConfiguration<WorkingCalendar>
         builder
             .HasOne<TreatmentPlanProcedures>()
             .WithOne()
-            .HasForeignKey<WorkingCalendar>("PlanID").IsRequired(false);
+            .HasForeignKey<AppointmentCalendar>("PlanID").IsRequired(false);
     }
 }

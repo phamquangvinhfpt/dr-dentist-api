@@ -32,6 +32,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateOnly>("AppointmentDate")
                         .HasColumnType("date");
 
+                    b.Property<TimeSpan>("ComeAt")
+                        .HasColumnType("interval");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -80,6 +83,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<bool>("canFeedback")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.ToTable("Appointment", "Treatment");
@@ -113,6 +119,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("EmailContext")
+                        .HasColumnType("text");
+
+                    b.Property<string[]>("ImageUrl")
+                        .HasColumnType("text[]");
+
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -126,6 +138,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("StaffId")
                         .HasColumnType("text");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -137,8 +152,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StaffId")
-                        .IsUnique();
+                    b.HasIndex("StaffId");
 
                     b.ToTable("ContactInfor", "CustomerService");
 
@@ -149,6 +163,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AppointmentId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
@@ -193,6 +210,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
                     b.HasIndex("DoctorProfileId");
 
                     b.HasIndex("PatientProfileId");
@@ -222,6 +242,10 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string[]>("Images")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
@@ -232,9 +256,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Message")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<string>("ReceiverId")
+                        .HasColumnType("text");
 
                     b.Property<string>("SenderId")
                         .HasColumnType("text");
@@ -244,17 +270,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<bool>("isStaffSender")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("receiverId")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("SenderId");
+                    b.HasIndex("ReceiverId");
 
-                    b.HasIndex("receiverId");
+                    b.HasIndex("SenderId");
 
                     b.ToTable("PatientMessage", "CustomerService");
 
@@ -333,6 +353,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("MedicalRecordId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("RecordId")
                         .HasColumnType("uuid");
 
@@ -350,8 +373,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RecordId")
-                        .IsUnique();
+                    b.HasIndex("MedicalRecordId");
+
+                    b.HasIndex("RecordId");
 
                     b.ToTable("Diagnosis", "Treatment");
 
@@ -519,6 +543,182 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
+            modelBuilder.Entity("FSH.WebApi.Domain.Examination.Room", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RoomName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Room", "Treatment");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.ApplicationForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CalendarID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("TimeID")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserID")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CalendarID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("ApplicationForm", "Identity");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.AppointmentCalendar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AppointmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DoctorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan?>("EndTime")
+                        .HasColumnType("interval");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PatientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PlanID")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan?>("StartTime")
+                        .HasColumnType("interval");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId");
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("PlanID")
+                        .IsUnique();
+
+                    b.ToTable("AppointmentCalendar", "Identity");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.DoctorProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -527,6 +727,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<string>("Certification")
                         .HasColumnType("text");
+
+                    b.Property<string[]>("CertificationImage")
+                        .HasColumnType("text[]");
 
                     b.Property<string>("College")
                         .HasColumnType("text");
@@ -549,6 +752,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("Education")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -563,6 +769,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid>("TypeServiceID")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("WorkingType")
+                        .HasColumnType("integer");
+
                     b.Property<string>("YearOfExp")
                         .HasColumnType("text");
 
@@ -570,6 +782,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.HasIndex("DoctorId")
                         .IsUnique();
+
+                    b.HasIndex("TypeServiceID");
 
                     b.ToTable("DoctorProfile", "Identity");
 
@@ -714,6 +928,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("PatientCode")
                         .HasColumnType("text");
 
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -732,13 +949,60 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.TimeWorking", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AppointmentId")
+                    b.Property<Guid>("CalendarID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("interval");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("interval");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CalendarID");
+
+                    b.ToTable("TimeWorking", "Identity");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedBy")
@@ -756,11 +1020,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DoctorId")
+                    b.Property<Guid>("DoctorID")
                         .HasColumnType("uuid");
-
-                    b.Property<TimeSpan?>("EndTime")
-                        .HasColumnType("interval");
 
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
@@ -771,11 +1032,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("PlanID")
+                    b.Property<Guid>("RoomID")
                         .HasColumnType("uuid");
-
-                    b.Property<TimeSpan?>("StartTime")
-                        .HasColumnType("interval");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -785,17 +1043,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("DoctorId");
-
-                    b.HasIndex("PlanID")
-                        .IsUnique();
+                    b.HasIndex("DoctorID");
 
                     b.ToTable("WorkingCalendar", "Identity");
 
@@ -997,37 +1247,71 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Transaction", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("BankAbbreviation")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankSubAccId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveAccount")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveBankId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveBankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CorresponsiveName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CusumBalance")
                         .HasColumnType("numeric");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ErrorMessage")
+                    b.Property<string>("SubAccId")
+                        .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsSuccess")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
-                    b.Property<DateOnly>("TransactionDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("TransactionID")
+                    b.Property<string>("Tid")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("VirtualAccount")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VirtualAccountName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("When")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -1130,7 +1414,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<double>("TotalPrice")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("TypeServiceID")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TypeServiceID");
 
                     b.ToTable("Service", "Service");
 
@@ -1186,7 +1475,7 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.HasAnnotation("Finbuckle:MultiTenant", true);
                 });
 
-            modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
+            modelBuilder.Entity("FSH.WebApi.Domain.Service.TypeService", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1210,11 +1499,58 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("TypeDescription")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TypeName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TypeService", "Service");
+
+                    b.HasAnnotation("Finbuckle:MultiTenant", true);
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DoctorID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("LastModifiedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<Guid?>("RecordId")
+                    b.Property<Guid?>("PatientID")
                         .HasColumnType("uuid");
 
                     b.Property<string>("TenantId")
@@ -1222,9 +1558,16 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid?>("TreatmentID")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("RecordId")
+                    b.HasIndex("DoctorID");
+
+                    b.HasIndex("PatientID");
+
+                    b.HasIndex("TreatmentID")
                         .IsUnique();
 
                     b.ToTable("Prescription", "Treatment");
@@ -1294,6 +1637,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<Guid?>("AppointmentID")
                         .HasColumnType("uuid");
 
+                    b.Property<double>("Cost")
+                        .HasColumnType("double precision");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -1312,6 +1658,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Property<Guid?>("DoctorID")
                         .HasColumnType("uuid");
 
+                    b.Property<double>("FinalCost")
+                        .HasColumnType("double precision");
+
                     b.Property<Guid>("LastModifiedBy")
                         .HasColumnType("uuid");
 
@@ -1323,9 +1672,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
                     b.Property<Guid?>("PaymentDetailId")
                         .HasColumnType("uuid");
-
-                    b.Property<double>("Price")
-                        .HasColumnType("double precision");
 
                     b.Property<int>("RescheduleTime")
                         .HasColumnType("integer");
@@ -1346,9 +1692,6 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
-
-                    b.Property<double>("TotalCost")
-                        .HasColumnType("double precision");
 
                     b.HasKey("Id");
 
@@ -1708,12 +2051,16 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.ContactInfor", b =>
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.CustomerServices.ContactInfor", "StaffId");
+                        .WithMany()
+                        .HasForeignKey("StaffId");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.CustomerServices.Feedback", b =>
                 {
+                    b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.CustomerServices.Feedback", "AppointmentId");
+
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", "DoctorProfile")
                         .WithMany("Feedbacks")
                         .HasForeignKey("DoctorProfileId")
@@ -1739,12 +2086,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("SenderId")
+                        .HasForeignKey("ReceiverId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
-                        .HasForeignKey("receiverId")
+                        .HasForeignKey("SenderId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
@@ -1761,8 +2108,12 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Examination.Diagnosis", b =>
                 {
                     b.HasOne("FSH.WebApi.Domain.Examination.MedicalRecord", "MedicalRecord")
-                        .WithOne("Diagnosis")
-                        .HasForeignKey("FSH.WebApi.Domain.Examination.Diagnosis", "RecordId");
+                        .WithMany()
+                        .HasForeignKey("MedicalRecordId");
+
+                    b.HasOne("FSH.WebApi.Domain.Examination.MedicalRecord", null)
+                        .WithMany("Diagnosises")
+                        .HasForeignKey("RecordId");
 
                     b.Navigation("MedicalRecord");
                 });
@@ -1815,11 +2166,47 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("Indication");
                 });
 
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.ApplicationForm", b =>
+                {
+                    b.HasOne("FSH.WebApi.Domain.Identity.WorkingCalendar", null)
+                        .WithMany()
+                        .HasForeignKey("CalendarID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserID");
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.AppointmentCalendar", b =>
+                {
+                    b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId");
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId");
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.PatientProfile", null)
+                        .WithMany()
+                        .HasForeignKey("PatientId");
+
+                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", null)
+                        .WithOne()
+                        .HasForeignKey("FSH.WebApi.Domain.Identity.AppointmentCalendar", "PlanID");
+                });
+
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.DoctorProfile", b =>
                 {
                     b.HasOne("FSH.WebApi.Infrastructure.Identity.ApplicationUser", null)
                         .WithOne()
                         .HasForeignKey("FSH.WebApi.Domain.Identity.DoctorProfile", "DoctorId");
+
+                    b.HasOne("FSH.WebApi.Domain.Service.TypeService", null)
+                        .WithMany()
+                        .HasForeignKey("TypeServiceID");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.MedicalHistory", b =>
@@ -1847,19 +2234,22 @@ namespace Migrators.PostgreSQL.Migrations.Application
                         .HasForeignKey("FSH.WebApi.Domain.Identity.PatientProfile", "UserId");
                 });
 
+            modelBuilder.Entity("FSH.WebApi.Domain.Identity.TimeWorking", b =>
+                {
+                    b.HasOne("FSH.WebApi.Domain.Identity.WorkingCalendar", null)
+                        .WithMany()
+                        .HasForeignKey("CalendarID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.WorkingCalendar", b =>
                 {
-                    b.HasOne("FSH.WebApi.Domain.Appointments.Appointment", null)
-                        .WithMany()
-                        .HasForeignKey("AppointmentId");
-
                     b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
                         .WithMany()
-                        .HasForeignKey("DoctorId");
-
-                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", null)
-                        .WithOne()
-                        .HasForeignKey("FSH.WebApi.Domain.Identity.WorkingCalendar", "PlanID");
+                        .HasForeignKey("DoctorID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Payment", b =>
@@ -1905,6 +2295,13 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("Procedure");
                 });
 
+            modelBuilder.Entity("FSH.WebApi.Domain.Service.Service", b =>
+                {
+                    b.HasOne("FSH.WebApi.Domain.Service.TypeService", null)
+                        .WithMany()
+                        .HasForeignKey("TypeServiceID");
+                });
+
             modelBuilder.Entity("FSH.WebApi.Domain.Service.ServiceProcedures", b =>
                 {
                     b.HasOne("FSH.WebApi.Domain.Service.Procedure", null)
@@ -1920,12 +2317,20 @@ namespace Migrators.PostgreSQL.Migrations.Application
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
-                    b.HasOne("FSH.WebApi.Domain.Examination.MedicalRecord", "MedicalRecord")
+                    b.HasOne("FSH.WebApi.Domain.Identity.DoctorProfile", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("DoctorID");
+
+                    b.HasOne("FSH.WebApi.Domain.Identity.PatientProfile", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("PatientID");
+
+                    b.HasOne("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", "TreatmentPlanProcedures")
                         .WithOne("Prescription")
-                        .HasForeignKey("FSH.WebApi.Domain.Treatment.Prescription", "RecordId")
+                        .HasForeignKey("FSH.WebApi.Domain.Treatment.Prescription", "TreatmentID")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("MedicalRecord");
+                    b.Navigation("TreatmentPlanProcedures");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.PrescriptionItem", b =>
@@ -2033,11 +2438,9 @@ namespace Migrators.PostgreSQL.Migrations.Application
                 {
                     b.Navigation("BasicExamination");
 
-                    b.Navigation("Diagnosis");
+                    b.Navigation("Diagnosises");
 
                     b.Navigation("Indication");
-
-                    b.Navigation("Prescription");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Identity.DoctorProfile", b =>
@@ -2045,6 +2448,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("Feedbacks");
 
                     b.Navigation("MedicalRecords");
+
+                    b.Navigation("Prescriptions");
 
                     b.Navigation("TreatmentPlanProcedures");
                 });
@@ -2060,6 +2465,8 @@ namespace Migrators.PostgreSQL.Migrations.Application
                     b.Navigation("PatientFamily");
 
                     b.Navigation("Payments");
+
+                    b.Navigation("Prescriptions");
                 });
 
             modelBuilder.Entity("FSH.WebApi.Domain.Payments.Payment", b =>
@@ -2087,6 +2494,11 @@ namespace Migrators.PostgreSQL.Migrations.Application
             modelBuilder.Entity("FSH.WebApi.Domain.Treatment.Prescription", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("FSH.WebApi.Domain.Treatment.TreatmentPlanProcedures", b =>
+                {
+                    b.Navigation("Prescription");
                 });
 #pragma warning restore 612, 618
         }

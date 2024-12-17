@@ -10,10 +10,12 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Appointments;
 public class AppointmentResponse
 {
+    public string? PatientUserID { get; set; }
     public Guid AppointmentId { get; set; }
     public Guid PatientId { get; set; }
     public string? PatientCode { get; set; }
     public string? PatientName { get; set; }
+    public string? PatientPhone { get; set; }
     public Guid DentistId { get; set; }
     public string? DentistName { get; set; }
     public Guid ServiceId { get; set; }
@@ -26,4 +28,8 @@ public class AppointmentResponse
     public string? Notes { get; set; }
     public PaymentStatus PaymentStatus { get; set; }
     public double ServicePrice { get; set; }
+    public bool canFeedback { get; set; }
+    public bool isFeedback { get; set; }
+    public Guid RoomID { get; set; }
+    public string? RoomName { get; set; }
 }

@@ -30,6 +30,7 @@ public static class FSHResource
     public const string AuditLogs = nameof(AuditLogs);
     public const string Appointment = nameof(Appointment);
     public const string MedicalHistory = nameof(MedicalHistory);
+    public const string MedicalRecord = nameof(MedicalRecord);
     public const string ContactInformation = nameof(ContactInformation);
     public const string Feedback = nameof(Feedback);
     public const string PatientMessages = nameof(PatientMessages);
@@ -62,7 +63,7 @@ public static class FSHPermissions
         new("View Hangfire", FSHAction.View, FSHResource.Hangfire),
 
         // USERS
-        new("View Users", FSHAction.View, FSHResource.Users),
+        new("View Users", FSHAction.View, FSHResource.Users, new[] { ROOT, PATIENT, STAFF, DENTIST }),
         new("Search Users", FSHAction.Search, FSHResource.Users),
         new("Create Users", FSHAction.Create, FSHResource.Users),
         new("Update Users", FSHAction.Update, FSHResource.Users),
@@ -86,12 +87,13 @@ public static class FSHPermissions
 
         // FILES
         new("Upload files", FSHAction.Upload, FSHResource.Files, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+        new("Export files", FSHAction.Export, FSHResource.Files, new[] { ROOT, ADMIN }),
 
         // NOTIFICATIONS
-        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, STAFF, PATIENT }),
+        new("Send Notifications", FSHAction.Create, FSHResource.Notifications,  new[] { ROOT, DENTIST, STAFF, PATIENT }),
 
         // AUDIT LOGS
-        new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs),
+        new("View AuditLogs", FSHAction.View, FSHResource.AuditLogs, new[] { ROOT }),
 
         // Appointment
         new("View Appointment", FSHAction.View, FSHResource.Appointment, new[] { ROOT, PATIENT, STAFF, DENTIST }),
@@ -107,6 +109,13 @@ public static class FSHPermissions
         new("Delete Medical History", FSHAction.Delete, FSHResource.MedicalHistory, new[] { ROOT, STAFF }),
         new("Search Medical History", FSHAction.Search, FSHResource.MedicalHistory, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
+        // Medical Record
+        new("View Medical Record", FSHAction.View, FSHResource.MedicalRecord, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+        new("Create Medical Record", FSHAction.Create, FSHResource.MedicalRecord, new[] { DENTIST }),
+        new("Update Medical Record", FSHAction.Update, FSHResource.MedicalRecord, new[] { DENTIST }),
+        new("Delete Medical Record", FSHAction.Delete, FSHResource.MedicalRecord, new[] { ROOT, STAFF }),
+        new("Search Medical Record", FSHAction.Search, FSHResource.MedicalRecord, new[] { ROOT, PATIENT, STAFF, DENTIST }),
+
         // Contact Information
         new("View Contact Information", FSHAction.View, FSHResource.ContactInformation, new[] { ROOT, PATIENT, STAFF, DENTIST }),
         new("Create Contact Information", FSHAction.Create, FSHResource.ContactInformation, new[] { ROOT }),
@@ -121,11 +130,11 @@ public static class FSHPermissions
         new("Search Feedback", FSHAction.Search, FSHResource.Feedback, new[] { ROOT, PATIENT, STAFF, DENTIST }),
 
         // Patient Messages
-        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { ROOT, PATIENT, STAFF }),
-        new("Create Patient Messages", FSHAction.Create, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Update Patient Messages", FSHAction.Update, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Delete Patient Messages", FSHAction.Delete, FSHResource.PatientMessages, new[] { PATIENT }),
-        new("Search Patient Messages", FSHAction.Search, FSHResource.PatientMessages, new[] { ROOT, PATIENT, STAFF }),
+        new("View Patient Messages", FSHAction.View, FSHResource.PatientMessages, new[] { PATIENT, STAFF, DENTIST }),
+        new("Create Patient Messages", FSHAction.Create, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Update Patient Messages", FSHAction.Update, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Delete Patient Messages", FSHAction.Delete, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
+        new("Search Patient Messages", FSHAction.Search, FSHResource.PatientMessages, new[] { PATIENT, STAFF }),
 
         // Diagnosis
         new("View Diagnosis", FSHAction.View, FSHResource.Diagnosis, new[] { ROOT, PATIENT, STAFF, DENTIST }),
@@ -219,7 +228,6 @@ public static class FSHPermissions
     public static IReadOnlyList<FSHPermission> Staff { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(STAFF)).ToArray());
     public static IReadOnlyList<FSHPermission> Patient { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(PATIENT)).ToArray());
     public static IReadOnlyList<FSHPermission> Guest { get; } = new ReadOnlyCollection<FSHPermission>(_all.Where(p => p.role.Contains(GUEST)).ToArray());
-
 }
 
 public record FSHPermission(string Description, string Action, string Resource, string[] role)

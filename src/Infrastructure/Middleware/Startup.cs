@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FSH.WebApi.Infrastructure.Redis;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,11 +13,20 @@ internal static class Startup
     internal static IServiceCollection AddTenantIdMiddleware(this IServiceCollection services) =>
         services.AddScoped<TenantIdMiddleware>();
 
+    internal static IServiceCollection AddQueueRequest(this IServiceCollection services)
+    {
+        services.AddScoped<QueueMiddleware>();
+        services.AddScoped<RequestQueue>();
+        return services;
+    }
     internal static IApplicationBuilder UseExceptionMiddleware(this IApplicationBuilder app) =>
         app.UseMiddleware<ExceptionMiddleware>();
 
     internal static IApplicationBuilder UseTenantIdMiddleware(this IApplicationBuilder app) =>
         app.UseMiddleware<TenantIdMiddleware>();
+
+    internal static IApplicationBuilder UseQueueRequestMiddleware(this IApplicationBuilder app) =>
+        app.UseMiddleware<QueueMiddleware>();
 
     internal static IServiceCollection AddRequestLogging(this IServiceCollection services, IConfiguration config)
     {

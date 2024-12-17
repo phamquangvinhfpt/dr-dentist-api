@@ -15,5 +15,7 @@ public class ServiceDTO
     public DateTime CreateDate { get; set; }
     public bool IsActive { get; set; } = true;
     public double TotalPrice { get; set; } = 0;
+    public Guid TypeServiceID { get; set; }
+    public string? TypeName { get; set; }
     public List<ProcedureDTO>? Procedures { get; set; }
 }

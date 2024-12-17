@@ -18,17 +18,26 @@ internal static class Startup
         if (!signalRSettings.UseBackplane)
         {
             services.AddSingleton<PresenceTracker>();
-            services.AddSignalR();
+            services.AddSignalR(options =>
+            {
+                options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+            });
         }
         else
         {
+            services.AddSingleton<PresenceTracker>();
             var backplaneSettings = config.GetSection("SignalRSettings:Backplane").Get<SignalRSettings.Backplane>();
             if (backplaneSettings is null) throw new InvalidOperationException("Backplane enabled, but no backplane settings in config.");
             switch (backplaneSettings.Provider)
             {
                 case "redis":
                     if (backplaneSettings.StringConnection is null) throw new InvalidOperationException("Redis backplane provider: No connectionString configured.");
-                    services.AddSignalR().AddStackExchangeRedis(backplaneSettings.StringConnection, options =>
+                    services.AddSignalR(options =>
+                    {
+                        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                        options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    }).AddStackExchangeRedis(backplaneSettings.StringConnection, options =>
                     {
                         options.Configuration.AbortOnConnectFail = false;
                     });
@@ -51,10 +60,6 @@ internal static class Startup
             options.CloseOnAuthenticationExpiration = true;
         });
 
-        endpoints.MapHub<ChatHub>("/chat", options =>
-        {
-            options.CloseOnAuthenticationExpiration = true;
-        });
         return endpoints;
     }
 }

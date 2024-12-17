@@ -1,18 +1,21 @@
 namespace FSH.WebApi.Domain.Payments;
 
-public class Transaction : BaseEntity, IAggregateRoot
+public class Transaction
 {
-    public string TransactionID { get; set; }
-    public decimal Amount { get; set; }
+    public int Id { get; set; }
+    public string Tid { get; set; }
     public string Description { get; set; }
-    public DateOnly TransactionDate { get; set; }
-    public TransactionType Type { get; set; }
-    public bool IsSuccess { get; set; }
-    public string? ErrorMessage { get; set; }
-}
-
-public enum TransactionType
-{
-    OUT,
-    IN
+    public decimal Amount { get; set; }
+    public decimal CusumBalance { get; set; }
+    public DateTime When { get; set; }
+    public string BankSubAccId { get; set; }
+    public string SubAccId { get; set; }
+    public string BankName { get; set; }
+    public string BankAbbreviation { get; set; }
+    public string? VirtualAccount { get; set; }
+    public string? VirtualAccountName { get; set; }
+    public string CorresponsiveName { get; set; }
+    public string CorresponsiveAccount { get; set; }
+    public string CorresponsiveBankId { get; set; }
+    public string CorresponsiveBankName { get; set; }
 }

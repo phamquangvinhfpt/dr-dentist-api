@@ -8,6 +8,7 @@ public class Feedback : AuditableEntity, IAggregateRoot
     public Guid? PatientProfileId { get; set; }
     public Guid? DoctorProfileId { get; set; }
     public Guid ServiceId { get; set; }
+    public Guid AppointmentId { get; set; }
     public string Message { get; set; } = string.Empty;
     public int Rating { get; set; }
 

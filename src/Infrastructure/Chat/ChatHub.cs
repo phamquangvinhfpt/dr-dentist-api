@@ -83,41 +83,6 @@ public class ChatHub : Hub, ITransientService
         _logger.LogInformation("A client disconnected from ChatHub: {connectionId}", Context.ConnectionId);
     }
 
-    public async Task<List<ListUserDto>> GetListUserDto()
-    {
-        if (_currentTenant is null)
-        {
-            throw new UnauthorizedException("Authentication Failed.");
-        }
-
-        return await _chatService.GetListUserDtoAsync();
-    }
-
-    public async Task SendMessage(string? receiverId, string message)
-    {
-        if (_currentTenant is null)
-        {
-            throw new UnauthorizedException("Authentication Failed.");
-        }
-
-        _chatService.SetCurrentUser(Context.User);
-
-        var listStaff = await _userManager.GetUsersInRoleAsync(FSHRoles.Staff);
-        // remove current user from list
-        listStaff = listStaff.Where(s => s.Id != _currentUser.GetUserId().ToString()).ToList();
-
-        var sentMessage = await _chatService.SendMessageAsync(receiverId, message, default);
-        if (_currentUser.IsInRole(FSHRoles.Staff))
-        {
-            await Clients.User(receiverId).SendAsync("ReceiveMessage", sentMessage);
-            await Clients.Users(listStaff.Select(s => s.Id)).SendAsync("ReceiveMessage", sentMessage);
-        }
-        else
-        {
-            await Clients.Users(listStaff.Select(s => s.Id)).SendAsync("ReceiveMessage", sentMessage);
-        }
-    }
-
     public async Task<IEnumerable<ListMessageDto>> GetConversation(string conversionId)
     {
         if (_currentTenant is null)

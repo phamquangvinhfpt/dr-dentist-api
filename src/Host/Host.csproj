@@ -46,12 +46,12 @@
         </None>
     </ItemGroup>
     <ItemGroup>
+      <Content Remove="Email Templates\email-ban-user.cshtml" />
       <Content Remove="Email Templates\join-my-team.cshtml" />
       <Content Remove="Email Templates\reset-password.cshtml" />
     </ItemGroup>
     <ItemGroup>
       <Folder Include="Databases\Host\" />
-      <Folder Include="Files\" />
     </ItemGroup>
     <ItemGroup>
       <Content Update="PaperTemplates\paper.cshtml">

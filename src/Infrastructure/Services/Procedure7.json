@@ -1,0 +1,30 @@
+[
+  {
+    "id": "7e8f9a10-1112-1314-1516-1a2b3c4d5e6f",
+    "name": "Mài Cùi Răng và Lấy Dấu",
+    "description": "Mài cùi răng theo thiết kế, lấy dấu hàm bằng vật liệu silicon chất lượng cao để đảm bảo độ chính xác cho mão sứ",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 1000000.00
+  },
+  {
+    "id": "8f1a2b3c-1718-1920-2122-1a2b3c4d5e6f",
+    "name": "Thiết Kế và Chọn Màu Răng Sứ, sản xuất",
+    "description": "Sử dụng công nghệ CAD/CAM để thiết kế mão sứ, lựa chọn màu sắc phù hợp với răng thật, tư vấn cho khách hàng về kiểu dáng và form răng",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 7500000.00
+  },
+  {
+    "id": "9a1b2c3d-2324-2526-2728-1a2b3c4d5e6f",
+    "name": "Làm Răng Tạm",
+    "description": "Thiết kế và gắn răng tạm thời trong thời gian chờ răng sứ được sản xuất, đảm bảo tính thẩm mỹ và chức năng ăn nhai",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 500000.00
+  },
+  {
+    "id": "c3d4e5f6-3132-3334-3536-1a2b3c4d5e6f",
+    "name": "Gắn Mão Sứ Vĩnh Viễn",
+    "description": "Gắn mão sứ bằng cement chuyên dụng, kiểm tra lần cuối về độ khít sát, khớp cắn và thẩm mỹ",
+    "createdBy": "f56b04ea-d95d-4fab-be50-2fd2ca1561ff",
+    "price": 800000.00
+  }
+]

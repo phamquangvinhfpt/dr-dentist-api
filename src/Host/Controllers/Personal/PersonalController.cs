@@ -1,8 +1,8 @@
 using FSH.WebApi.Application.Auditing;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Profile;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
 using System.Security.Claims;
 
 namespace FSH.WebApi.Host.Controllers.Identity;
@@ -11,9 +11,9 @@ public class PersonalController : VersionNeutralApiController
 {
     private readonly IUserService _userService;
     private readonly IAuditService _auditService;
-    private readonly IWorkingCalendarService _workingCalendarService;
+    private readonly IAppointmentCalendarService _workingCalendarService;
 
-    public PersonalController(IUserService userService, IAuditService auditService, IWorkingCalendarService workingCalendarService)
+    public PersonalController(IUserService userService, IAuditService auditService, IAppointmentCalendarService workingCalendarService)
     {
         _userService = userService;
         _auditService = auditService;

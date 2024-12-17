@@ -1,4 +1,4 @@
-﻿using FSH.WebApi.Application.Identity.WorkingCalendars;
+﻿using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +10,13 @@ public class RescheduleRequest : IRequest<string>
 {
     public Guid AppointmentID { get; set; }
     public DateOnly AppointmentDate { get; set; }
-    public TimeSpan StartTime {  get; set; }
+    public TimeSpan StartTime { get; set; }
     public TimeSpan Duration { get; set; }
 }
 
 public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
 {
-    public RescheduleRequestValidator(IAppointmentService appointmentService, IWorkingCalendarService workingCalendarService)
+    public RescheduleRequestValidator(IAppointmentService appointmentService, IAppointmentCalendarService workingCalendarService)
     {
         RuleFor(p => p.AppointmentID)
             .NotEmpty()
@@ -44,7 +44,7 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
                     return false;
                 }
@@ -52,9 +52,9 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
             })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
-                     return "Start time must be between 8:00 AM and 5:00 PM";
+                     return "Start time must be between 8:00 AM and 10:00 PM";
                 }
                 return "Start time must be greater than current time";
             });
@@ -64,8 +64,8 @@ public class RescheduleRequestValidator : CustomValidator<RescheduleRequest>
            .Must(duration => duration >= TimeSpan.FromMinutes(30) && duration <= TimeSpan.FromHours(1))
            .WithMessage("Duration must be between 30 minutes and 1 hours")
            .Must((request, duration) =>
-               (request.StartTime + duration) <= TimeSpan.FromHours(17))
-           .WithMessage("Appointment must end before 5:00 PM");
+               (request.StartTime + duration) <= TimeSpan.FromHours(22))
+           .WithMessage("Appointment must end before 10:00 PM");
     }
 }
 

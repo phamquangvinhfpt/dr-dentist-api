@@ -8,5 +8,5 @@ public class ListUserDto : IDto
     public string? SenderName { get; set; }
     public bool IsRead { get; set; }
     public string? ImageUrl { get; set; }
-    public DateTime CreatedOn { get; set; }
+    public DateTime? CreatedOn { get; set; }
 }

@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <style type="text/css">
+        /* CLIENT-SPECIFIC STYLES */
+        body, table, td, a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        /* RESET STYLES */
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        table {
+            border-collapse: collapse !important;
+        }
+
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        /* iOS BLUE LINKS */
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+
+        /* MOBILE STYLES */
+        @("@")media screen and (max-width:600px) {
+            h1 {
+                font-size: 32px !important;
+                line-height: 32px !important;
+            }
+        }
+
+        /* ANDROID CENTER FIX */
+        div[style*="margin: 16px 0;"] {
+            margin: 0 !important;
+        }
+    </style>
+</head>
+
+<body style="background-color: #0a0b14; margin: 0 !important; padding: 0 !important;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center" style="padding: 0px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="center" style="padding: 40px 30px 40px 30px; border-radius: 4px 4px 0px 0px; color: #d1d5db; font-family: Arial, sans-serif;">
+                            <h1 style="font-size: 24px; margin: 0;">🦷 TƯ VẤN NHA KHOA 🦷</h1>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="padding: 0px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="left" style="padding: 20px 30px 40px 30px; color: #d1d5db; font-family: Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                            <p style="margin-bottom: 20px;">Kính gửi khách hàng có số điện thoại @Model?.Phone,</p>
+                            
+                            <p style="margin-bottom: 20px;">Cảm ơn bạn đã quan tâm đến dịch vụ nha khoa của chúng tôi. Dưới đây là thông tin tư vấn chi tiết cho vấn đề của bạn:</p>
+
+                            <div style="background-color: #374151; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                <p style="color: #9ca3af; margin-bottom: 0;">@Model?.ConsultContent</p>
+                            </div>
+
+                            <p style="margin-bottom: 20px;">Để được hỗ trợ thêm hoặc đặt lịch khám, bạn có thể liên hệ với chúng tôi qua:</p>
+
+                            <table border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
+                                <tr>
+                                    <td align="center" style="border-radius: 20px;" bgcolor="#3b82f6">
+                                        <a href="tel:@Model?.ClinicPhone" target="_blank" style="font-size: 16px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 15px 25px; border-radius: 20px; display: inline-block;">
+                                            Gọi Ngay
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div style="text-align: center; margin-top: 20px;">
+                                <p style="color: #9ca3af; font-size: 16px;">Hotline: @Model?.ClinicPhone</p>
+                                <p style="color: #9ca3af; font-size: 16px;">Địa chỉ: @Model?.ClinicAddress</p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td align="center" style="padding: 30px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="center" style="padding: 30px 30px 30px 30px; border-radius: 4px 4px 4px 4px; color: #9ca3af; font-family: Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px;">
+                            <p style="margin: 0;">© 2024 Dental Clinic. All rights reserved.</p>
+                            <p style="margin-top: 10px;">Email này được gửi tự động từ hệ thống tư vấn của chúng tôi.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+         <tr>
+            <td align="center" style="padding: 30px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#FFECD1" align="center"
+                            style="padding: 30px 30px 30px 30px; border-radius: 4px 4px 4px 4px; color: #666666; font-family: 'Montserrat', Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                            <h2 style="font-size: 20px; font-weight: 400; color: #111111; margin: 0;">
+                                Để biết thêm về hệ thống chúng tôi xin nhấn vào link: 
+                            </h2>
+                            <p style="margin: 0;">
+                                <a href="https://guardianexam.com" target="_blank" style="color: #154ec1;">
+                                    Tìm hiểu thêm
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

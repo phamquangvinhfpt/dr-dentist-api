@@ -1,10 +1,11 @@
+using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Shared.Authorization;
 
 namespace FSH.WebApi.Application.Identity.Users;
 
 public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
 {
-    public CreateUserRequestValidator(IUserService userService, ICurrentUser currentUser)
+    public CreateUserRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService)
     {
         RuleFor(u => u.Email).Cascade(CascadeMode.Stop)
             .NotEmpty()
@@ -52,13 +53,13 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
         RuleFor(p => p.DoctorProfile).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .When(p => p.Role == FSHRoles.Dentist)
-            .SetValidator(new UpdateDoctorProfileVaidator(userService, currentUser))
+            .SetValidator(new UpdateDoctorProfileVaidator(userService, currentUser, serviceService))
             .When(p => p.Role == FSHRoles.Dentist);
 
         RuleFor(p => p.Role).Cascade(CascadeMode.Stop)
             .MustAsync(async (_, role, context) =>
             {
-                var r = true;
+                bool r = true;
                 if (role == FSHRoles.Staff || role == FSHRoles.Dentist)
                 {
                     r = currentUser.IsInRole(FSHRoles.Admin);

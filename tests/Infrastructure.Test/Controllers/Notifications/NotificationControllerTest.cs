@@ -12,6 +12,7 @@ using Xunit;
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Claims;
+using FSH.WebApi.Infrastructure.Chat;
 using MediatR;
 
 namespace Infrastructure.Test.Controllers.Notifications;
@@ -22,12 +23,14 @@ public class NotificationsControllerTests
     private readonly Mock<ICurrentUser> _currentUserMock;
     private readonly Mock<ISender> _mediatorMock;
     private readonly NotificationsController _controller;
+    private readonly Mock<IChatService> _chatServiceMock;
 
     public NotificationsControllerTests()
     {
         _repositoryMock = new Mock<IRepository<Notification>>();
+        _chatServiceMock = new Mock<IChatService>();
         _currentUserMock = new Mock<ICurrentUser>();
-        _controller = new NotificationsController();
+        _controller = new NotificationsController(_chatServiceMock.Object);
         _mediatorMock = new Mock<ISender>();
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("127.0.0.1");

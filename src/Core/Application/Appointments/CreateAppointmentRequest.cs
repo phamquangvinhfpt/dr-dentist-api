@@ -1,7 +1,7 @@
 ﻿using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
-using FSH.WebApi.Application.Identity.WorkingCalendars;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Shared.Authorization;
 using System;
@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FSH.WebApi.Application.Appointments;
-public class CreateAppointmentRequest : IRequest<AppointmentDepositRequest>
+public class CreateAppointmentRequest : IRequest<PayAppointmentRequest>
 {
     public string? PatientId { get; set; }
     public string? DentistId { get; set; }
@@ -24,7 +24,7 @@ public class CreateAppointmentRequest : IRequest<AppointmentDepositRequest>
 
 public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointmentRequest>
 {
-    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService, IWorkingCalendarService workingCalendarService)
+    public CreateAppointmentRequestValidator(IUserService userService, ICurrentUser currentUser, IServiceService serviceService, IAppointmentService appointmentService, IAppointmentCalendarService workingCalendarService)
     {
         RuleFor(p => p.PatientId)
             .NotNull()
@@ -75,7 +75,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                 {
                     return startTime > currentTime;
                 }
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
                     return false;
                 }
@@ -84,9 +84,9 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
                 })
             .WithMessage((request, startTime) =>
             {
-                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(17))
+                if (startTime < TimeSpan.FromHours(8) || startTime > TimeSpan.FromHours(22))
                 {
-                    return "Start time must be between 8:00 AM and 5:00 PM";
+                    return "Start time must be between 8:00 AM and 10:00 PM";
                 }
                 return "Start time must be greater than current time";
             });
@@ -97,8 +97,8 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
             .Must(duration => duration >= TimeSpan.FromMinutes(30) && duration <= TimeSpan.FromHours(1))
             .WithMessage("Duration must be between 30 minutes and 1 hours")
             .Must((request, duration) =>
-                (request.StartTime + duration) <= TimeSpan.FromHours(17))
-            .WithMessage("Appointment must end before 5:00 PM");
+                (request.StartTime + duration) <= TimeSpan.FromHours(22))
+            .WithMessage("Appointment must end before 10:00 PM");
 
         //RuleFor(p => p.Type)
         //    .IsInEnum()
@@ -114,7 +114,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
         RuleFor(p => p)
             .MustAsync(async (request, cancellation) =>
                 await appointmentService.CheckAvailableAppointment(request.PatientId))
-            .WithMessage((request, cancellation) => $"User{request.PatientId} has an appointment that is waiting for deposit");
+            .WithMessage((request, cancellation) => $"Patient has an available appointment");
 
         RuleFor(p => p)
             .MustAsync(async (request, cancellation) =>
@@ -128,7 +128,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
     }
 }
 
-public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, AppointmentDepositRequest>
+public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointmentRequest, PayAppointmentRequest>
 {
     private readonly IAppointmentService appointmentService;
     private readonly IStringLocalizer<CreateAppointmentRequest> _t;
@@ -139,7 +139,7 @@ public class CreateAppointmentRequestHandler : IRequestHandler<CreateAppointment
         _t = t;
     }
 
-    public Task<AppointmentDepositRequest> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
+    public Task<PayAppointmentRequest> Handle(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
         return appointmentService.CreateAppointment(request, cancellationToken);
     }
