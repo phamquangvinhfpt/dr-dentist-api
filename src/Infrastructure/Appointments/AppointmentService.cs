@@ -47,7 +47,7 @@ internal class AppointmentService : IAppointmentService
     private static string APPOINTMENT = "APPOINTMENT";
     private static string FOLLOW = "FOLLOW";
     private static string NON = "NON";
-    private static string RESCHEDULE = "RESCHEDULE";
+    private static string REEXAM = "REEXAM";
     public AppointmentService(
         ApplicationDbContext db,
         ICacheService cacheService,
