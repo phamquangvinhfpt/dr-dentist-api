@@ -399,17 +399,18 @@ internal class AppointmentService : IAppointmentService
             Console.WriteLine(_currentUserService.GetUserId());
             string user_role = _currentUserService.GetRole();
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID) ?? throw new NotFoundException("Error when find appointment.");
-            var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
-            if (appointment.PatientId != patientProfile.Id)
-            {
-                throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
-            }
+
             if (appointment.SpamCount < 3)
             {
                 appointment.SpamCount += 1;
             }
             else if(appointment.SpamCount == 3 && user_role == FSHRoles.Patient)
             {
+                var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
+                if (appointment.PatientId != patientProfile.Id)
+                {
+                    throw new UnauthorizedAccessException("Only Patient can reschedule their appointment");
+                }
                 var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
                 await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddDays(7));
@@ -1027,16 +1028,7 @@ internal class AppointmentService : IAppointmentService
 
             await _db.SaveChangesAsync(cancellationToken);
             _cacheService.Remove(request.PatientCode);
-            var keys = await _cacheService.GetAsync<List<string>>(APPOINTMENT);
-            if (keys == null)
-            {
-                return;
-            }
-            foreach (string key in keys)
-            {
-                _cacheService.Remove(key);
-            }
-            _cacheService.Remove(APPOINTMENT);
+
             var notification = new BasicNotification
             {
                 Message = "Payment has been completed!",
@@ -1047,6 +1039,7 @@ internal class AppointmentService : IAppointmentService
 
             var user = await _userManager.FindByIdAsync(query.Patient.UserId);
             await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -1536,6 +1529,53 @@ internal class AppointmentService : IAppointmentService
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message, ex);
+        }
+    }
+    public Task DeleteRedisCode()
+    {
+        try
+        {
+            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+            if (key1a != null)
+            {
+                foreach (string key in key1a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(APPOINTMENT);
+            }
+            var key2a = _cacheService.Get<HashSet<string>>(NON);
+            if (key2a != null)
+            {
+                foreach (string key in key2a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(NON);
+            }
+            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
+            if (key3a != null)
+            {
+                foreach (string key in key3a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(FOLLOW);
+            }
+            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
+            if (key4a != null)
+            {
+                foreach (string key in key4a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(REEXAM);
+            }
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
         }
     }
 }

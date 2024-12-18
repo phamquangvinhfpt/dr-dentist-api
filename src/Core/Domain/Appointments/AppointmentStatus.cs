@@ -7,5 +7,6 @@ public enum AppointmentStatus
     Confirmed,
     Come,
     Cancelled,
-    Done
+    Done,
+    Examinated
 }

@@ -40,6 +40,10 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly INotificationService _notificationService;
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
+    private static string APPOINTMENT = "APPOINTMENT";
+    private static string FOLLOW = "FOLLOW";
+    private static string REEXAM = "REEXAM";
+    private static string NON = "NON";
 
     public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService)
     {
@@ -130,6 +134,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -228,6 +233,10 @@ internal class TreatmentPlanService : ITreatmentPlanService
             var plan = await _db.TreatmentPlanProcedures
                 .FirstOrDefaultAsync(p => p.Id == id);
 
+            if(plan == null)
+            {
+                throw new Exception("The plan is not found.");
+            }
 
             if (plan.Status != Domain.Treatment.TreatmentPlanStatus.Active)
             {
@@ -241,12 +250,43 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             var cal = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
                 ?? throw new Exception("Calendar is not found.");
+            var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
+            var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.Id == plan.ServiceProcedureId);
+
+            if(ser_pro.StepOrder == 1)
+            {
+                appointment.Status = AppointmentStatus.Examinated;
+            }
+            else
+            {
+                var past_procedure = await _db.ServiceProcedures
+                    .Where(p => p.ServiceId == ser_pro.ServiceId && p.StepOrder == (ser_pro.StepOrder - 1))
+                    .FirstOrDefaultAsync();
+
+                var past_plan = await _db.TreatmentPlanProcedures
+                    .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == appointment.Id)
+                    .FirstOrDefaultAsync();
+
+                var hasCalendar = await _db.AppointmentCalendars
+                    .FirstOrDefaultAsync(p => p.PlanID == past_plan.Id);
+
+                if (hasCalendar == null)
+                {
+                    throw new Exception("The previous procedure is not done");
+                }
+                //else
+                //{
+                //    if (request.TreatmentDate < hasCalendar.Date)
+                //    {
+                //        throw new Exception("Warning: the plan can not do when the previous plan in progress");
+                //    }
+                //}
+            }
 
             plan.Status = Domain.Treatment.TreatmentPlanStatus.Completed;
             cal.Status = Domain.Identity.CalendarStatus.Success;
 
-            var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
-            var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed);
+            var isCompleted = _db.TreatmentPlanProcedures.Count(p => p.AppointmentID == plan.AppointmentID && p.Status != Domain.Treatment.TreatmentPlanStatus.Completed && p.Id != plan.Id);
 
             if (isCompleted == 0)
             {
@@ -265,6 +305,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
             return _t["Success"];
         }
         catch (Exception ex)
@@ -612,6 +653,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
             plan.Plan.StartTime = request.TreatmentTime;
 
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
             return _t["Success"];
         }
         catch (Exception ex)
@@ -619,6 +662,53 @@ internal class TreatmentPlanService : ITreatmentPlanService
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
+        }
+    }
+    public Task DeleteRedisCode()
+    {
+        try
+        {
+            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+            if (key1a != null)
+            {
+                foreach (string key in key1a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(APPOINTMENT);
+            }
+            var key2a = _cacheService.Get<HashSet<string>>(NON);
+            if (key2a != null)
+            {
+                foreach (string key in key2a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(NON);
+            }
+            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
+            if (key3a != null)
+            {
+                foreach (string key in key3a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(FOLLOW);
+            }
+            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
+            if (key4a != null)
+            {
+                foreach (string key in key4a)
+                {
+                    _cacheService.Remove(key);
+                }
+                _cacheService.Remove(REEXAM);
+            }
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
         }
     }
 }

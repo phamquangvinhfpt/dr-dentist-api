@@ -56,6 +56,7 @@ internal class FeedbackService : IFeedbackService
                 AppointmentId = request.AppointmentID,
                 PatientProfileId = appointment.PatientId,
                 DoctorProfileId = appointment.DentistId,
+                ServiceId = appointment.ServiceId,
                 Message = request.Message,
                 Rating = request.Rating,
                 CreatedBy = _currentUserService.GetUserId(),
