@@ -1052,7 +1052,7 @@ internal class ApplicationDbSeeder
                 var random = new Random();
                 var currentDate = DateOnly.FromDateTime(DateTime.Now);
                 var appointments = _db.Appointments.ToList();
-
+                var payDetail = new List<Domain.Payments.PaymentDetail>();
                 foreach (var appointment in appointments)
                 {
                     if (appointment.Status == AppointmentStatus.Come)
@@ -1071,7 +1071,6 @@ internal class ApplicationDbSeeder
                             Status = Domain.Payments.PaymentStatus.Completed,
                             FinalPaymentDate = appointment.AppointmentDate,
                         }).Entity;
-                        var payDetail = new List<Domain.Payments.PaymentDetail>();
                         var sps = _db.ServiceProcedures.Where(p => p.ServiceId == s.Id)
                             .OrderBy(p => p.StepOrder)
                             .Select(s => new
@@ -1090,6 +1089,7 @@ internal class ApplicationDbSeeder
                                 ProcedureID = item.Procedure.Id,
                                 PaymentAmount = item.Procedure.Price,
                                 PaymentStatus = Domain.Payments.PaymentStatus.Completed,
+                                PaymentDay = d,
                             });
                             var date = d.AddDays(next++);
                             // seed treatment plan
@@ -1188,7 +1188,6 @@ internal class ApplicationDbSeeder
                                 CreatedBy = appointment.PatientId
                             });
                         }
-
                     }
                     else
                     {
@@ -1206,7 +1205,6 @@ internal class ApplicationDbSeeder
                             Method = Domain.Payments.PaymentMethod.None,
                             Status = Domain.Payments.PaymentStatus.Incomplete,
                         }).Entity;
-                        var payDetail = new List<Domain.Payments.PaymentDetail>();
                         var sps = _db.ServiceProcedures.Where(s => s.ServiceId == s.Id)
                             .OrderBy(p => p.StepOrder)
                             .Select(s => new
@@ -1257,6 +1255,7 @@ internal class ApplicationDbSeeder
                         });
                     }
                 }
+                _db.PaymentDetails.AddRange(payDetail);
                 _db.SaveChanges();
                 await SeedNonDoctorAppointmentAsync();
                 await SeedPatientDemoAsync();
