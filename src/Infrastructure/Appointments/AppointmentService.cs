@@ -1482,7 +1482,7 @@ internal class AppointmentService : IAppointmentService
             foreach (var doctor in doctors) {
                 bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.DoctorId);
 
-                if (check) {
+                if (!check) {
                     var user = await _userManager.FindByIdAsync(doctor.DoctorId);
                     result.Add(new GetDoctorResponse
                     {
