@@ -360,6 +360,7 @@ internal partial class UserService : IUserService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
         }
     }
 
@@ -805,45 +806,50 @@ internal partial class UserService : IUserService
             result.Email = user.Email;
             result.Gender = user.Gender;
             result.ImageUrl = user.ImageUrl;
-            result.Rating = Math.Round(totalRating.AverageRating, 0);
-            result.TotalFeedback = totalRating?.TotalFeedbacks;
             result.DoctorProfile = dProfile;
-            result.DoctorFeedback = new List<FeedBackDoctorResponse>();
-
-            foreach (var ratingGroup in feedbackByRating)
+            result.Rating = 0;
+            result.TotalFeedback = 0;
+            if (totalRating != null)
             {
-                var feedbackDoctorResponse = new FeedBackDoctorResponse
+                result.Rating = Math.Round(totalRating.AverageRating, 0);
+                result.TotalFeedback = totalRating?.TotalFeedbacks;
+                result.DoctorFeedback = new List<FeedBackDoctorResponse>();
+
+                foreach (var ratingGroup in feedbackByRating)
                 {
-                    RatingType = ratingGroup.Rating,
-                    TotalRating = ratingGroup.TotalFeedbacks,
-                    Feedbacks = new List<FeedBackResponse>()
-                };
-
-                foreach (var feedback in ratingGroup.Feedbacks)
-                {
-                    var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
-
-                    var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
-                    var patientUser = patientProfile != null ?
-                        await _userManager.FindByIdAsync(patientProfile.UserId) : null;
-
-                    var feedbackResponse = new FeedBackResponse
+                    var feedbackDoctorResponse = new FeedBackDoctorResponse
                     {
-                        FeedbackID = feedback.Id,
-                        ServiceID = feedback.ServiceId,
-                        ServiceName = service?.ServiceName,
-                        PatientID = patientUser.Id,
-                        PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
-                        CreateDate = feedback.CreatedOn,
-                        Ratings = feedback.Rating,
-                        Message = feedback.Message,
-                        CanFeedback = feedback.Appointment.canFeedback
+                        RatingType = ratingGroup.Rating,
+                        TotalRating = ratingGroup.TotalFeedbacks,
+                        Feedbacks = new List<FeedBackResponse>()
                     };
 
-                    feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);
-                }
+                    foreach (var feedback in ratingGroup.Feedbacks)
+                    {
+                        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
 
-                result.DoctorFeedback.Add(feedbackDoctorResponse);
+                        var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
+                        var patientUser = patientProfile != null ?
+                            await _userManager.FindByIdAsync(patientProfile.UserId) : null;
+
+                        var feedbackResponse = new FeedBackResponse
+                        {
+                            FeedbackID = feedback.Id,
+                            ServiceID = feedback.ServiceId,
+                            ServiceName = service?.ServiceName,
+                            PatientID = patientUser.Id,
+                            PatientName = patientUser != null ? $"{patientUser.FirstName} {patientUser.LastName}" : null,
+                            CreateDate = feedback.CreatedOn,
+                            Ratings = feedback.Rating,
+                            Message = feedback.Message,
+                            CanFeedback = feedback.Appointment.canFeedback
+                        };
+
+                        feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);
+                    }
+
+                    result.DoctorFeedback.Add(feedbackDoctorResponse);
+                }
             }
         }
         catch (Exception ex)

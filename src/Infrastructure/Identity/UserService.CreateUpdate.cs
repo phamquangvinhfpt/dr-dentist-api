@@ -201,7 +201,7 @@ internal partial class UserService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
     public async Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken)
