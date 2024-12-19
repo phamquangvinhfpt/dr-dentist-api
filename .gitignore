@@ -461,6 +461,8 @@ $RECYCLE.BIN/
 
 ##Igore all from Files
 Files/
+Files/Image/female.png
+Files/Image/male.png
 ##Except the following
 !Files/QuestionImportTemplate.docx
 /docker-compose/.env

@@ -13,7 +13,7 @@
     "LastName": "Doe",
     "Gender": true,
     "BirthDate": "1990-01-15",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Software Developer",
     "Address": "123 Main St, Anytown, USA"
@@ -32,7 +32,7 @@
     "LastName": "Smith",
     "Gender": false,
     "BirthDate": "1985-07-22",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/female.png",
     "IsActive": true,
     "Job": "Data Analyst",
     "Address": "456 Elm St, Another City, USA"
@@ -51,7 +51,7 @@
     "LastName": "Johnson",
     "Gender": true,
     "BirthDate": "1988-11-30",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Marketing Manager",
     "Address": "789 Oak Rd, Somewhere Else, USA"
@@ -70,7 +70,7 @@
     "LastName": "Brown",
     "Gender": false,
     "BirthDate": "1992-04-05",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/female.png",
     "IsActive": true,
     "Job": "Graphic Designer",
     "Address": "321 Pine Lane, New City, USA"
@@ -89,7 +89,7 @@
     "LastName": "Lee",
     "Gender": true,
     "BirthDate": "1995-09-18",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Student",
     "Address": "555 College Ave, University Town, USA"
@@ -108,7 +108,7 @@
     "LastName": "Taylor",
     "Gender": false,
     "BirthDate": "1987-03-12",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/female.png",
     "IsActive": true,
     "Job": "Teacher",
     "Address": "789 Maple Ave, Schooltown, USA"
@@ -127,7 +127,7 @@
     "LastName": "Wilson",
     "Gender": true,
     "BirthDate": "1983-09-28",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Accountant",
     "Address": "101 Oak St, Moneyville, USA"
@@ -146,7 +146,7 @@
     "LastName": "Anderson",
     "Gender": false,
     "BirthDate": "1991-11-05",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/female.png",
     "IsActive": true,
     "Job": "Nurse",
     "Address": "234 Elm St, Healthytown, USA"
@@ -165,7 +165,7 @@
     "LastName": "Thomas",
     "Gender": true,
     "BirthDate": "1979-08-14",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Chef",
     "Address": "777 Foodie Lane, Flavor City, USA"
@@ -184,7 +184,7 @@
     "LastName": "Martin",
     "Gender": true,
     "BirthDate": "1982-02-15",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/male.png",
     "IsActive": true,
     "Job": "Project Manager",
     "Address": "789 Pine Rd, Worktown, USA"
@@ -203,7 +203,7 @@
     "LastName": "White",
     "Gender": false,
     "BirthDate": "1993-12-08",
-    "ImageUrl": null,
+    "ImageUrl": "Files/Image/png/female.png",
     "IsActive": true,
     "Job": "HR Specialist",
     "Address": "101 Elm Ave, Officeville, USA"

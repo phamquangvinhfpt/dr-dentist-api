@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using DocumentFormat.OpenXml.InkML;
 using FSH.WebApi.Application.Chat;
 using FSH.WebApi.Application.Common.FileStorage;
 using FSH.WebApi.Application.Common.Interfaces;

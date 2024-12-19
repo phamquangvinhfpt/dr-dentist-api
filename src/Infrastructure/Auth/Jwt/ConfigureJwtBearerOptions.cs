@@ -60,8 +60,7 @@ public class ConfigureJwtBearerOptions : IConfigureNamedOptions<JwtBearerOptions
                 var accessToken = context.Request.Query["access_token"];
 
                 if (!string.IsNullOrEmpty(accessToken) &&
-                    (context.HttpContext.Request.Path.StartsWithSegments("/notifications") ||
-                     context.HttpContext.Request.Path.StartsWithSegments("/chat")))
+                    context.HttpContext.Request.Path.StartsWithSegments("/notifications"))
                 {
                     // Read the token out of the query string
                     context.Token = accessToken;

@@ -292,7 +292,7 @@ internal partial class UserService
 
     public async Task UpdateAvatarAsync(UpdateAvatarRequest request, CancellationToken cancellationToken)
     {
-        if(_currentUserService.GetUserId().ToString() != request.UserId)
+        if (_currentUserService.GetUserId().ToString() != request.UserId)
         {
             throw new BadRequestException("Only user update for personal.");
         }
@@ -302,7 +302,11 @@ internal partial class UserService
 
         if (request.Image != null)
         {
-            RemoveCurrentAvatar(currentImage);
+            if (!IsDefaultImage(currentImage))
+            {
+                RemoveCurrentAvatar(currentImage);
+            }
+
             user.ImageUrl = await _fileStorage.SaveFileAsync(request.Image, cancellationToken);
             if (string.IsNullOrEmpty(user.ImageUrl))
             {
@@ -311,7 +315,11 @@ internal partial class UserService
         }
         else if (request.DeleteCurrentImage)
         {
-            RemoveCurrentAvatar(currentImage);
+            if (!IsDefaultImage(currentImage))
+            {
+                RemoveCurrentAvatar(currentImage);
+            }
+
             user.ImageUrl = null;
         }
 
@@ -330,5 +338,18 @@ internal partial class UserService
         if (string.IsNullOrEmpty(currentImage)) return;
         string root = Directory.GetCurrentDirectory();
         _fileStorage.Remove(Path.Combine(root, currentImage));
+    }
+
+    private bool IsDefaultImage(string imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath)) return false;
+
+        string[] defaultImages = new[]
+        {
+        "Files/Image/png/male.png",
+        "Files/Image/png/female.png"
+        };
+
+        return defaultImages.Contains(imagePath);
     }
 }
