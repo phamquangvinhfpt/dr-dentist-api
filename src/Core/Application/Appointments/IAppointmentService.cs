@@ -34,4 +34,5 @@ public interface IAppointmentService : ITransientService
     Task<string> CreateReExamination(AddReExamination request, CancellationToken cancellationToken);
     Task<List<GetDoctorResponse>> GetAvailableDoctorAsync(GetAvailableDoctor request, CancellationToken cancellationToken);
     Task<string> ToggleFollowAppointment(DefaultIdType id, CancellationToken cancellationToken);
+    Task<string> RevertPayment(DefaultIdType id);
 }
