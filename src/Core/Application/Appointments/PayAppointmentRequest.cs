@@ -20,6 +20,7 @@ public class PayAppointmentRequest : IRequest<string>
     public bool IsVerify { get; set; } = false;
     public bool IsPay { get; set; } = false;
     public bool IsCancel { get; set; } = false;
+    public string? UserId { get; set; }
 }
 
 public class PayAppointmentRequestValidator : CustomValidator<PayAppointmentRequest>

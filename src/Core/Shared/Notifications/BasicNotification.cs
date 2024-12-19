@@ -13,6 +13,8 @@ public class BasicNotification : INotificationMessage
 
     public string Title { get; set; }
     public string Message { get; set; }
+    public string? LargeBody { get; set; }
+    public string? SummaryText { get; set; }
     public LabelType Label { get; set; }
     public string? Url { get; set; }
 }

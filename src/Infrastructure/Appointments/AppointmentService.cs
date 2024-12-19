@@ -25,10 +25,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using Namotion.Reflection;
-using System.Numerics;
-using System.Threading;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 internal class AppointmentService : IAppointmentService
@@ -222,7 +218,7 @@ internal class AppointmentService : IAppointmentService
             payment.Status = Domain.Payments.PaymentStatus.Incomplete;
 
             await _db.SaveChangesAsync(cancellationToken);
-           if(appointment.DentistId != default)
+            if (appointment.DentistId != default)
             {
                 _jobService.Schedule(
                () => SendAppointmentActionNotification(appointment.PatientId,
@@ -230,11 +226,14 @@ internal class AppointmentService : IAppointmentService
                appointment.AppointmentDate,
                TypeRequest.Verify, cancellationToken), TimeSpan.FromSeconds(5));
             }
+
             var notification = new BasicNotification
             {
-                Message = "Your appointment has been confirmed!",
+                Message = "Lịch hẹn của bạn đã được xác nhận!",
                 Label = BasicNotification.LabelType.Success,
-                Title = "Booking Successfully!",
+                LargeBody = "Lịch hẹn nha khoa của bạn đã được xác nhận thành công. Chi tiết lịch hẹn đã được gửi vào email đăng ký.",
+                SummaryText = "Đặt lịch khám nha khoa thành công",
+                Title = "Đặt lịch thành công!",
                 Url = "/appointment",
             };
             await _notificationService.SendPaymentNotificationToUser(patientId.UserId, notification, null, cancellationToken);
@@ -311,7 +310,7 @@ internal class AppointmentService : IAppointmentService
             }
 
             appointmentsQuery = appointmentsQuery.Where(p => p.DentistId != Guid.Empty);
-            if(currentUser == FSHRoles.Dentist)
+            if (currentUser == FSHRoles.Dentist)
             {
                 var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
                 appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id && p.Status == AppointmentStatus.Come);
@@ -404,7 +403,7 @@ internal class AppointmentService : IAppointmentService
             {
                 appointment.SpamCount += 1;
             }
-            else if(appointment.SpamCount == 3 && user_role == FSHRoles.Patient)
+            else if (appointment.SpamCount == 3 && user_role == FSHRoles.Patient)
             {
                 var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 if (appointment.PatientId != patientProfile.Id)
@@ -435,7 +434,8 @@ internal class AppointmentService : IAppointmentService
                             _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
                 _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
                 return;
-            }else if(appointment.SpamCount == 3 && user_role != FSHRoles.Patient)
+            }
+            else if (appointment.SpamCount == 3 && user_role != FSHRoles.Patient)
             {
                 throw new Exception($"Warning: User had done reschedule 3 times");
             }
@@ -508,7 +508,8 @@ internal class AppointmentService : IAppointmentService
         {
             string user_role = _currentUserService.GetRole();
             var appoint = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID && p.PatientId == request.UserID);
-            if (appoint == null) {
+            if (appoint == null)
+            {
                 throw new Exception("Can not found appointment of this user.");
             }
             if (user_role == FSHRoles.Patient)
@@ -519,20 +520,21 @@ internal class AppointmentService : IAppointmentService
                     throw new Exception("Only Patient can cancel their appointment");
                 }
             }
-            if(appoint.Status == AppointmentStatus.Done ||
+            if (appoint.Status == AppointmentStatus.Done ||
                 appoint.Status == AppointmentStatus.Failed ||
                 appoint.Status == AppointmentStatus.Pending ||
                 appoint.Status == AppointmentStatus.Cancelled)
             {
                 throw new BadRequestException("Appointment can not be cancel. Check Status");
             }
-            if (appoint.Status == AppointmentStatus.Confirmed) {
+            if (appoint.Status == AppointmentStatus.Confirmed)
+            {
                 var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
 
                 calendar.Status = CalendarStatus.Canceled;
                 var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
                 payment.Status = Domain.Payments.PaymentStatus.Canceled;
-                if(appoint.DentistId != default)
+                if (appoint.DentistId != default)
                 {
                     _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
                         appoint.DentistId,
@@ -540,11 +542,12 @@ internal class AppointmentService : IAppointmentService
                         TypeRequest.Cancel, cancellationToken), TimeSpan.FromSeconds(5));
                 }
             }
-            else if(appoint.Status == AppointmentStatus.Come)
+            else if (appoint.Status == AppointmentStatus.Come)
             {
                 var query = await _db.TreatmentPlanProcedures
                     .Where(p => p.AppointmentID == request.AppointmentID && p.Status == Domain.Treatment.TreatmentPlanStatus.Active).OrderByDescending(p => p.StartDate).ToListAsync();
-                foreach (var item in query) {
+                foreach (var item in query)
+                {
                     item.Status = Domain.Treatment.TreatmentPlanStatus.Cancelled;
                     var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.PlanID == item.Id);
                     calendar.Status = CalendarStatus.Canceled;
@@ -586,7 +589,7 @@ internal class AppointmentService : IAppointmentService
                     throw new Exception("Only Patient can reschedule their appointment");
                 }
             }
-            else if(!isStaffOrAdmin)
+            else if (!isStaffOrAdmin)
             {
                 throw new UnauthorizedAccessException("Only Staff or Admin can access this function.");
             }
@@ -730,10 +733,11 @@ internal class AppointmentService : IAppointmentService
                 PaymentStatus = appointments.Payment is not null ? appointments.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
             };
 
-            if(appointments.Appointment.DentistId != Guid.Empty)
+            if (appointments.Appointment.DentistId != Guid.Empty)
             {
                 var dentist = _db.DoctorProfiles.FirstOrDefault(p => p.Id == appointments.Appointment.DentistId);
-                if (dentist != null) {
+                if (dentist != null)
+                {
                     var d = await _userManager.FindByIdAsync(dentist.DoctorId);
                     result.DentistId = dentist.Id;
                     result.DentistName = $"{d.FirstName} {d.LastName}";
@@ -822,7 +826,7 @@ internal class AppointmentService : IAppointmentService
                     }
 
                     var entry = _db.TreatmentPlanProcedures.Add(t).Entity;
-                    if(sp.StepOrder == 1)
+                    if (sp.StepOrder == 1)
                     {
                         var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == id);
                         calendar.PlanID = entry.Id;
@@ -844,7 +848,7 @@ internal class AppointmentService : IAppointmentService
                         Status = entry.Status,
                         hasPrescription = false,
                     };
-                    if(sp.StepOrder == 1)
+                    if (sp.StepOrder == 1)
                     {
                         r.StartDate = appointment.AppointmentDate;
                     }
@@ -883,7 +887,7 @@ internal class AppointmentService : IAppointmentService
                 })
                 .FirstOrDefaultAsync();
 
-            if(query.Payment.Status != PaymentStatus.Incomplete)
+            if (query.Payment.Status != PaymentStatus.Incomplete)
             {
                 throw new Exception("The appointment have no any amount to pay.");
             }
@@ -911,7 +915,7 @@ internal class AppointmentService : IAppointmentService
                 Details = new List<Application.Payments.PaymentDetail>()
             };
 
-            foreach(var item in query.Detail)
+            foreach (var item in query.Detail)
             {
                 var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item.ProcedureID);
                 response.Details.Add(new Application.Payments.PaymentDetail
@@ -924,7 +928,8 @@ internal class AppointmentService : IAppointmentService
             }
             return response;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
         }
@@ -934,7 +939,7 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
-            if(request.IsPay && (request.Method == Domain.Payments.PaymentMethod.Cash))
+            if (request.IsPay && (request.Method == Domain.Payments.PaymentMethod.Cash))
             {
                 var query = await _db.Payments
                     .Where(p => p.Id == request.PaymentID)
@@ -946,7 +951,7 @@ internal class AppointmentService : IAppointmentService
                     })
                     .FirstOrDefaultAsync();
 
-                if(query.Payment.RemainingAmount != request.Amount)
+                if (query.Payment.RemainingAmount != request.Amount)
                 {
                     throw new Exception("Warning: Amount is not equal");
                 }
@@ -954,23 +959,27 @@ internal class AppointmentService : IAppointmentService
                 query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
                 query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
 
-                foreach (var item in query.Detail) {
+                foreach (var item in query.Detail)
+                {
                     item.PaymentStatus = Domain.Payments.PaymentStatus.Completed;
                 }
 
                 await _db.SaveChangesAsync(cancellationToken);
                 var notification = new BasicNotification
                 {
-                    Message = "Payment has been completed!",
+                    Message = "Thanh toán thành công toàn bộ dịch vụ!",
                     Label = BasicNotification.LabelType.Success,
-                    Title = "Payment Successfully!",
+                    LargeBody = "Cảm ơn bạn đã hoàn tất thanh toán cho toàn bộ dịch vụ và liệu trình khám. Khoản thanh toán của bạn đã được xác nhận thành công. Vui lòng kiểm tra email để nhận biên lai và các thông tin chi tiết về lịch hẹn và dịch vụ đã thanh toán.",
+                    SummaryText = "Thanh toán thành công toàn bộ liệu trình khám và dịch vụ.",
+                    Title = "Thanh toán thành công!",
                     Url = "/appointment",
                 };
 
                 var user = await _userManager.FindByIdAsync(query.Profile.UserId);
                 await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
+                await _notificationService.SendPaymentNotificationToUser(_currentUserService.GetUserId().ToString(), notification, null, cancellationToken);
             }
-            else if(!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
+            else if (!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
             {
                 var query = await _db.Payments
                     .Where(p => p.Id == request.PaymentID)
@@ -989,11 +998,13 @@ internal class AppointmentService : IAppointmentService
                     PatientCode = query.Patient.PatientCode,
                     Amount = query.Payment.RemainingAmount.Value,
                     IsVerify = false,
+                    UserId = _currentUserService.GetUserId().ToString(),
                 };
                 await _cacheService.SetAsync(query.Patient.PatientCode, result, request.Time);
             }
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
@@ -1031,14 +1042,17 @@ internal class AppointmentService : IAppointmentService
 
             var notification = new BasicNotification
             {
-                Message = "Payment has been completed!",
+                Message = "Thanh toán thành công toàn bộ dịch vụ!",
                 Label = BasicNotification.LabelType.Success,
-                Title = "Payment Successfully!",
+                LargeBody = "Cảm ơn bạn đã hoàn tất thanh toán cho toàn bộ dịch vụ và liệu trình khám. Khoản thanh toán của bạn đã được xác nhận thành công. Vui lòng kiểm tra email để nhận biên lai và các thông tin chi tiết về lịch hẹn và dịch vụ đã thanh toán.",
+                SummaryText = "Thanh toán thành công toàn bộ liệu trình khám và dịch vụ.",
+                Title = "Thanh toán thành công!",
                 Url = "/appointment",
             };
 
             var user = await _userManager.FindByIdAsync(query.Patient.UserId);
             await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
+            await _notificationService.SendPaymentNotificationToUser(request.UserId, notification, null, cancellationToken);
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -1053,7 +1067,7 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var c = _cacheService.Get<PayAppointmentRequest>(code);
-            if(c != null)
+            if (c != null)
             {
                 await _cacheService.RemoveAsync(code);
                 return _t["Success"];
@@ -1080,7 +1094,8 @@ internal class AppointmentService : IAppointmentService
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
-            if (time != default) {
+            if (time != default)
+            {
                 appointmentsQuery = appointmentsQuery.Where(w => w.StartTime == time);
             }
 
@@ -1134,14 +1149,14 @@ internal class AppointmentService : IAppointmentService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            if(request.DoctorID == default || request.AppointmentID == default)
+            if (request.DoctorID == default || request.AppointmentID == default)
             {
                 throw new Exception("All Information should be include.");
             }
             var doctor = await _db.DoctorProfiles
                 .Where(p => p.Id == request.DoctorID)
                 .FirstOrDefaultAsync();
-            if(doctor == null)
+            if (doctor == null)
             {
                 throw new Exception("Doctor can not be found.");
             }
@@ -1159,10 +1174,11 @@ internal class AppointmentService : IAppointmentService
                 })
                 .FirstOrDefaultAsync();
 
-            if (appoitment == null) {
+            if (appoitment == null)
+            {
                 throw new Exception("Appointment can not be found or be cancel.");
             }
-            if(appoitment.Appointment.Status != AppointmentStatus.Confirmed)
+            if (appoitment.Appointment.Status != AppointmentStatus.Confirmed)
             {
                 throw new Exception("Appointment is unavailable to reschedule.");
             }
@@ -1172,7 +1188,8 @@ internal class AppointmentService : IAppointmentService
                 appoitment.Appointment.StartTime,
                 appoitment.Appointment.StartTime.Add(appoitment.Appointment.Duration),
                 request.DoctorID);
-            if (!check) {
+            if (!check)
+            {
                 throw new Exception("Doctor has a meeting in this time or not work today");
             }
             appoitment.Appointment.DentistId = request.DoctorID;
@@ -1249,7 +1266,7 @@ internal class AppointmentService : IAppointmentService
                     {
                         Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
                         Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
-                        Step= s.StepOrder
+                        Step = s.StepOrder
                     }).FirstOrDefaultAsync();
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
                 var r = new GetWorkingDetailResponse
@@ -1364,9 +1381,9 @@ internal class AppointmentService : IAppointmentService
 
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
 
-                if(calendar != null)
+                if (calendar != null)
                 {
-                    if(calendar.RoomID != default)
+                    if (calendar.RoomID != default)
                     {
                         var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
                         r.RoomID = room.Id;
@@ -1407,17 +1424,19 @@ internal class AppointmentService : IAppointmentService
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.DentistId == request.DoctorId && p.PatientId == request.PatientId && p.Id == request.AppointmentId && p.Status == AppointmentStatus.Done);
-            if (appointment == null) {
+            if (appointment == null)
+            {
                 throw new Exception("Warning: Error when find appointment");
             }
 
-            if(!await CheckAppointmentDateValid(request.Date.Value))
+            if (!await CheckAppointmentDateValid(request.Date.Value))
             {
                 throw new Exception("Warning: The Day is not available");
             }
 
             var check = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == request.DoctorId && p.Date == request.Date && p.Status == WorkingStatus.Accept);
-            if (check != null) {
+            if (check != null)
+            {
                 bool t = await _db.TimeWorkings.AnyAsync(c => c.CalendarID == check.Id && (
                     c.StartTime <= request.StartTime && c.EndTime >= request.EndTime
                 ));
@@ -1469,20 +1488,23 @@ internal class AppointmentService : IAppointmentService
 
             var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
 
-            if (service == null) {
+            if (service == null)
+            {
                 throw new Exception("Warning: Service Not Found");
             }
-            if(request.Date == default)
+            if (request.Date == default)
             {
                 throw new Exception("Warning: The Date should be available");
             }
 
             var doctors = await _db.DoctorProfiles.Where(p => p.TypeServiceID == service.TypeServiceID).ToListAsync();
 
-            foreach (var doctor in doctors) {
+            foreach (var doctor in doctors)
+            {
                 bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.DoctorId);
 
-                if (check) {
+                if (check)
+                {
                     var user = await _userManager.FindByIdAsync(doctor.DoctorId);
                     result.Add(new GetDoctorResponse
                     {
@@ -1501,7 +1523,8 @@ internal class AppointmentService : IAppointmentService
             }
             return result;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
