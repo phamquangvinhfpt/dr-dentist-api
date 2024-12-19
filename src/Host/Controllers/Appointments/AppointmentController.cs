@@ -278,7 +278,15 @@ public class AppointmentController : VersionNeutralApiController
         DeleteRedisCode();
         return Task.FromResult("Success");
     }
-
+    [HttpGet("payment/revert/{id}")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Revert Payment", "")]
+    public Task<string> RevertPayment(Guid id)
+    {
+        DeleteRedisCode();
+        return _appointmentService.RevertPayment(id);
+    }
     public Task DeleteRedisCode()
     {
         try

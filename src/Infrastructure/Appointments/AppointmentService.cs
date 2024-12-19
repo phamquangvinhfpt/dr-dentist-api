@@ -1482,7 +1482,7 @@ internal class AppointmentService : IAppointmentService
             foreach (var doctor in doctors) {
                 bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.DoctorId);
 
-                if (!check) {
+                if (check) {
                     var user = await _userManager.FindByIdAsync(doctor.DoctorId);
                     result.Add(new GetDoctorResponse
                     {
@@ -1575,6 +1575,38 @@ internal class AppointmentService : IAppointmentService
         }
         catch (Exception ex)
         {
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<string> RevertPayment(DefaultIdType id)
+    {
+        try
+        {
+            var query = await _db.Payments
+                    .Where(p => p.AppointmentId == id)
+                    .FirstOrDefaultAsync();
+
+            query.Status = Domain.Payments.PaymentStatus.Incomplete;
+            query.FinalPaymentDate = default;
+            query.RemainingAmount = query.Amount - query.DepositAmount;
+            query.Method = PaymentMethod.None;
+            var detail = await _db.PaymentDetails
+                    .Where(p => p.PaymentID == id)
+                    .ToListAsync();
+
+            foreach(var item in detail)
+            {
+                item.PaymentStatus = PaymentStatus.Incomplete;
+            }
+
+            await _db.SaveChangesAsync();
+            return "Success";
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
     }

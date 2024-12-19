@@ -1,4 +1,6 @@
-﻿using FSH.WebApi.Application.Payments;
+﻿using FSH.WebApi.Application.Common.Caching;
+using FSH.WebApi.Application.Payments;
+using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Payments;
 
 namespace FSH.WebApi.Host.Controllers.Payment;
