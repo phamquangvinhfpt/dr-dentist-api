@@ -842,7 +842,8 @@ internal partial class UserService : IUserService
                             CreateDate = feedback.CreatedOn,
                             Ratings = feedback.Rating,
                             Message = feedback.Message,
-                            CanFeedback = feedback.Appointment.canFeedback
+                            CanFeedback = feedback.Appointment.canFeedback,
+                            PatientAvatar = patientUser.ImageUrl
                         };
 
                         feedbackDoctorResponse.Feedbacks.Add(feedbackResponse);

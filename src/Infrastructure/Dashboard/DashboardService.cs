@@ -2,6 +2,7 @@
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.Dashboards;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Infrastructure.Appointments;
@@ -239,6 +240,52 @@ internal class DashboardService : IDashboardService
                     .OrderBy(p => p.Date)
                     .ToListAsync(cancellationToken);
             return chart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<FeedbackServiceDetail>();
+
+            var query = await _db.Feedbacks
+                .Where(p => p.Rating > 3)
+                .OrderBy(p => p.CreatedOn)
+                .Take(3)
+                .Select(a => new
+                {
+                    Feedback = a,
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == a.DoctorProfileId),
+                    Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId),
+                    Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(p => p.Id == a.ServiceId),
+                })
+                .ToListAsync();
+            foreach(var d in query)
+            {
+                var dPatient = await _db.Users.FirstOrDefaultAsync(p => p.Id == d.Patient.UserId);
+                var dDoctor = await _db.Users.FirstOrDefaultAsync(p => p.Id == d.Doctor.DoctorId);
+                result.Add(new FeedbackServiceDetail
+                {
+                    FeedbackId = d.Feedback.Id,
+                    PatientID = dPatient.Id,
+                    CanFeedback = false,
+                    CreateDate = d.Feedback.CreatedOn,
+                    DoctorID = dDoctor.Id,
+                    DoctorName = $"{dDoctor.FirstName} {dDoctor.LastName}",
+                    Message = d.Feedback.Message,
+                    PatientName = $"{dPatient.FirstName} {dPatient.LastName}",
+                    Ratings = d.Feedback.Rating,
+                    PatientAvatar = dPatient.ImageUrl,
+                    DoctorAvatar = dDoctor.ImageUrl,
+                });
+            }
+            return result;
         }
         catch (Exception ex)
         {

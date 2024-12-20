@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.Dashboards;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -87,5 +88,12 @@ public class DashboardController : VersionedApiController
     public Task<int> AppointmentDoneAsync(CancellationToken cancellationToken)
     {
         return _dashboardService.AppointmentDoneAsync(cancellationToken);
+    }
+    //checked
+    [HttpGet("patients/feedbacks")]
+    [OpenApiOperation("Get some feedback", "")]
+    public Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken)
+    {
+        return _dashboardService.PatientFeedbacksAsync(cancellationToken);
     }
 }
