@@ -44,6 +44,19 @@ internal class DashboardService : IDashboardService
         _notificationService = notificationService;
     }
 
+    public async Task<int> AppointmentDoneAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.Appointments.CountAsync(p => p.Status == Domain.Appointments.AppointmentStatus.Done);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
     public async Task<List<BookingAnalytic>> BookingAnalytics(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
     {
         try
@@ -75,7 +88,7 @@ internal class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -129,7 +142,7 @@ internal class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -161,7 +174,7 @@ internal class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -192,7 +205,7 @@ internal class DashboardService : IDashboardService
         }
         catch (Exception ex) {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -230,7 +243,33 @@ internal class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<int> RegularDoctorAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.DoctorProfiles.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<int> SatisfiedPatientAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.Feedbacks.CountAsync(p => p.Rating > 3);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
         }
     }
 
@@ -276,7 +315,20 @@ internal class DashboardService : IDashboardService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
-            throw;
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<int> TotalServiceAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.Services.CountAsync(p => p.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
         }
     }
 }

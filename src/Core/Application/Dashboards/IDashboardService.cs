@@ -13,4 +13,8 @@ public interface IDashboardService : ITransientService
     Task<List<ServiceAnalytic>> ServiceAnalytic(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
     Task<List<DoctorAnalytic>> DoctorAnalytic(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
     Task<List<BookingAnalytic>> BookingAnalytics(DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken);
+    Task<int> SatisfiedPatientAsync(CancellationToken cancellationToken);
+    Task<int> RegularDoctorAsync(CancellationToken cancellationToken);
+    Task<int> TotalServiceAsync(CancellationToken cancellationToken);
+    Task<int> AppointmentDoneAsync(CancellationToken cancellationToken);
 }

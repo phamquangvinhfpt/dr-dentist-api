@@ -59,4 +59,33 @@ public class DashboardController : VersionedApiController
     {
         return _dashboardService.BookingAnalytics(start, end, cancellationToken);
     }
+    //checked
+    [HttpGet("patient/satisfied")]
+    [OpenApiOperation("Get Satified patient", "")]
+    public Task<int> SatisfiedPatientAsync(CancellationToken cancellationToken)
+    {
+        return _dashboardService.SatisfiedPatientAsync(cancellationToken);
+    }
+    //checked
+    [HttpGet("doctor/regular")]
+    [OpenApiOperation("Get Regular doctor", "")]
+    public Task<int> RegularDoctorAsync(CancellationToken cancellationToken)
+    {
+        return _dashboardService.RegularDoctorAsync(cancellationToken);
+    }
+    //checked
+    [HttpGet("service/total")]
+    [OpenApiOperation("Get Total Service", "")]
+    public Task<int> TotalServiceAsync(CancellationToken cancellationToken)
+    {
+        return _dashboardService.TotalServiceAsync(cancellationToken);
+    }
+
+    //checked
+    [HttpGet("appointment/done")]
+    [OpenApiOperation("Get Amount of Appointment Done", "")]
+    public Task<int> AppointmentDoneAsync(CancellationToken cancellationToken)
+    {
+        return _dashboardService.AppointmentDoneAsync(cancellationToken);
+    }
 }

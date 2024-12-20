@@ -21,7 +21,7 @@ public class UpdateDoctorProfile : IRequest<string>
     public string? YearOfExp { get; set; }
     public string? SeftDescription { get; set; }
     [AllowedExtensions(FileType.Image)]
-    [MaxFileSize(5 * 1024 * 1024)]
+    //[MaxFileSize(5 * 1024 * 1024)]
     public IFormFile[]? CertificationImage { get; set; }
     public WorkingType WorkingType { get; set; }
 }
