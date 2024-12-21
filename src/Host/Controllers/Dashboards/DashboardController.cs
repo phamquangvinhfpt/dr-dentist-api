@@ -62,6 +62,8 @@ public class DashboardController : VersionedApiController
     }
     //checked
     [HttpGet("patient/satisfied")]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get Satified patient", "")]
     public Task<int> SatisfiedPatientAsync(CancellationToken cancellationToken)
     {
@@ -69,6 +71,8 @@ public class DashboardController : VersionedApiController
     }
     //checked
     [HttpGet("doctor/regular")]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get Regular doctor", "")]
     public Task<int> RegularDoctorAsync(CancellationToken cancellationToken)
     {
@@ -76,6 +80,8 @@ public class DashboardController : VersionedApiController
     }
     //checked
     [HttpGet("service/total")]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get Total Service", "")]
     public Task<int> TotalServiceAsync(CancellationToken cancellationToken)
     {
@@ -84,6 +90,8 @@ public class DashboardController : VersionedApiController
 
     //checked
     [HttpGet("appointment/done")]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get Amount of Appointment Done", "")]
     public Task<int> AppointmentDoneAsync(CancellationToken cancellationToken)
     {
@@ -91,6 +99,8 @@ public class DashboardController : VersionedApiController
     }
     //checked
     [HttpGet("patients/feedbacks")]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get some feedback", "")]
     public Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken)
     {
