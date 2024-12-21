@@ -492,6 +492,7 @@ internal class ServiceService : IServiceService
         result.Description = existing.ServiceDescription;
         result.TypeName = type.TypeName;
         result.TypeServiceID = type.Id;
+        result.IsActive = existing.IsActive;
         var service_procedure = await _db.ServiceProcedures.Where(p => p.ServiceId == serviceID).ToListAsync(cancellationToken);
         if (service_procedure != null) {
             result.Procedures = new List<ProcedureDTO>();

@@ -827,9 +827,9 @@ internal class ApplicationDbSeeder
                             var selectedTimeSlot = doctorTimeSlots[random.Next(doctorTimeSlots.Count())];
                             var maxStartTime = selectedTimeSlot.EndTime - duration;
 
-                            int availableMinutes = (int)(maxStartTime - selectedTimeSlot.StartTime).TotalMinutes;
-                            int randomOffsetMinutes = random.Next(0, availableMinutes);
-                            startTime = selectedTimeSlot.StartTime.Add(TimeSpan.FromMinutes(randomOffsetMinutes));
+                            int availablehour = maxStartTime.Hours - selectedTimeSlot.StartTime.Hours;
+                            int randomOffsetMinutes = random.Next(0, availablehour);
+                            startTime = selectedTimeSlot.StartTime.Add(TimeSpan.FromHours(randomOffsetMinutes));
 
                             bool isTimeSlotBooked = await innerDbContext.AppointmentCalendars
                                 .AnyAsync(c =>
@@ -965,7 +965,7 @@ internal class ApplicationDbSeeder
                 }
 
                 var appointmentsPerDay = random.Next(5, 11);
-                var startHour = random.Next(8, 17);
+                var startHour = random.Next(8, 22);
                 var startTime = new TimeSpan(startHour, 0, 0);
 
                 var duration = TimeSpan.FromMinutes(30);

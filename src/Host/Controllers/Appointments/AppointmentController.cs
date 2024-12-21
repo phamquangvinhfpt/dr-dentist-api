@@ -278,6 +278,17 @@ public class AppointmentController : VersionNeutralApiController
         DeleteRedisCode();
         return Task.FromResult("Success");
     }
+
+    [HttpGet("date/test")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Test convert date", "")]
+    public Task<string> convertdate([FromQuery] DateOnly date)
+    {
+        string formattedDate = date.ToString("dd-MM-yyyy");
+        return Task.FromResult(formattedDate);
+    }
+
     [HttpGet("payment/revert/{id}")]
     [AllowAnonymous]
     [TenantIdHeader]

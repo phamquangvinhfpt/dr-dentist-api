@@ -110,6 +110,10 @@ internal partial class UserService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            if(!CheckValidExpYear(request.BirthDay.Value, request.DoctorProfile.YearOfExp).Result)
+            {
+                throw new Exception("The Exp year is not available with birthday");
+            }
             var role = await _roleManager.FindByNameAsync(request.Role) ?? throw new InternalServerException(_t["Role is unavailable."]);
             var user = new ApplicationUser
             {

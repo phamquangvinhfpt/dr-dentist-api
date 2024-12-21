@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
+using FSH.WebApi.Application.Common.Exporters;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
@@ -14,6 +15,7 @@ using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Appointments;
+using FSH.WebApi.Infrastructure.Auditing;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -42,8 +44,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly ILogger<WorkingCalendarService> _logger;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private readonly IExcelWriter _excelWriter;
     private static string APPOINTMENT = "APPOINTMENT";
-    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService)
+
+    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService, IExcelWriter excelWriter)
     {
         _db = db;
         _t = t;
@@ -52,6 +56,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         _logger = logger;
         _cacheService = cacheService;
         _notificationService = notificationService;
+        _excelWriter = excelWriter;
     }
 
     public Task<bool> CheckAvailableTimeWorking(string DoctorID, DateOnly date, TimeSpan time)
@@ -1216,6 +1221,65 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<Stream> ExportWorkingCalendarAsync(DateOnly start, DateOnly end, string DoctorID)
+    {
+        try
+        {
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == DoctorID);
+            if(doctor == null)
+            {
+                throw new Exception("User Not Found");
+            }
+            var query = _db.WorkingCalendars.Where(p => p.DoctorID == doctor.Id);
+            if(start != default)
+            {
+                query = query.Where(p => p.Date >= start);
+            }
+            if (end != default)
+            {
+                query = query.Where(p => p.Date <= end);
+            }
+            query = query.OrderBy(p => p.Date);
+            var r = await query
+                .Select(a => new
+                {
+                    Calendar = a,
+                    Doctor = _db.DoctorProfiles
+                        .Where(p => p.Id == a.DoctorID)
+                        .Join(_db.Users, p => p.DoctorId, u => u.Id, (p, u) => $"{u.FirstName} {u.LastName}").FirstOrDefault(),
+                    TypeWorking = _db.DoctorProfiles.Where(p => p.Id == a.DoctorID).Select(t => t.WorkingType.ToString()).FirstOrDefault(),
+                    TypeService = _db.DoctorProfiles
+                        .Where(p => p.Id == a.DoctorID)
+                        .Join(_db.TypeServices, p => p.TypeServiceID, u => u.Id, (p, u) => u.TypeName).FirstOrDefault(),
+                    Date = a.Date.Value.ToString("dd-MM-yyyy"),
+                    Room = _db.Rooms.Where(p => p.Id == a.RoomID).Select(r => r.RoomName).FirstOrDefault(),
+                    Times = _db.TimeWorkings.Where(p => p.CalendarID == a.Id).OrderBy(p => p.StartTime).Select(t => new { Time = $"{t.StartTime} - {t.EndTime}", Status = t.IsActive }).ToList(),
+                }).ToListAsync();
+            var result = new List<WorkingCalendarExport>();
+            foreach(var item in r)
+            {
+                result.Add(new WorkingCalendarExport
+                {
+                    Doctor = item.Doctor,
+                    TypeWorking = item.TypeWorking,
+                    TypeService = item.TypeService,
+                    Date = item.Date,
+                    Room = item.Room,
+                    First_Shift = item.Times[0].Time,
+                    First_Status = item.Times[0].Status && (item.Calendar.Date.Value < DateOnly.FromDateTime(DateTime.Now)) ? "Present" : "Absent",
+                    Last_Shift = item.Times.Count > 1 ? item.Times[1].Time : "",
+                    Second_Status = item.Times.Count > 1 ? item.Times[1].Status && (item.Calendar.Date.Value < DateOnly.FromDateTime(DateTime.Now)) ? "Present" : "Absent" : "",
+                });
+            }
+
+            return _excelWriter.WriteToStream(result);
+        }
+        catch (Exception ex) {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }

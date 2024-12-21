@@ -9,6 +9,7 @@ namespace FSH.WebApi.Application.Identity.Users;
 
 public interface IUserService : ITransientService
 {
+    Task<bool> CheckValidExpYear(DateOnly date, int exp);
     Task<bool> CheckUserInRoleAsync(string userID, string roleName);
     Task<PaginationResponse<ListUserDTO>> SearchAsync(UserListFilter filter, CancellationToken cancellationToken);
     Task<bool> ExistsWithUserIDAsync(string userID);

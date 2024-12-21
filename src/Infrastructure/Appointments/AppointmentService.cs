@@ -646,7 +646,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"You has a meet with patient {patient.FirstName} {patient.LastName} in {AppointmentDate}",
+                            Message = $"You has a meet with patient {patient.FirstName} {patient.LastName} in {AppointmentDate.ToString("dd-MM-yyyy")}",
                             Title = "Booking Schedule Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -656,7 +656,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Patient {patient.FirstName} {patient.LastName} was reschedule to {AppointmentDate}",
+                            Message = $"Patient {patient.FirstName} {patient.LastName} was reschedule to {AppointmentDate.ToString("dd-MM-yyyy")}",
                             Title = "Reschedule Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -664,7 +664,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Reschedule to {AppointmentDate} successfully",
+                            Message = $"Reschedule to {AppointmentDate.ToString("dd-MM-yyyy")} successfully",
                             Title = "Reschedule Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -674,7 +674,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Patient {patient.FirstName} {patient.LastName} was cancel the meeting in {AppointmentDate}",
+                            Message = $"Patient {patient.FirstName} {patient.LastName} was cancel the meeting in {AppointmentDate.ToString("dd-MM-yyyy")}",
                             Title = "Cancel Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);
@@ -682,7 +682,7 @@ internal class AppointmentService : IAppointmentService
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Cancel appointment in {AppointmentDate}",
+                            Message = $"Cancel appointment in {AppointmentDate.ToString("dd-MM-yyyy")}",
                             Title = "Cancel Appointment Notification",
                             Url = null,
                         }, null, cancellationToken);

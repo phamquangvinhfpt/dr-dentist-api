@@ -321,7 +321,7 @@ internal partial class UserService : IUserService
                 profile.College = request.College ?? profile.College;
                 profile.Education = request.Education ?? profile.Education;
                 profile.SeftDescription = request.SeftDescription ?? profile.SeftDescription;
-                profile.YearOfExp = request.YearOfExp ?? profile.YearOfExp;
+                profile.YearOfExp = request.YearOfExp.ToString() ?? profile.YearOfExp;
                 profile.WorkingType = request.WorkingType;
                 profile.TypeServiceID = request.TypeServiceID;
                 if (request.CertificationImage != null)
@@ -345,7 +345,7 @@ internal partial class UserService : IUserService
                     College = request.College,
                     Education = request.Education,
                     SeftDescription = request.SeftDescription,
-                    YearOfExp = request.YearOfExp,
+                    YearOfExp = request.YearOfExp.ToString(),
                     WorkingType = WorkingType.None,
                     IsActive = false,
                 };
@@ -973,5 +973,20 @@ internal partial class UserService : IUserService
                     "Ban",
                     _templateService.GenerateEmailTemplate("email-ban-user", eMailModel));
         _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
+    }
+
+    public Task<bool> CheckValidExpYear(DateOnly date, int exp)
+    {
+        try
+        {
+            var currentDate = DateOnly.FromDateTime(DateTime.Now);
+            date = date.AddYears(exp);
+
+            return Task.FromResult(currentDate > date);
+        }
+        catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
     }
 }
