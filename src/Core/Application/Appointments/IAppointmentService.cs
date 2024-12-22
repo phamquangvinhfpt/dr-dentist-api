@@ -13,7 +13,7 @@ public interface IAppointmentService : ITransientService
 {
     Task<bool> CheckAppointmentAvailableToReschedule(Guid appointmentId);
     Task<bool> CheckAppointmentDateValid(DateOnly date);
-    Task<bool> CheckAvailableAppointment(string? patientId);
+    Task<bool> CheckAvailableAppointment(string? patientId, DateOnly appointmentDate);
     Task<bool> CheckAppointmentExisting(Guid appointmentId);
     Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken);
     Task VerifyAndFinishBooking(PayAppointmentRequest request, CancellationToken cancellationToken);

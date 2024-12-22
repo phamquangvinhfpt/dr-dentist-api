@@ -113,7 +113,7 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
 
         RuleFor(p => p)
             .MustAsync(async (request, cancellation) =>
-                await appointmentService.CheckAvailableAppointment(request.PatientId))
+                await appointmentService.CheckAvailableAppointment(request.PatientId, request.AppointmentDate))
             .WithMessage((request, cancellation) => $"Patient has an available appointment");
 
         RuleFor(p => p)

@@ -81,14 +81,14 @@ internal class AppointmentService : IAppointmentService
         return appointment is not null;
     }
 
-    public async Task<bool> CheckAvailableAppointment(string? patientId)
+    public async Task<bool> CheckAvailableAppointment(string? patientId, DateOnly date)
     {
         var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == patientId);
         bool appointment = await _db.Appointments
             .Where(p => p.PatientId == patient.Id &&
             (p.Status == Domain.Appointments.AppointmentStatus.Pending || p.Status == AppointmentStatus.Confirmed)
             ).AnyAsync();
-        bool isSunday = DateOnly.FromDateTime(DateTime.Now).DayOfWeek == DayOfWeek.Sunday;
+        bool isSunday = date.DayOfWeek == DayOfWeek.Sunday;
         return !appointment && !isSunday;
     }
 
