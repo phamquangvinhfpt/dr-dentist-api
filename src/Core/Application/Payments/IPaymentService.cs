@@ -13,4 +13,5 @@ public interface IPaymentService : ITransientService
     Task<PaginationResponse<Transaction>> GetAllTransactions(PaginationFilter filter, CancellationToken cancellationToken);
     // public Task SeedTransactions(List<TransactionDto> list, CancellationToken cancellationToken);
     Task GetTransactionFromWebhook(TransactionAPIResponse transaction, CancellationToken cancellationToken);
+    Task<Stream> ExportPaymentAsync(ExportPaymentRequest request);
 }

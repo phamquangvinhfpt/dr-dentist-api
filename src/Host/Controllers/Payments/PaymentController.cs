@@ -1,4 +1,5 @@
 ﻿using FSH.WebApi.Application.Common.Caching;
+using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Payments;
@@ -58,6 +59,17 @@ public class PaymentController : VersionedApiController
     // {
     //     return _paymentService.SeedTransactions(list, cancellationToken);
     // }
+
+
+    [HttpPost("export-payment")]
+    [OpenApiOperation("Export payment history logs.", "")]
+    [MustHavePermission(FSHAction.Export, FSHResource.Files)]
+    public async Task<FileResult> ExportPaymentAsync(ExportPaymentRequest request)
+    {
+        var stream = await _paymentService.ExportPaymentAsync(request);
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"payment_export.xlsx");
+    }
+
 
     [HttpPost("webhook")]
     [OpenApiOperation("Post webhook", "")]

@@ -1,10 +1,13 @@
 using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Wordprocessing;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
+using FSH.WebApi.Application.Common.Exporters;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
+using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Application.Payments;
 using FSH.WebApi.Domain.Appointments;
@@ -32,17 +35,21 @@ public class PaymentService : IPaymentService
     private readonly ICacheService _cacheService;
     private readonly IOptions<PaymentSettings> _settings;
     private readonly ICurrentUser _currentUserService;
+    private readonly IExcelWriter _excelWriter;
     private readonly UserManager<ApplicationUser> _userManager;
-    public PaymentService(UserManager<ApplicationUser> userManager, ILogger<PaymentService> logger, ApplicationDbContext context, IAppointmentService appointmentService, ICacheService cacheService, IOptions<PaymentSettings> settings, ICurrentUser currentUserService)
+
+    public PaymentService(ILogger<PaymentService> logger, ApplicationDbContext context, IAppointmentService appointmentService, ICacheService cacheService, IOptions<PaymentSettings> settings, ICurrentUser currentUserService, IExcelWriter excelWriter, UserManager<ApplicationUser> userManager)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _logger = logger;
+        _context = context;
         _appointmentService = appointmentService;
         _cacheService = cacheService;
         _settings = settings;
         _currentUserService = currentUserService;
+        _excelWriter = excelWriter;
         _userManager = userManager;
     }
+
 
     // public async Task CheckNewTransactions(CancellationToken cancellationToken)
     // {
@@ -440,5 +447,86 @@ public class PaymentService : IPaymentService
         }
 
         _logger.LogInformation("Added {count} new transactions.", transaction.data.Count);
+    }
+
+    public async Task<Stream> ExportPaymentAsync(ExportPaymentRequest request)
+    {
+        try
+        {
+            var query = _context.Payments.AsQueryable();
+            if (request.UserID != null)
+            {
+                var pProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == request.UserID) ?? throw new Exception("User Not Found");
+                query = query.Where(p => p.PatientProfileId == pProfile.Id);
+            }
+            if (request.StartDate != default && request.PaymentStatus == PaymentStatus.Completed)
+            {
+                query = query.Where(p => p.FinalPaymentDate >= request.StartDate);
+                if (request.EndDate != default)
+                {
+                    query = query.Where(p => p.FinalPaymentDate <= request.EndDate);
+                }
+                query = query.Where(p => p.Status == PaymentStatus.Completed).OrderBy(p => p.FinalPaymentDate);
+            }
+            else if (request.StartDate != default && request.PaymentStatus == PaymentStatus.Incomplete)
+            {
+                query = query.Where(p => p.DepositDate >= request.StartDate);
+                if (request.EndDate != default)
+                {
+                    query = query.Where(p => p.DepositDate <= request.EndDate);
+                }
+                query = query.Where(p => p.Status == PaymentStatus.Incomplete).OrderBy(p => p.DepositDate);
+            }
+            else if (request.StartDate != default && request.PaymentStatus == PaymentStatus.Failed)
+            {
+                query = query.Where(p => p.CreatedOn >= DateTime.Parse(request.StartDate.ToString()));
+                if (request.EndDate != default)
+                {
+                    query = query.Where(p => p.CreatedOn <= DateTime.Parse(request.StartDate.ToString()));
+                }
+                query = query.Where(p => p.Status == PaymentStatus.Incomplete).OrderBy(p => p.CreatedOn);
+            }
+            else if (request.StartDate != default && request.PaymentStatus == PaymentStatus.Canceled)
+            {
+                query = query.Where(p => p.LastModifiedOn >= DateTime.Parse(request.StartDate.ToString()));
+                if (request.EndDate != default)
+                {
+                    query = query.Where(p => p.LastModifiedOn <= DateTime.Parse(request.StartDate.ToString()));
+                }
+                query = query.Where(p => p.Status == PaymentStatus.Canceled).OrderBy(p => p.LastModifiedOn);
+            }
+            if (request.PaymentMethod != PaymentMethod.None)
+            {
+                query = query.Where(p => p.Method == request.PaymentMethod);
+            }
+            var result = await query
+                .Select(a => new
+                {
+                    Patient = _context.PatientProfiles
+                        .Where(p => p.Id == a.PatientProfileId)
+                        .Join(_context.Users, p => p.UserId, u => u.Id, (p, u) => $"{u.FirstName} {u.LastName}").FirstOrDefault(),
+                    ExaminationDate = _context.Appointments.Where(p => p.Id == a.AppointmentId).Select(e => e.AppointmentDate.ToString("dd-MM-yyyy")).FirstOrDefault(),
+                    Service = _context.Services.IgnoreQueryFilters().Where(s => s.Id == a.ServiceId).Select(s => s.ServiceName).FirstOrDefault(),
+                    TypeService = _context.Services.IgnoreQueryFilters()
+                        .Where(s => s.Id == a.ServiceId)
+                        .Join(_context.TypeServices, p => p.TypeServiceID, t => t.Id, (p, t) => t.TypeName)
+                        .FirstOrDefault(),
+                    ServicePrice = _context.Services.IgnoreQueryFilters().Where(s => s.Id == a.ServiceId).Select(s => s.TotalPrice).FirstOrDefault(),
+                    Deposit = a.DepositAmount,
+                    DepositDate = a.DepositDate.Value.ToString("dd-MM-yyyy"),
+                    a.RemainingAmount,
+                    TotalAmount = a.Amount,
+                    FinalPaymentAt = a.FinalPaymentDate.Value.ToString("dd-MM-yyyy"),
+                    Method = a.Method != PaymentMethod.None ? a.Method.ToString() : "",
+                    Status = a.Status.ToString()
+                }).ToListAsync();
+            
+            return _excelWriter.WriteToStream(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
     }
 }
