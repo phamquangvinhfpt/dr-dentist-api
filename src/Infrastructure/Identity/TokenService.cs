@@ -81,9 +81,9 @@ internal class TokenService : ITokenService
             throw new UnauthorizedException(_t["User Not Active. Please contact the administrator."]);
         }
 
-        if (_securitySettings.RequireConfirmedAccount && !user.EmailConfirmed)
+        if (_securitySettings.RequireConfirmedAccount && !user.EmailConfirmed && !user.PhoneNumberConfirmed)
         {
-            throw new UnauthorizedException(_t["E-Mail not confirmed."]);
+            throw new UnauthorizedException(_t["Account not confirmed."]);
         }
 
         if (_currentTenant.Id != MultitenancyConstants.Root.Id)

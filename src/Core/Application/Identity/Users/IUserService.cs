@@ -29,7 +29,7 @@ public interface IUserService : ITransientService
     Task InvalidatePermissionCacheAsync(string userId, CancellationToken cancellationToken);
     Task ToggleStatusAsync(ToggleStatusRequest request, CancellationToken cancellationToken);
     Task<string> GetOrCreateFromPrincipalAsync(ClaimsPrincipal principal);
-    Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken);
+    Task<string> CreateAsync(CreateUserRequest request, bool isMobile, string local, string origin, CancellationToken cancellationToken);
     Task UpdateAsync(UpdateUserRequest request, CancellationToken cancellationToken);
     Task<string> UpdateEmailAsync(UpdateEmailRequest request);
     Task UpdatePhoneNumberAsync(UpdatePhoneNumberRequest request);

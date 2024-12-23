@@ -1,12 +1,12 @@
-using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.Interfaces;
-using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Password;
 using FSH.WebApi.Application.Identity.Users.Verify;
 using FSH.WebApi.Infrastructure.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FSH.WebApi.Host.Controllers.Identity;
@@ -16,12 +16,14 @@ public class UsersController : VersionNeutralApiController
     private readonly IUserService _userService;
     private readonly ICurrentUser _currentUserService;
     private readonly IServiceService _serviceService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public UsersController(IUserService userService, ICurrentUser currentUserService, IServiceService serviceService)
+    public UsersController(IUserService userService, ICurrentUser currentUserService, IServiceService serviceService, UserManager<ApplicationUser> userManager)
     {
         _userService = userService;
         _currentUserService = currentUserService;
         _serviceService = serviceService;
+        _userManager = userManager;
     }
 
     //checked
@@ -80,7 +82,7 @@ public class UsersController : VersionNeutralApiController
         {
             request.Job = FSHRoles.Staff;
         }
-        return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
+        return _userService.CreateAsync(request, IsMobile(), GetLanguageFromRequest(), GetOriginFromRequest(), cancellation);
     }
     //checked
     [HttpPost("get-doctors")]
@@ -119,7 +121,7 @@ public class UsersController : VersionNeutralApiController
                 throw new BadRequestException(t.Errors[0].ErrorMessage);
             }
         }
-        return _userService.CreateAsync(request, GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
+        return _userService.CreateAsync(request, IsMobile(), GetLanguageFromRequest(), GetOriginFromRequest(), cancellationToken);
     }
     //checked
     [HttpPost("{id}/toggle-status")]
@@ -151,6 +153,37 @@ public class UsersController : VersionNeutralApiController
         }
 
         return _userService.ConfirmPhoneNumberAsync(userId, code);
+    }
+
+    [HttpGet("confirm-account-phone-number")]
+    [OpenApiOperation("Confirm account using phone number.", "")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [ApiConventionMethod(typeof(FSHApiConventions), nameof(FSHApiConventions.Search))]
+    public async Task<string> ConfirmAccountByPhoneNumberAsync(string phone, string code)
+    {
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        return await _userService.ConfirmPhoneNumberAsync(user.Id, code);
+    }
+
+    [HttpGet("resend-phone-confirm")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Resend phone confirmation code.", "")]
+    public async Task<string> ResendPhoneConfirmAsync(string phone)
+    {
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        return await _userService.ResendPhoneNumberCodeConfirm(user.Id);
     }
 
     [HttpGet("resend-phone-number-code")]
@@ -238,8 +271,22 @@ public class UsersController : VersionNeutralApiController
 
         return $"{Request.Scheme}://{Request.Host.Value}{Request.PathBase.Value}";
     }
+
     private string GetLanguageFromRequest()
     {
         return HttpContext.Request.Headers["Accept-Language"].ToString();
+    }
+
+    public bool IsMobile()
+    {
+        string userAgent = Request.Headers["User-Agent"].ToString();
+
+        string[] mobileKeywords = new[]
+        {
+            "Android", "webOS", "iPhone", "iPad", "iPod", "BlackBerry", "IEMobile", "Opera Mini",
+            "Mobile", "mobile", "Tablet", "tablet"
+        };
+
+        return mobileKeywords.Any(userAgent.Contains);
     }
 }

@@ -105,7 +105,7 @@ internal partial class UserService
         return user;
     }
     //checked
-    public async Task<string> CreateAsync(CreateUserRequest request, string local, string origin, CancellationToken cancellationToken)
+    public async Task<string> CreateAsync(CreateUserRequest request, bool isMobile, string local, string origin, CancellationToken cancellationToken)
     {
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
@@ -168,7 +168,7 @@ internal partial class UserService
 
             var messages = new List<string> { string.Format(_t["User {0} Registered."], user.UserName) };
 
-            if (_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.Email))
+            if (_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.Email) && !isMobile)
             {
                 // send verification email
                 string emailVerificationUri = await GetEmailVerificationUriAsync(user, origin);
@@ -195,7 +195,13 @@ internal partial class UserService
                     _templateService.GenerateEmailTemplate("email-confirmation-vie", eMailModel));
                     _jobService.Enqueue(() => _mailService.SendAsync(mailRequest, CancellationToken.None));
                 }
+
                 messages.Add(_t[$"Please check {user.Email} to verify your account!"]);
+            }
+             else if(_securitySettings.RequireConfirmedAccount && !string.IsNullOrEmpty(user.PhoneNumber) && isMobile)
+            {
+                string code = await _userManager.GenerateChangePhoneNumberTokenAsync(user, request.PhoneNumber);
+                _speedSMSService.sendSMS(new string[] { request.PhoneNumber }, $"Your verification code is: {code}", SpeedSMSType.TYPE_CSKH);
             }
 
             await _events.PublishAsync(new ApplicationUserCreatedEvent(user.Id));
