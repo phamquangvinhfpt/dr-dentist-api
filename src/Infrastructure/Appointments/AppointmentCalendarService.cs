@@ -296,8 +296,9 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
         foreach (var t in timeSlot)
         {
             result.RemoveAll(slot =>
-                slot.Time >= t.StartTime && slot.Time < t.EndTime);
+                slot.Time > t.StartTime && slot.Time < t.EndTime);
         }
+        result = result.OrderBy(p => p.Time).ToList();
         return result;
     }
 

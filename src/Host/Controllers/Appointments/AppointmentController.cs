@@ -31,7 +31,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Create Appointment", "")]
     public Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request)
     {
-        DeleteRedisCode();
         return Mediator.Send(request);
     }
     //checked
@@ -40,7 +39,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Create ReExamination Appointment", "")]
     public Task<string> CreateReAppointment(AddReExamination request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _appointmentService.CreateReExamination(request, cancellationToken);
     }
 
@@ -49,7 +47,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Get Doctors Available for service at Date and Time", "")]
     public async Task<List<GetDoctorResponse>> GetAvailableDoctor(GetAvailableDoctor request, CancellationToken cancellationToken)
     {
-        //DeleteRedisCode();
         return await _appointmentService.GetAvailableDoctorAsync(request, cancellationToken);
     }
 
@@ -58,7 +55,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Cancel Appointment", "")]
     public Task<string> CancelAppointment(CancelAppointmentRequest request)
     {
-        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -67,7 +63,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Reschedule Appointment", "")]
     public Task<string> RescheduleAppointment(RescheduleRequest request)
     {
-        DeleteRedisCode();
         return Mediator.Send(request);
     }
     //checked
@@ -122,7 +117,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Toggle Appointment Status, Use for Doctor Click and verify patient who came to clinic", "")]
     public Task<List<TreatmentPlanResponse>> VerifyAppointment(Guid id, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _appointmentService.ToggleAppointment(id, cancellationToken);
     }
 
@@ -131,7 +125,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Toggle Follow up Appointment Status. Use CalendarID", "")]
     public Task<string> VerifyFollowUpAppointment(Guid id, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _appointmentService.ToggleFollowAppointment(id, cancellationToken);
     }
 
@@ -147,7 +140,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Send request for payment method", "")]
     public Task<string> PayForAppointment(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -155,7 +147,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Cancel request for payment", "")]
     public Task<string> CancelPaymentForAppointment(string code, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _appointmentService.CancelPayment(code, cancellationToken);
     }
 
@@ -197,7 +188,6 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Add Doctor to Appointments that have non-doctor", "")]
     public Task<string> AddDoctorToAppointments(AddDoctorToAppointment request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _appointmentService.AddDoctorToAppointments(request, cancellationToken);
     }
 
@@ -275,7 +265,7 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Delete cache", "")]
     public Task<string> DeleteCache()
     {
-        DeleteRedisCode();
+        _appointmentService.DeleteRedisCode();
         return Task.FromResult("Success");
     }
 
@@ -295,54 +285,54 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("Revert Payment", "")]
     public Task<string> RevertPayment(Guid id)
     {
-        DeleteRedisCode();
+        _appointmentService.DeleteRedisCode();
         return _appointmentService.RevertPayment(id);
     }
-    public Task DeleteRedisCode()
-    {
-        try
-        {
-            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if(key1a != null)
-            {
-                foreach (string key in key1a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(APPOINTMENT);
-            }
-            var key2a = _cacheService.Get<HashSet<string>>(NON);
-            if (key2a != null)
-            {
-                foreach (string key in key2a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(NON);
-            }
-            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
-            if (key3a != null)
-            {
-                foreach (string key in key3a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(FOLLOW);
-            }
-            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
-            if (key4a != null)
-            {
-                foreach (string key in key4a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(REEXAM);
-            }
-            return Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-    }
+    //public Task DeleteRedisCode()
+    //{
+    //    try
+    //    {
+    //        var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+    //        if(key1a != null)
+    //        {
+    //            foreach (string key in key1a)
+    //            {
+    //                _cacheService.Remove(key);
+    //            }
+    //            _cacheService.Remove(APPOINTMENT);
+    //        }
+    //        var key2a = _cacheService.Get<HashSet<string>>(NON);
+    //        if (key2a != null)
+    //        {
+    //            foreach (string key in key2a)
+    //            {
+    //                _cacheService.Remove(key);
+    //            }
+    //            _cacheService.Remove(NON);
+    //        }
+    //        var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
+    //        if (key3a != null)
+    //        {
+    //            foreach (string key in key3a)
+    //            {
+    //                _cacheService.Remove(key);
+    //            }
+    //            _cacheService.Remove(FOLLOW);
+    //        }
+    //        var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
+    //        if (key4a != null)
+    //        {
+    //            foreach (string key in key4a)
+    //            {
+    //                _cacheService.Remove(key);
+    //            }
+    //            _cacheService.Remove(REEXAM);
+    //        }
+    //        return Task.CompletedTask;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        throw new Exception(ex.Message);
+    //    }
+    //}
 }

@@ -17,7 +17,8 @@ public class ServiceController : VersionNeutralApiController
     }
     //checked
     [HttpPost("pagination/get-all")]
-    [MustHavePermission(FSHAction.View, FSHResource.Service)]
+    [AllowAnonymous]
+    [TenantIdHeader]
     [OpenApiOperation("Get Services with pagination.", "")]
     public async Task<PaginationResponse<ServiceDTOs>> GetAllServiceAsync(PaginationFilter request, CancellationToken cancellationToken)
     {

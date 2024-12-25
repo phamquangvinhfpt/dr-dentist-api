@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Identity.AppointmentCalendars;
 public class GetWorkingDetailResponse
 {
+    public string? PatientAvatar { get; set; }
     public Guid RoomID { get; set; }
     public Guid TreatmentID { get; set; }
     public string? RoomName { get; set; }

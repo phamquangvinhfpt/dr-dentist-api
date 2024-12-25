@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Vml.Office;
+using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Application.Common.Mailing;
@@ -40,12 +41,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly INotificationService _notificationService;
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
-    private static string APPOINTMENT = "APPOINTMENT";
-    private static string FOLLOW = "FOLLOW";
-    private static string REEXAM = "REEXAM";
-    private static string NON = "NON";
+    private readonly IAppointmentService _appointmentService;
 
-    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService)
+    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService, IAppointmentService appointmentService)
     {
         _db = db;
         _t = t;
@@ -58,6 +56,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         _notificationService = notificationService;
         _templateService = templateService;
         _mailService = mailService;
+        _appointmentService = appointmentService;
     }
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
@@ -134,7 +133,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await DeleteRedisCode();
+            await _appointmentService.DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -305,7 +304,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await DeleteRedisCode();
+            await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }
         catch (Exception ex)
@@ -654,7 +653,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await DeleteRedisCode();
+            await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }
         catch (Exception ex)
@@ -662,53 +661,6 @@ internal class TreatmentPlanService : ITreatmentPlanService
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message, ex);
-        }
-    }
-    public Task DeleteRedisCode()
-    {
-        try
-        {
-            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if (key1a != null)
-            {
-                foreach (string key in key1a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(APPOINTMENT);
-            }
-            var key2a = _cacheService.Get<HashSet<string>>(NON);
-            if (key2a != null)
-            {
-                foreach (string key in key2a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(NON);
-            }
-            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
-            if (key3a != null)
-            {
-                foreach (string key in key3a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(FOLLOW);
-            }
-            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
-            if (key4a != null)
-            {
-                foreach (string key in key4a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(REEXAM);
-            }
-            return Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
         }
     }
 }

@@ -178,6 +178,8 @@ internal class AppointmentService : IAppointmentService
                 IsVerify = true,
             };
 
+            await transaction.CommitAsync(cancellationToken);
+
             if (!isStaffOrAdmin)
             {
                 await _cacheService.SetAsync(
@@ -186,7 +188,10 @@ internal class AppointmentService : IAppointmentService
                         TimeSpan.FromMinutes(11),
                         cancellationToken);
             }
-            await transaction.CommitAsync(cancellationToken);
+            else
+            {
+                await DeleteRedisCode();
+            }
             return result;
         }
         catch (Exception ex)
@@ -237,6 +242,7 @@ internal class AppointmentService : IAppointmentService
                 Url = "/appointment",
             };
             await _notificationService.SendPaymentNotificationToUser(patientId.UserId, notification, null, cancellationToken);
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -313,7 +319,7 @@ internal class AppointmentService : IAppointmentService
             if (currentUser == FSHRoles.Dentist)
             {
                 var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
-                appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id && p.Status == AppointmentStatus.Come);
+                appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id && p.Status == AppointmentStatus.Come && p.Status == AppointmentStatus.Examinated);
             }
             else if (currentUser == FSHRoles.Patient)
             {
@@ -366,7 +372,8 @@ internal class AppointmentService : IAppointmentService
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
-                    Type = AppointmentType.Appointment
+                    Type = AppointmentType.Appointment,
+                    PatientAvatar = pUser.ImageUrl != null ? pUser.ImageUrl : null,
                 };
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.AppointmentDate && p.Status == WorkingStatus.Accept);
 
@@ -475,6 +482,7 @@ internal class AppointmentService : IAppointmentService
                 appointment.AppointmentDate,
                 TypeRequest.Reschedule, cancellationToken), TimeSpan.FromSeconds(5));
             }
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -564,6 +572,7 @@ internal class AppointmentService : IAppointmentService
             appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -620,6 +629,7 @@ internal class AppointmentService : IAppointmentService
             calendar.DoctorId = dprofile.Id;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -731,6 +741,7 @@ internal class AppointmentService : IAppointmentService
                 ServiceName = appointments.Service?.ServiceName,
                 ServicePrice = appointments.Service?.TotalPrice ?? 0,
                 PaymentStatus = appointments.Payment is not null ? appointments.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
             };
 
             if (appointments.Appointment.DentistId != Guid.Empty)
@@ -862,6 +873,7 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new Exception("Can not verify appointment.");
             }
+            await DeleteRedisCode();
         }
         catch (Exception ex)
         {
@@ -978,6 +990,7 @@ internal class AppointmentService : IAppointmentService
                 var user = await _userManager.FindByIdAsync(query.Profile.UserId);
                 await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
                 await _notificationService.SendPaymentNotificationToUser(_currentUserService.GetUserId().ToString(), notification, null, cancellationToken);
+                await DeleteRedisCode();
             }
             else if (!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
             {
@@ -1133,6 +1146,7 @@ internal class AppointmentService : IAppointmentService
                     ServiceName = a.Service?.ServiceName,
                     ServicePrice = a.Service?.TotalPrice ?? 0,
                     PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                    PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
                 });
             }
             return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
@@ -1202,6 +1216,7 @@ internal class AppointmentService : IAppointmentService
             _jobService.Schedule(
                 () => SendAppointmentActionNotification(appoitment.Appointment.PatientId, request.DoctorID, appoitment.Appointment.AppointmentDate, TypeRequest.Verify, cancellationToken),
                 TimeSpan.FromSeconds(5));
+            await DeleteRedisCode();
             return _t["Success"];
         }
         catch (Exception ex)
@@ -1291,6 +1306,7 @@ internal class AppointmentService : IAppointmentService
                     StartTime = a.Appointment.StartTime.Value,
                     Status = a.Appointment.Status,
                     Step = sp.Step,
+                    PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
                 };
                 if (calendar != null)
                 {
@@ -1377,6 +1393,7 @@ internal class AppointmentService : IAppointmentService
                     PatientProfileID = a.Patient.Id,
                     StartTime = a.Appointment.StartTime.Value,
                     Status = a.Appointment.Status,
+                    PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
                 };
 
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
@@ -1469,7 +1486,7 @@ internal class AppointmentService : IAppointmentService
             await _db.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-
+            await DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)
@@ -1545,6 +1562,7 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception("Can not verify the follow up appointment.");
             }
             calendar.Status = CalendarStatus.Checkin;
+            await DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)

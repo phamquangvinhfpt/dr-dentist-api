@@ -182,20 +182,19 @@ public class PaymentService : IPaymentService
 
             if (Sdate != default)
             {
-                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate > Sdate || p.CreatedOn > DateTime.Parse(Sdate.ToString()));
+                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate >= Sdate || p.CreatedOn >= DateTime.Parse(Sdate.ToString()));
             }
             if (Edate != default)
             {
-                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate < Edate || p.CreatedOn < DateTime.Parse(Edate.ToString()));
+                paymentQuery = paymentQuery.Where(p => p.FinalPaymentDate <= Edate || p.CreatedOn <= DateTime.Parse(Edate.ToString()));
             }
-            var count = paymentQuery.Count();
             var spec = new EntitiesByPaginationFilterSpec<Payment>(filter);
             if (currentUser.Equals(FSHRoles.Patient))
             {
                 var patientProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 paymentQuery = paymentQuery.Where(p => p.PatientProfileId == patientProfile.Id);
             }
-
+            var count = paymentQuery.Count();
             paymentQuery = paymentQuery.OrderByDescending(p => p.CreatedOn).WithSpecification(spec);
 
             var payments = await paymentQuery
@@ -495,6 +494,15 @@ public class PaymentService : IPaymentService
                 }
                 query = query.Where(p => p.Status == PaymentStatus.Canceled).OrderBy(p => p.LastModifiedOn);
             }
+            else if (request.StartDate != default && request.PaymentStatus == PaymentStatus.Waiting)
+            {
+                query = query.Where(p => p.CreatedOn >= DateTime.Parse(request.StartDate.ToString()));
+                if (request.EndDate != default)
+                {
+                    query = query.Where(p => p.CreatedOn <= DateTime.Parse(request.StartDate.ToString()));
+                }
+                query = query.OrderBy(p => p.CreatedOn);
+            }
             if (request.PaymentMethod != PaymentMethod.None)
             {
                 query = query.Where(p => p.Method == request.PaymentMethod);
@@ -502,6 +510,7 @@ public class PaymentService : IPaymentService
             var result = await query
                 .Select(a => new
                 {
+                    CreateOn = a.CreatedOn.ToString("dd-MM-yyyy"),
                     Patient = _context.PatientProfiles
                         .Where(p => p.Id == a.PatientProfileId)
                         .Join(_context.Users, p => p.UserId, u => u.Id, (p, u) => $"{u.FirstName} {u.LastName}").FirstOrDefault(),

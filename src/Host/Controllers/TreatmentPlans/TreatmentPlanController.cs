@@ -11,17 +11,9 @@ namespace FSH.WebApi.Host.Controllers.TreatmentPlans;
 public class TreatmentPlanController : VersionNeutralApiController
 {
     private ITreatmentPlanService _treatmentPlanService;
-    private readonly ICacheService _cacheService;
-    private readonly ICurrentUser _currentUserService;
-    private static string APPOINTMENT = "APPOINTMENT";
-    private static string FOLLOW = "FOLLOW";
-    private static string REEXAM = "REEXAM";
-    private static string NON = "NON";
-    public TreatmentPlanController(ICacheService cacheService, ITreatmentPlanService treatmentPlanService, ICurrentUser currentUserService)
+    public TreatmentPlanController(ITreatmentPlanService treatmentPlanService)
     {
         _treatmentPlanService = treatmentPlanService;
-        _currentUserService = currentUserService;
-        _cacheService = cacheService;
     }
 
     [HttpGet("get/{id}")]
@@ -53,7 +45,6 @@ public class TreatmentPlanController : VersionNeutralApiController
     [OpenApiOperation("Add treatment date and note for next follow up appointment", "")]
     public Task<string> AddTreatmentPlanDetail(AddTreatmentDetail request)
     {
-        DeleteRedisCode();
         return Mediator.Send(request);
     }
 
@@ -62,7 +53,6 @@ public class TreatmentPlanController : VersionNeutralApiController
     [OpenApiOperation("Update treatment date and note for next follow up appointment", "")]
     public Task<string> UpdateTreatmentPlanDetail(AddTreatmentDetail request, CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return _treatmentPlanService.UpdateTreamentPlan(request, cancellationToken);
     }
 
@@ -103,54 +93,6 @@ public class TreatmentPlanController : VersionNeutralApiController
         {
             throw new ArgumentNullException("Patient identity is empty");
         }
-        DeleteRedisCode();
         return _treatmentPlanService.ExaminationAndChangeTreatmentStatus(id, cancellationToken);
-    }
-    public Task DeleteRedisCode()
-    {
-        try
-        {
-            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if (key1a != null)
-            {
-                foreach (string key in key1a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(APPOINTMENT);
-            }
-            var key2a = _cacheService.Get<HashSet<string>>(NON);
-            if (key2a != null)
-            {
-                foreach (string key in key2a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(NON);
-            }
-            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
-            if (key3a != null)
-            {
-                foreach (string key in key3a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(FOLLOW);
-            }
-            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
-            if (key4a != null)
-            {
-                foreach (string key in key4a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(REEXAM);
-            }
-            return Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
     }
 }

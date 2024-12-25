@@ -106,4 +106,28 @@ public class DashboardController : VersionedApiController
     {
         return _dashboardService.PatientFeedbacksAsync(cancellationToken);
     }
+
+    //checked
+    [HttpGet("staff/appointments")]
+    [OpenApiOperation("Get total appointment follow by date", "")]
+    public Task<int> TotalAppointmentsAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.TotalAppointmentsAsync(date, cancellationToken);
+    }
+
+    //checked
+    [HttpGet("staff/new-contact")]
+    [OpenApiOperation("Get new contact request follow by date", "")]
+    public Task<int> NewContactsAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.NewContactsAsync(date, cancellationToken);
+    }
+
+    //checked
+    //[HttpGet("staff/new-contact")]
+    //[OpenApiOperation("Get new contact request follow by date", "")]
+    //public Task<int> NewContactsAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    //{
+    //    return _dashboardService.NewContactsAsync(date, cancellationToken);
+    //}
 }

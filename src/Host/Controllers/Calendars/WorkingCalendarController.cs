@@ -15,16 +15,10 @@ namespace FSH.WebApi.Host.Controllers.Calendars;
 public class WorkingCalendarController : VersionNeutralApiController
 {
     private readonly IWorkingCalendarService _workingCalendarService;
-    private readonly ICacheService _cacheService;
-    private static string APPOINTMENT = "APPOINTMENT";
-    private static string FOLLOW = "FOLLOW";
-    private static string REEXAM = "REEXAM";
-    private static string NON = "NON";
 
-    public WorkingCalendarController(IWorkingCalendarService workingCalendarService, ICacheService cacheService)
+    public WorkingCalendarController(IWorkingCalendarService workingCalendarService)
     {
         _workingCalendarService = workingCalendarService;
-        _cacheService = cacheService;
     }
 
     [HttpPost("create-parttime")]
@@ -152,7 +146,6 @@ public class WorkingCalendarController : VersionNeutralApiController
         foreach (var item in request) {
             string result = await _workingCalendarService.AddRoomForWorkingAsync(item, cancellationToken);
         }
-        DeleteRedisCode();
         return Ok("Success");
     }
 
@@ -162,7 +155,6 @@ public class WorkingCalendarController : VersionNeutralApiController
         List<Guid> request,
         CancellationToken cancellationToken)
     {
-        DeleteRedisCode();
         return await _workingCalendarService.AutoAddRoomForWorkingAsync(request, cancellationToken); ;
     }
 
@@ -222,53 +214,5 @@ public class WorkingCalendarController : VersionNeutralApiController
     {
         var stream = await _workingCalendarService.ExportWorkingCalendarAsync(start, end, DoctorID);
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"working_calendar_export{start.Month}{start.Year}{end.Month}{end.Year}.xlsx");
-    }
-
-    public Task DeleteRedisCode()
-    {
-        try
-        {
-            var key1a = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-            if (key1a != null)
-            {
-                foreach (string key in key1a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(APPOINTMENT);
-            }
-            var key2a = _cacheService.Get<HashSet<string>>(NON);
-            if (key2a != null)
-            {
-                foreach (string key in key2a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(NON);
-            }
-            var key3a = _cacheService.Get<HashSet<string>>(FOLLOW);
-            if (key3a != null)
-            {
-                foreach (string key in key3a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(FOLLOW);
-            }
-            var key4a = _cacheService.Get<HashSet<string>>(REEXAM);
-            if (key4a != null)
-            {
-                foreach (string key in key4a)
-                {
-                    _cacheService.Remove(key);
-                }
-                _cacheService.Remove(REEXAM);
-            }
-            return Task.CompletedTask;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
     }
 }

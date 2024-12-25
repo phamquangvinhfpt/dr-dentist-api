@@ -1293,15 +1293,24 @@ internal class ApplicationDbSeeder
             int d_profile_index = 0;
             int p_profile_index = 0;
             Random next = new Random();
-            var type = await _db.TypeServices.ToListAsync();
+            List<Guid> l = new List<Guid>();
             foreach (var user in users)
             {
                 var entry = _db.Users.Add(user).Entity;
                 if (flash < 5)
                 {
-                    var t = type[next.Next(type.Count)];
+                    var type = _db.TypeServices.Where(p => !l.Contains(p.Id)).FirstOrDefault();
                     doctors[d_profile_index].DoctorId = entry.Id;
-                    doctors[d_profile_index].TypeServiceID = t.Id;
+                    if(type != null)
+                    {
+                        doctors[d_profile_index].TypeServiceID = type.Id;
+                        l.Add(type.Id);
+                    }
+                    else
+                    {
+                        var t = await _db.TypeServices.ToListAsync();
+                        doctors[d_profile_index].TypeServiceID = t[next.Next(t.Count())].Id;
+                    }
                     doctors[d_profile_index].WorkingType = WorkingType.FullTime;
                     doctors[d_profile_index].IsActive = true;
                     doctor.Add(entry);
@@ -1310,9 +1319,18 @@ internal class ApplicationDbSeeder
                 }
                 else if (flash < 10)
                 {
-                    var t = type[next.Next(type.Count)];
+                    var type = _db.TypeServices.Where(p => !l.Contains(p.Id)).FirstOrDefault();
                     doctors[d_profile_index].DoctorId = entry.Id;
-                    doctors[d_profile_index].TypeServiceID = t.Id;
+                    if (type != null)
+                    {
+                        doctors[d_profile_index].TypeServiceID = type.Id;
+                        l.Add(type.Id);
+                    }
+                    else
+                    {
+                        var t = await _db.TypeServices.ToListAsync();
+                        doctors[d_profile_index].TypeServiceID = t[next.Next(t.Count())].Id;
+                    }
                     doctors[d_profile_index].WorkingType = WorkingType.PartTime;
                     doctors[d_profile_index].IsActive = true;
                     doctor.Add(entry);

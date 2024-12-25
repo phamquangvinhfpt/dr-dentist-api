@@ -248,6 +248,19 @@ internal class DashboardService : IDashboardService
         }
     }
 
+    public async Task<int> NewContactsAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.ContactInfor.CountAsync(p => p.Status == Domain.CustomerServices.ContactStatus.Pending);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
     public async Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken)
     {
         try
@@ -358,6 +371,19 @@ internal class DashboardService : IDashboardService
                     }).OrderByDescending(p => p.TotalRevenue)
                     .ToListAsync(cancellationToken);
             return chart;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<int> TotalAppointmentsAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.Appointments.CountAsync(p => p.DentistId != default && p.AppointmentDate == date && p.Status == Domain.Appointments.AppointmentStatus.Confirmed);
         }
         catch (Exception ex)
         {

@@ -22,7 +22,7 @@ public class ExcelWriter : IExcelWriter
         }
 
         using XLWorkbook wb = new XLWorkbook();
-        wb.Worksheets.Add(table);
+        wb.Worksheets.Add(table).Columns().AdjustToContents();
         Stream stream = new MemoryStream();
         wb.SaveAs(stream);
         stream.Seek(0, SeekOrigin.Begin);

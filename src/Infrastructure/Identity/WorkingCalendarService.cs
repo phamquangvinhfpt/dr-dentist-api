@@ -31,7 +31,6 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Xceed.Document.NET;
-using static FSH.WebApi.Shared.Multitenancy.MultitenancyConstants;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
@@ -45,9 +44,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
     private readonly IExcelWriter _excelWriter;
-    private static string APPOINTMENT = "APPOINTMENT";
+    private readonly IAppointmentService _appointmentService;
 
-    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService, IExcelWriter excelWriter)
+    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService, IExcelWriter excelWriter, IAppointmentService appointmentService)
     {
         _db = db;
         _t = t;
@@ -57,6 +56,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         _cacheService = cacheService;
         _notificationService = notificationService;
         _excelWriter = excelWriter;
+        _appointmentService = appointmentService;
     }
 
     public Task<bool> CheckAvailableTimeWorking(string DoctorID, DateOnly date, TimeSpan time)
@@ -146,7 +146,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex) {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -286,7 +286,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -376,7 +376,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -435,14 +435,14 @@ internal class WorkingCalendarService : IWorkingCalendarService
             calendar.Calendar.RoomID = request.RoomID;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await DeleteRedisCode();
+            await _appointmentService.DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -468,7 +468,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -517,7 +517,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -612,7 +612,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -707,7 +707,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -803,7 +803,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -899,7 +899,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -981,7 +981,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1023,7 +1023,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex)
         {
             _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 
@@ -1063,26 +1063,6 @@ internal class WorkingCalendarService : IWorkingCalendarService
         catch (Exception ex) {
             _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
             throw new Exception(ex.Message);
-        }
-    }
-    public async Task DeleteRedisCode()
-    {
-        try
-        {
-            var keys = _cacheService.Get<List<string>>(APPOINTMENT);
-            if (keys == null)
-            {
-                return;
-            }
-            foreach (string key in keys)
-            {
-                _cacheService.Remove(key);
-            }
-            _cacheService.Remove(APPOINTMENT);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex.Message);
         }
     }
 
@@ -1177,14 +1157,14 @@ internal class WorkingCalendarService : IWorkingCalendarService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await DeleteRedisCode();
+            await _appointmentService.DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 

@@ -19,4 +19,6 @@ public interface IDashboardService : ITransientService
     Task<int> TotalServiceAsync(CancellationToken cancellationToken);
     Task<int> AppointmentDoneAsync(CancellationToken cancellationToken);
     Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken);
+    Task<int> TotalAppointmentsAsync(DateOnly date, CancellationToken cancellationToken);
+    Task<int> NewContactsAsync(DateOnly date, CancellationToken cancellationToken);
 }

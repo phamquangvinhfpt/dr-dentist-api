@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.Appointments;
 public class AppointmentResponse
 {
+    public string? PatientAvatar { get; set; }
     public string? PatientUserID { get; set; }
     public Guid AppointmentId { get; set; }
     public Guid PatientId { get; set; }
