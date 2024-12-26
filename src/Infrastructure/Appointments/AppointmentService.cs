@@ -697,6 +697,24 @@ internal class AppointmentService : IAppointmentService
                             Url = null,
                         }, null, cancellationToken);
                     break;
+                case TypeRequest.Schedule:
+                    await _notificationService.SendNotificationToUser(doctor.Id,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                            Message = $"Patient {patient.FirstName} {patient.LastName} has meeting {AppointmentDate.ToString("dd-MM-yyyy")}",
+                            Title = "Schedule Appointment Notification",
+                            Url = null,
+                        }, null, cancellationToken);
+                    await _notificationService.SendNotificationToUser(patient.Id,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                            Message = $"Appointment in {AppointmentDate.ToString("dd-MM-yyyy")} was schedule for {doctor.FirstName} {doctor.LastName}",
+                            Title = "Schedule Appointment Notification",
+                            Url = null,
+                        }, null, cancellationToken);
+                    break;
             }
         }
         catch (Exception ex)
@@ -1224,8 +1242,8 @@ internal class AppointmentService : IAppointmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             _jobService.Schedule(
-                () => SendAppointmentActionNotification(appoitment.Appointment.PatientId, request.DoctorID, appoitment.Appointment.AppointmentDate, TypeRequest.Verify, cancellationToken),
-                TimeSpan.FromSeconds(5));
+                () => SendAppointmentActionNotification(appoitment.Appointment.PatientId, request.DoctorID, appoitment.Appointment.AppointmentDate, TypeRequest.Schedule, cancellationToken),
+                TimeSpan.FromSeconds(1));
             await DeleteRedisCode();
             return _t["Success"];
         }

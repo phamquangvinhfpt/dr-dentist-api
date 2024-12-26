@@ -128,6 +128,7 @@ internal partial class UserService : IUserService
                     list_user.Add(new ListUserDTO
                     {
                         Id = user.Id.ToString(),
+                        Name = $"{user.FirstName} {user.LastName}",
                         UserName = user.UserName,
                         Address = user.Address,
                         Email = user.Email,
@@ -203,6 +204,7 @@ internal partial class UserService : IUserService
             list_user.Add(new ListUserDTO
             {
                 Id = user.Id,
+                Name = $"{user.FirstName} {user.LastName}",
                 UserName = user.UserName,
                 Address = user.Address,
                 Email = user.Email,
@@ -346,7 +348,7 @@ internal partial class UserService : IUserService
                     Education = request.Education,
                     SeftDescription = request.SeftDescription,
                     YearOfExp = request.YearOfExp.ToString(),
-                    WorkingType = WorkingType.None,
+                    WorkingType = request.WorkingType,
                     IsActive = false,
                 };
                 if (request.CertificationImage != null)
@@ -622,6 +624,7 @@ internal partial class UserService : IUserService
                 list_user.Add(new ListUserDTO
                 {
                     Id = user.Id.ToString(),
+                    Name = $"{user.FirstName} {user.LastName}",
                     UserName = user.UserName,
                     Address = user.Address,
                     Email = user.Email,
@@ -938,6 +941,7 @@ internal partial class UserService : IUserService
                 {
                     list_user.Add(new ListUserDTO
                     {
+                        Name = $"{user.FirstName} {user.LastName}",
                         Id = user.Id.ToString(),
                         UserName = user.UserName,
                         Address = user.Address,

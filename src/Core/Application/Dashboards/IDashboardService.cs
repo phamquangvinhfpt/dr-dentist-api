@@ -1,4 +1,5 @@
-﻿using FSH.WebApi.Application.CustomerServices.Feedbacks;
+﻿using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,4 +22,5 @@ public interface IDashboardService : ITransientService
     Task<List<FeedbackServiceDetail>> PatientFeedbacksAsync(CancellationToken cancellationToken);
     Task<int> TotalAppointmentsAsync(DateOnly date, CancellationToken cancellationToken);
     Task<int> NewContactsAsync(DateOnly date, CancellationToken cancellationToken);
+    Task<PaginationResponse<AppointmentResponse>> GetAppointmentAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken);
 }

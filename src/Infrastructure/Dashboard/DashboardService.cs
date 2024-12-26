@@ -1,10 +1,15 @@
-﻿using DocumentFormat.OpenXml.Office2010.Excel;
+﻿using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Models;
+using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.Dashboards;
 using FSH.WebApi.Application.Notifications;
+using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Auth.Permissions;
 using FSH.WebApi.Infrastructure.Identity;
@@ -139,6 +144,74 @@ internal class DashboardService : IDashboardService
                 });
             }
             return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<AppointmentResponse>> GetAppointmentAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<AppointmentResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
+            var appointmentsQuery = _db.Appointments
+                .AsQueryable().Where(p => p.DentistId != default);
+
+            if (date != default)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
+            }
+            appointmentsQuery = appointmentsQuery.Where(p => !_db.WorkingCalendars.Any(w => w.DoctorID == p.DentistId &&
+                w.Date == p.AppointmentDate &&
+                w.Status == Domain.Identity.WorkingStatus.Accept));
+
+            int count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
+
+            var appointments = await appointmentsQuery
+                .Select(appointment => new
+                {
+                    Appointment = appointment,
+                    Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                    Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(s => s.Id == appointment.ServiceId),
+                    Payment = _db.Payments.IgnoreQueryFilters().FirstOrDefault(p => p.AppointmentId == appointment.Id),
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DentistId),
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var a in appointments)
+            {
+                var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
+                var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
+                result.Add(new AppointmentResponse
+                {
+                    PatientUserID = patient.Id,
+                    AppointmentId = a.Appointment.Id,
+                    PatientId = a.Appointment.PatientId,
+                    ServiceId = a.Appointment.ServiceId,
+                    AppointmentDate = a.Appointment.AppointmentDate,
+                    StartTime = a.Appointment.StartTime,
+                    Duration = a.Appointment.Duration,
+                    Status = a.Appointment.Status,
+                    Notes = a.Appointment.Notes,
+                    PatientPhone = patient.PhoneNumber != null ? patient.PhoneNumber : null,
+                    PatientCode = a.Patient?.PatientCode,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
+                    ServiceName = a.Service?.ServiceName,
+                    ServicePrice = a.Service?.TotalPrice ?? 0,
+                    PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                    PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                    DentistId = a.Doctor.Id,
+                    DentistName = $"{dUser.FirstName} {dUser.LastName}",
+                    Type = AppointmentType.Appointment
+                });
+            }
+            return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
         {

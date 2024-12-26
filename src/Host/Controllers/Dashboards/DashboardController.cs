@@ -130,4 +130,12 @@ public class DashboardController : VersionedApiController
     //{
     //    return _dashboardService.NewContactsAsync(date, cancellationToken);
     //}
+
+    //checked
+    [HttpPost("staff/appointment/un-examination")]
+    [OpenApiOperation("Get All appointment what doctor can not do examinate in date", "")]
+    public Task<PaginationResponse<AppointmentResponse>> GetAppointmentAsync(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.GetAppointmentAsync(date, filter, cancellationToken);
+    }
 }
