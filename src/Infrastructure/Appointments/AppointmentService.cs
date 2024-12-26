@@ -1098,11 +1098,21 @@ internal class AppointmentService : IAppointmentService
     {
         try
         {
+            var current_role = _currentUserService.GetRole();
             var result = new List<AppointmentResponse>();
             var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
             var appointmentsQuery = _db.Appointments
                 .AsNoTracking().Where(p => p.DentistId == default);
-
+            if(current_role == FSHRoles.Patient)
+            {
+                var id = _currentUserService.GetUserId().ToString();
+                var pProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id);
+                if(pProfile == null)
+                {
+                    throw new Exception("Patient Not Found");
+                }
+                appointmentsQuery = appointmentsQuery.Where(p => p.PatientId == pProfile.Id);
+            }
             if (date != default)
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
