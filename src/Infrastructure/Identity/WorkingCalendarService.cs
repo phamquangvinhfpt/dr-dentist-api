@@ -1119,8 +1119,103 @@ internal class WorkingCalendarService : IWorkingCalendarService
                         (new TimeSpan(13, 0, 0), new TimeSpan(17, 0, 0)),
                         (new TimeSpan(18, 0, 0), new TimeSpan(22, 0, 0))
                     };
+                    var room_id = Guid.Empty;
+                    var assignedShifts = new List<int>();
+                    for (int i = 1; i <= 2; i++)
+                    {
+                        for (int j = 0; j < shifts.Count(); j++){
 
+                            if (assignedShifts.Contains(j))
+                                continue;
 
+                            var wasUse = await _db.WorkingCalendars
+                            .Where(p => p.Id != calendar.Calendar.Id &&
+                            p.Date == calendar.Calendar.Date &&
+                            p.Status == WorkingStatus.Accept &&
+                            p.RoomID != default &&
+                            _db.TimeWorkings.Any(c =>
+                                c.CalendarID != calendar.Calendar.Id && (
+                                c.StartTime <= shifts[j].Start && shifts[j].Start < c.EndTime ||
+                                c.StartTime < shifts[j].End && shifts[j].End <= c.EndTime ||
+                                shifts[j].Start <= c.StartTime && c.EndTime <= shifts[j].End
+                            ))).ToListAsync();
+                            if (wasUse.Count() > 0)
+                            {
+                                var room = await _db.Rooms.ToListAsync();
+                                foreach (var r in wasUse)
+                                {
+                                    room.RemoveAll(v => v.Id == r.RoomID);
+                                }
+                                if (room.Count() == 0)
+                                {
+                                    continue;
+                                }
+                                if (room_id != default && !wasUse.Any(p => p.RoomID == room_id))
+                                {
+                                    calendar.Calendar.RoomID = room_id;
+                                    _db.TimeWorkings.Add(new TimeWorking
+                                    {
+                                        CalendarID = calendar.Calendar.Id,
+                                        IsActive = true,
+                                        StartTime = shifts[j].Start,
+                                        EndTime = shifts[j].End,
+                                    });
+                                    assignedShifts.Add(j);
+                                    break;
+                                }
+                                else
+                                {
+                                    calendar.Calendar.RoomID = room[0].Id;
+                                    _db.TimeWorkings.Add(new TimeWorking
+                                    {
+                                        CalendarID = calendar.Calendar.Id,
+                                        IsActive = true,
+                                        StartTime = shifts[j].Start,
+                                        EndTime = shifts[j].End,
+                                    });
+                                    room_id = room[0].Id;
+                                    assignedShifts.Add(j);
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                if (room_id == default)
+                                {
+                                    var room = await _db.Rooms.ToListAsync();
+                                    calendar.Calendar.RoomID = room[0].Id;
+                                    _db.TimeWorkings.Add(new TimeWorking
+                                    {
+                                        CalendarID = calendar.Calendar.Id,
+                                        IsActive = true,
+                                        StartTime = shifts[j].Start,
+                                        EndTime = shifts[j].End,
+                                    });
+                                    room_id = room[0].Id;
+                                    assignedShifts.Add(j);
+                                    break;
+                                }
+                                else
+                                {
+                                    calendar.Calendar.RoomID = room_id;
+                                    _db.TimeWorkings.Add(new TimeWorking
+                                    {
+                                        CalendarID = calendar.Calendar.Id,
+                                        IsActive = true,
+                                        StartTime = shifts[j].Start,
+                                        EndTime = shifts[j].End,
+                                    });
+                                    assignedShifts.Add(j);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (assignedShifts.Count < 2)
+                    {
+                        throw new Exception($"Warning: Could not assign enough shifts at {calendar.Calendar.Date}. Only assigned {assignedShifts.Count} shifts.");
+                    }
+                    calendar.Calendar.Status = WorkingStatus.Accept;
                 }
                 else
                 {
