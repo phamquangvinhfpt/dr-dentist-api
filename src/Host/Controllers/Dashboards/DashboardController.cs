@@ -133,12 +133,12 @@ public class DashboardController : VersionedApiController
     }
 
     //checked
-    //[HttpGet("staff/follow-up")]
-    //[OpenApiOperation("Get follow up follow by date", "")]
-    //public Task<int> TotalFollowUpAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
-    //{
-    //    return _dashboardService.TotalFollowUpAsync(date, cancellationToken);
-    //}
+    [HttpGet("staff/un-assign")]
+    [OpenApiOperation("Get Unassign appointment follow by date", "")]
+    public Task<int> TotalUnAssignAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.TotalUnAssignAsync(date, cancellationToken);
+    }
 
     //checked
     [HttpPost("staff/appointment/un-examination")]
