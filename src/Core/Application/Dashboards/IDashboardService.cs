@@ -1,5 +1,6 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.CustomerServices.Feedbacks;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,4 +24,7 @@ public interface IDashboardService : ITransientService
     Task<int> TotalAppointmentsAsync(DateOnly date, CancellationToken cancellationToken);
     Task<int> NewContactsAsync(DateOnly date, CancellationToken cancellationToken);
     Task<PaginationResponse<AppointmentResponse>> GetAppointmentAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken);
+    Task<int> TotalFollowUpAsync(DateOnly date, CancellationToken cancellationToken);
+    Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken);
+    Task<int> TotalUnAssignAsync(DateOnly date, CancellationToken cancellationToken);
 }

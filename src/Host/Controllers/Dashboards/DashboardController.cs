@@ -1,6 +1,7 @@
 ﻿using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.Dashboards;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -124,11 +125,19 @@ public class DashboardController : VersionedApiController
     }
 
     //checked
-    //[HttpGet("staff/new-contact")]
-    //[OpenApiOperation("Get new contact request follow by date", "")]
-    //public Task<int> NewContactsAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    [HttpGet("staff/follow-up")]
+    [OpenApiOperation("Get follow up follow by date", "")]
+    public Task<int> TotalFollowUpAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.TotalFollowUpAsync(date, cancellationToken);
+    }
+
+    //checked
+    //[HttpGet("staff/follow-up")]
+    //[OpenApiOperation("Get follow up follow by date", "")]
+    //public Task<int> TotalFollowUpAsync([FromQuery] DateOnly date, CancellationToken cancellationToken)
     //{
-    //    return _dashboardService.NewContactsAsync(date, cancellationToken);
+    //    return _dashboardService.TotalFollowUpAsync(date, cancellationToken);
     //}
 
     //checked
@@ -137,5 +146,12 @@ public class DashboardController : VersionedApiController
     public Task<PaginationResponse<AppointmentResponse>> GetAppointmentAsync(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
         return _dashboardService.GetAppointmentAsync(date, filter, cancellationToken);
+    }
+
+    [HttpPost("staff/follow/un-examination")]
+    [OpenApiOperation("Get All appointment what doctor can not do examinate in date", "")]
+    public Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAsync(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
+    {
+        return _dashboardService.GetFollowUpAsync(date, filter, cancellationToken);
     }
 }

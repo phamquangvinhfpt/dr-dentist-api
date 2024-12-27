@@ -8,8 +8,10 @@ using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.CustomerServices.Feedbacks;
 using FSH.WebApi.Application.Dashboards;
+using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
+using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Auth.Permissions;
 using FSH.WebApi.Infrastructure.Identity;
@@ -38,8 +40,9 @@ internal class DashboardService : IDashboardService
     private readonly ILogger<DashboardService> _logger;
     private readonly ICacheService _cacheService;
     private readonly INotificationService _notificationService;
+    private readonly IAppointmentCalendarService _appointmentCalendarService;
 
-    public DashboardService(ApplicationDbContext db, IStringLocalizer<DashboardService> t, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<DashboardService> logger, ICacheService cacheService, INotificationService notificationService)
+    public DashboardService(ApplicationDbContext db, IStringLocalizer<DashboardService> t, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<DashboardService> logger, ICacheService cacheService, INotificationService notificationService, IAppointmentCalendarService appointmentCalendarService)
     {
         _db = db;
         _t = t;
@@ -48,6 +51,7 @@ internal class DashboardService : IDashboardService
         _logger = logger;
         _cacheService = cacheService;
         _notificationService = notificationService;
+        _appointmentCalendarService = appointmentCalendarService;
     }
 
     public async Task<int> AppointmentDoneAsync(CancellationToken cancellationToken)
@@ -157,7 +161,7 @@ internal class DashboardService : IDashboardService
         try
         {
             var result = new List<AppointmentResponse>();
-            var spec = new EntitiesByPaginationFilterSpec<Appointment>(filter);
+            var spec = new EntitiesByPaginationFilterSpec<AppointmentResponse>(filter);
             var appointmentsQuery = _db.Appointments
                 .AsQueryable().Where(p => p.DentistId != default);
 
@@ -165,13 +169,13 @@ internal class DashboardService : IDashboardService
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.AppointmentDate == date);
             }
-            appointmentsQuery = appointmentsQuery.Where(p => !_db.WorkingCalendars.Any(w => w.DoctorID == p.DentistId &&
-                w.Date == p.AppointmentDate &&
-                w.Status == Domain.Identity.WorkingStatus.Accept));
+            //appointmentsQuery = appointmentsQuery.Where(p => !_db.WorkingCalendars.Any(w => w.DoctorID == p.DentistId &&
+            //    w.Date == p.AppointmentDate &&
+            //    w.Status == Domain.Identity.WorkingStatus.Accept));
 
-            int count = await appointmentsQuery.CountAsync(cancellationToken);
+            //int count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
+            //appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -186,32 +190,130 @@ internal class DashboardService : IDashboardService
 
             foreach (var a in appointments)
             {
-                var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
-                var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
-                result.Add(new AppointmentResponse
+                if(!_appointmentCalendarService.CheckAvailableTimeSlot(a.Appointment.AppointmentDate, a.Appointment.StartTime, a.Appointment.StartTime.Add(a.Appointment.Duration), a.Appointment.DentistId).Result)
                 {
-                    PatientUserID = patient.Id,
-                    AppointmentId = a.Appointment.Id,
-                    PatientId = a.Appointment.PatientId,
-                    ServiceId = a.Appointment.ServiceId,
-                    AppointmentDate = a.Appointment.AppointmentDate,
-                    StartTime = a.Appointment.StartTime,
-                    Duration = a.Appointment.Duration,
-                    Status = a.Appointment.Status,
-                    Notes = a.Appointment.Notes,
-                    PatientPhone = patient.PhoneNumber != null ? patient.PhoneNumber : null,
-                    PatientCode = a.Patient?.PatientCode,
-                    PatientName = $"{patient.FirstName} {patient.LastName}",
-                    ServiceName = a.Service?.ServiceName,
-                    ServicePrice = a.Service?.TotalPrice ?? 0,
-                    PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
-                    PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
-                    DentistId = a.Doctor.Id,
-                    DentistName = $"{dUser.FirstName} {dUser.LastName}",
-                    Type = AppointmentType.Appointment
-                });
+                    var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
+                    var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
+                    result.Add(new AppointmentResponse
+                    {
+                        PatientUserID = patient.Id,
+                        AppointmentId = a.Appointment.Id,
+                        PatientId = a.Appointment.PatientId,
+                        ServiceId = a.Appointment.ServiceId,
+                        AppointmentDate = a.Appointment.AppointmentDate,
+                        StartTime = a.Appointment.StartTime,
+                        Duration = a.Appointment.Duration,
+                        Status = a.Appointment.Status,
+                        Notes = a.Appointment.Notes,
+                        PatientPhone = patient.PhoneNumber != null ? patient.PhoneNumber : null,
+                        PatientCode = a.Patient?.PatientCode,
+                        PatientName = $"{patient.FirstName} {patient.LastName}",
+                        ServiceName = a.Service?.ServiceName,
+                        ServicePrice = a.Service?.TotalPrice ?? 0,
+                        PaymentStatus = a.Payment is not null ? a.Payment.Status : Domain.Payments.PaymentStatus.Waiting,
+                        PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                        DentistId = a.Doctor.Id,
+                        DentistName = $"{dUser.FirstName} {dUser.LastName}",
+                        Type = AppointmentType.Appointment
+                    });
+                }
             }
-            return new PaginationResponse<AppointmentResponse>(result, count, filter.PageNumber, filter.PageSize);
+            int count = result.Count();
+            var r = result.AsQueryable().WithSpecification(spec).ToList();
+            return new PaginationResponse<AppointmentResponse>(r, count, filter.PageNumber, filter.PageSize);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = new List<GetWorkingDetailResponse>();
+            var spec = new EntitiesByPaginationFilterSpec<GetWorkingDetailResponse>(filter);
+            var appointmentsQuery = _db.AppointmentCalendars
+                .AsNoTracking()
+                .Where(p => p.Type == AppointmentType.FollowUp && p.Status == Domain.Identity.CalendarStatus.Booked);
+
+            if (date != default)
+            {
+                appointmentsQuery = appointmentsQuery.Where(w => w.Date == date);
+            }
+            //appointmentsQuery = appointmentsQuery.Where(p => !_db.WorkingCalendars.Any(w => w.DoctorID == p.DentistId &&
+            //    w.Date == p.AppointmentDate &&
+            //    w.Status == Domain.Identity.WorkingStatus.Accept));
+
+            //int count = await appointmentsQuery.CountAsync(cancellationToken);
+
+            //appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
+
+            var appointments = await appointmentsQuery
+                .Select(appointment => new
+                {
+                    Appointment = appointment,
+                    Doctor = _db.DoctorProfiles.FirstOrDefault(d => d.Id == appointment.DoctorId),
+                    Patient = _db.PatientProfiles.FirstOrDefault(p => p.Id == appointment.PatientId),
+                    TreatmentPlan = _db.TreatmentPlanProcedures.FirstOrDefault(s => s.Id == appointment.PlanID),
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var a in appointments)
+            {
+                if (!_appointmentCalendarService.CheckAvailableTimeSlot(a.Appointment.Date.Value, a.Appointment.StartTime.Value, a.Appointment.EndTime.Value, a.Appointment.DoctorId.Value).Result)
+                {
+                    var doctor = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
+                    var patient = await _userManager.FindByIdAsync(a.Patient.UserId);
+                    var sp = await _db.ServiceProcedures.Where(p => p.Id == a.TreatmentPlan.ServiceProcedureId)
+                        .Select(s => new
+                        {
+                            Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
+                            Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                            Step = s.StepOrder
+                        }).FirstOrDefaultAsync();
+                    var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);
+                    var r = new GetWorkingDetailResponse
+                    {
+                        TreatmentID = a.TreatmentPlan.Id,
+                        AppointmentId = a.Appointment.AppointmentId.Value,
+                        AppointmentType = a.Appointment.Type,
+                        CalendarID = a.Appointment.Id,
+                        Date = a.Appointment.Date.Value,
+                        DoctorName = $"{doctor.FirstName} {doctor.LastName}",
+                        DoctorProfileID = a.Appointment.DoctorId.Value,
+                        EndTime = a.Appointment.EndTime.Value,
+                        PatientPhone = patient.PhoneNumber != null ? patient.PhoneNumber : null,
+                        Note = a.Appointment.Note,
+                        PatientCode = a.Patient.PatientCode,
+                        PatientName = $"{patient.FirstName} {patient.LastName}",
+                        PatientProfileID = a.Patient.Id,
+                        ProcedureID = sp.Procedure.Id,
+                        ProcedureName = sp.Procedure.Name,
+                        ServiceID = sp.Service.Id,
+                        ServiceName = sp.Service.ServiceName,
+                        StartTime = a.Appointment.StartTime.Value,
+                        Status = a.Appointment.Status,
+                        Step = sp.Step,
+                        PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                    };
+                    if (calendar != null)
+                    {
+                        if (calendar.RoomID != default)
+                        {
+                            var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == calendar.RoomID);
+                            r.RoomID = room.Id;
+                            r.RoomName = room.RoomName;
+                        }
+                    }
+                    result.Add(r);
+                }
+            }
+            int count = result.Count();
+            var re = result.AsQueryable().WithSpecification(spec).ToList();
+            return new PaginationResponse<GetWorkingDetailResponse>(re, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)
         {
@@ -465,11 +567,37 @@ internal class DashboardService : IDashboardService
         }
     }
 
+    public async Task<int> TotalFollowUpAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.AppointmentCalendars.CountAsync(p => p.DoctorId != default && p.Date == date && p.Type == AppointmentType.FollowUp && p.Status == Domain.Identity.CalendarStatus.Booked);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
     public async Task<int> TotalServiceAsync(CancellationToken cancellationToken)
     {
         try
         {
             return await _db.Services.CountAsync(p => p.IsActive);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<int> TotalUnAssignAsync(DateOnly date, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _db.Appointments.CountAsync(p => p.DentistId == default && p.AppointmentDate == date && p.Status == Domain.Appointments.AppointmentStatus.Confirmed);
         }
         catch (Exception ex)
         {
