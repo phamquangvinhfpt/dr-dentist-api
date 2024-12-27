@@ -124,9 +124,9 @@ public class PersonalController : VersionNeutralApiController
     }
     //checked
     [HttpPost("update-doctor-profile")]
-    [MustHavePermission(FSHAction.Update, FSHResource.Users)]
+    //[MustHavePermission(FSHAction.Update, FSHResource.Users)]
     [OpenApiOperation("Update Doctor Profile", "")]
-    public Task<string> UpdateDoctorProfile(UpdateDoctorProfile request)
+    public Task<string> UpdateDoctorProfile([FromForm] UpdateDoctorProfile request)
     {
         return Mediator.Send(request);
     }

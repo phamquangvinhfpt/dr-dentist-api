@@ -70,7 +70,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
         try
         {
             var doctor = await _userManager.FindByIdAsync(doctorID);
-            if (doctor == null) {
+            if (doctor == null)
+            {
                 throw new Exception("Waring: Doctor is not existing.");
             }
             var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == doctorID);
@@ -88,7 +89,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
             foreach (var item in request)
             {
                 var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == DateOnly.FromDateTime(item.Date));
-                if (existing) {
+                if (existing)
+                {
                     throw new Exception($"Date: {item.Date} has been taken in your working calendar");
                 }
                 int totalTimeInDay = 0;
@@ -129,7 +131,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             // Validate each week's total hours
             foreach (var weekHours in weeklyHours)
             {
-                if(weekHours.Key.Week == 1 && weekHours.Value.FirstDate.DayOfWeek > DayOfWeek.Tuesday)
+                if (weekHours.Key.Week == 1 && weekHours.Value.FirstDate.DayOfWeek > DayOfWeek.Tuesday)
                 {
                     continue;
                 }
@@ -143,7 +145,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
             await transaction.CommitAsync(cancellationToken);
             return "Success";
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
             throw new Exception(ex.Message);
@@ -175,7 +178,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 var currentDate = new DateOnly(date.Year, date.Month, day);
 
                 var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == currentDate);
-                if (existing) {
+                if (existing)
+                {
                     throw new Exception($"Day: {currentDate} has been existing");
                 }
 
@@ -226,11 +230,12 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 int totalTimeInDay = 0;
 
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == DateOnly.FromDateTime(item.Date));
-                if (calendar == null) {
+                if (calendar == null)
+                {
                     //throw new Exception("Warning: Error when find calendar");
                     _logger.LogInformation("Warning: Error when find calendar at UpdateWorkingCalendar. To Processing create new working time.");
                 }
-                if(calendar.Status != WorkingStatus.Waiting)
+                if (calendar.Status != WorkingStatus.Waiting)
                 {
                     throw new Exception("Warning: The time was accept or cancel");
                 }
@@ -242,7 +247,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     //    throw new Exception($"At least 4 hour each session for part time doctor: {t.StartTime} - {t.EndTime}");
                     //}
 
-                    if(dProfile.WorkingType == WorkingType.PartTime)
+                    if (dProfile.WorkingType == WorkingType.PartTime)
                     {
                         var times = await _db.TimeWorkings.Where(p => p.CalendarID == calendar.Id).ToListAsync();
                         if (times.Count() == 0)
@@ -272,7 +277,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 if (dProfile.WorkingType == WorkingType.PartTime && totalTimeInDay < 4)
                 {
                     throw new Exception($"Part-time doctor must work at least 4 hours per day. Date: {item.Date}");
-                }else if (dProfile.WorkingType == WorkingType.FullTime && totalTimeInDay < 8)
+                }
+                else if (dProfile.WorkingType == WorkingType.FullTime && totalTimeInDay < 8)
                 {
                     throw new Exception($"Fulltime doctor must work at 8 hours per day. Date: {item.Date}");
                 }
@@ -290,7 +296,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
     }
 
-    public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendarPagination(PaginationFilter filter, DateOnly date, DateOnly Edate,  CancellationToken cancellationToken)
+    public async Task<PaginationResponse<WorkingCalendarResponse>> GetWorkingCalendarPagination(PaginationFilter filter, DateOnly date, DateOnly Edate, CancellationToken cancellationToken)
     {
         try
         {
@@ -300,7 +306,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var query = _db.WorkingCalendars
                 .AsNoTracking().Where(p => p.Status == WorkingStatus.Accept);
 
-            if(currentUser == FSHRoles.Dentist)
+            if (currentUser == FSHRoles.Dentist)
             {
                 string id = _currentUserService.GetUserId().ToString();
                 var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
@@ -340,7 +346,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     WorkingType = calendar.Doctor.WorkingType,
                 };
                 r.CalendarDetails = new List<CalendarDetail>();
-                foreach(var item in calendar.Calendar)
+                foreach (var item in calendar.Calendar)
                 {
                     var t = new CalendarDetail
                     {
@@ -357,7 +363,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                     t.Times = new List<TimeDetail>();
                     var times = await _db.TimeWorkings.Where(p => p.CalendarID == item.Id).ToListAsync();
-                    foreach(var i in times)
+                    foreach (var i in times)
                     {
                         t.Times.Add(new TimeDetail
                         {
@@ -386,7 +392,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
         try
         {
             var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == request.RoomID);
-            if (room == null) {
+            if (room == null)
+            {
                 throw new Exception("Warning: Error when find room");
             }
             var calendar = await _db.WorkingCalendars
@@ -398,7 +405,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Doctor = _db.DoctorProfiles.FirstOrDefault(p => p.Id == c.DoctorID)
                 })
                 .FirstOrDefaultAsync();
-            if (calendar == null) {
+            if (calendar == null)
+            {
                 throw new Exception("Warning: Error when find calendar");
             }
             if (calendar.Times.Count() == 0)
@@ -413,22 +421,27 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 .Where(p => p.RoomID == request.RoomID && p.Date == calendar.Calendar.Date && p.Status == WorkingStatus.Accept)
                 .ToListAsync();
             bool flag = false;
-            foreach (var item in wasUse) {
-                foreach (var item2 in calendar.Times) {
+            foreach (var item in wasUse)
+            {
+                foreach (var item2 in calendar.Times)
+                {
                     flag = await _db.TimeWorkings.AnyAsync(c =>
                         c.CalendarID == item.Id && (
                         c.StartTime <= item2.StartTime && item2.StartTime < c.EndTime ||
                         c.StartTime < item2.EndTime && item2.EndTime <= c.EndTime ||
                         item2.StartTime <= c.StartTime && c.EndTime <= item2.EndTime
                     ));
-                    if (flag) {
+                    if (flag)
+                    {
                         throw new Exception($"Warning: the room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
                     }
                 }
             }
-            if (calendar.Doctor.WorkingType == WorkingType.PartTime) {
+            if (calendar.Doctor.WorkingType == WorkingType.PartTime)
+            {
                 calendar.Calendar.Status = WorkingStatus.Accept;
-                foreach (var item in calendar.Times) {
+                foreach (var item in calendar.Times)
+                {
                     item.IsActive = true;
                 }
             }
@@ -452,7 +465,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
         try
         {
             var existing = await _db.Rooms.AnyAsync(p => p.RoomName == request.Name);
-            if (existing) {
+            if (existing)
+            {
                 throw new Exception("The room is existing");
             }
             _db.Rooms.Add(new Domain.Examination.Room
@@ -485,7 +499,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var date = DateTime.Now;
             var time = date.TimeOfDay;
 
-            foreach(var item in query)
+            foreach (var item in query)
             {
                 var r = new RoomDetail
                 {
@@ -497,7 +511,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     p.Status == WorkingStatus.Accept && p.Date == DateOnly.FromDateTime(date) &&
                     _db.TimeWorkings.Any(t => t.CalendarID == p.Id &&
                     t.StartTime <= time && t.EndTime >= time && t.IsActive));
-                if (isUse != null) {
+                if (isUse != null)
+                {
                     var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == isUse.DoctorID);
                     var doctor = await _userManager.FindByIdAsync(dProfile.DoctorId);
                     r.DoctorID = doctor.Id;
@@ -1001,7 +1016,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     w.Date.Value.Year == targetYear))
                 .ToListAsync(cancellationToken);
 
-            foreach(var doctor in doctorsWithNoSchedule)
+            foreach (var doctor in doctorsWithNoSchedule)
             {
                 var user = await _userManager.FindByIdAsync(doctor.DoctorId);
                 result.Add(new GetDoctorResponse
@@ -1031,22 +1046,23 @@ internal class WorkingCalendarService : IWorkingCalendarService
     {
         try
         {
-            if(request.UserID == null)
+            if (request.UserID == null)
             {
                 throw new Exception("Warning: user information should be include.");
             }
-            if(request.Date == default)
+            if (request.Date == default)
             {
                 throw new Exception("Warning: The Date is default.");
             }
 
             var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == request.UserID);
 
-            if (dProfile == null) {
+            if (dProfile == null)
+            {
                 throw new Exception("Warning: Can not identify doctor.");
             }
             var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dProfile.Id && p.Date == request.Date);
-            if(calendar == null)
+            if (calendar == null)
             {
                 throw new Exception("Warning: User do not have work at this day.");
             }
@@ -1060,7 +1076,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 }).ToListAsync();
             return times;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError("Error getting doctors with no calendar: {Message}", ex.Message);
             throw new Exception(ex.Message);
         }
@@ -1071,7 +1088,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            foreach(var item in request)
+            foreach (var item in request)
             {
                 var calendar = await _db.WorkingCalendars
                     .Where(p => p.Id == item)
@@ -1086,63 +1103,77 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 {
                     throw new Exception("Warning: Error when find calendar");
                 }
-                if (calendar.Times.Count() == 0)
+                //if (calendar.Times.Count() == 0)
+                //{
+                //    throw new Exception("Warning: Time was not selected.");
+                //}
+                if (calendar.Doctor.WorkingType == WorkingType.PartTime && calendar.Calendar.Status != WorkingStatus.Accept)
                 {
-                    throw new Exception("Warning: Time was not selected.");
+                    throw new Exception("Warning: Time working that is not accept.");
                 }
-                if (calendar.Doctor.WorkingType == WorkingType.FullTime && calendar.Calendar.Status != WorkingStatus.Accept)
+                if (!calendar.Times.Any())
                 {
-                    throw new Exception("Warning: Time working that is not set to doctor full time.");
-                }
-                var room_id = Guid.Empty;
-                foreach (var item2 in calendar.Times)
-                {
-                    var wasUse = await _db.WorkingCalendars
-                        .Where(p => p.Id != calendar.Calendar.Id &&
-                        p.Date == calendar.Calendar.Date &&
-                        p.Status == WorkingStatus.Accept &&
-                        p.RoomID != default &&
-                        _db.TimeWorkings.Any(c =>
-                            c.CalendarID != calendar.Calendar.Id && (
-                            c.StartTime <= item2.StartTime && item2.StartTime < c.EndTime ||
-                            c.StartTime < item2.EndTime && item2.EndTime <= c.EndTime ||
-                            item2.StartTime <= c.StartTime && c.EndTime <= item2.EndTime
-                        ))).ToListAsync();
-
-                    if(wasUse == null)
+                    var shifts = new List<(TimeSpan Start, TimeSpan End)>
                     {
-                        if (room_id == Guid.Empty)
+                        (new TimeSpan(8, 0, 0), new TimeSpan(12, 0, 0)),
+                        (new TimeSpan(13, 0, 0), new TimeSpan(17, 0, 0)),
+                        (new TimeSpan(18, 0, 0), new TimeSpan(22, 0, 0))
+                    };
+
+
+                }
+                else
+                {
+                    var room_id = Guid.Empty;
+                    foreach (var item2 in calendar.Times)
+                    {
+                        var wasUse = await _db.WorkingCalendars
+                            .Where(p => p.Id != calendar.Calendar.Id &&
+                            p.Date == calendar.Calendar.Date &&
+                            p.Status == WorkingStatus.Accept &&
+                            p.RoomID != default &&
+                            _db.TimeWorkings.Any(c =>
+                                c.CalendarID != calendar.Calendar.Id && (
+                                c.StartTime <= item2.StartTime && item2.StartTime < c.EndTime ||
+                                c.StartTime < item2.EndTime && item2.EndTime <= c.EndTime ||
+                                item2.StartTime <= c.StartTime && c.EndTime <= item2.EndTime
+                            ))).ToListAsync();
+
+                        if (wasUse == null)
                         {
-                            var room = await _db.Rooms.FirstOrDefaultAsync();
-                            room_id = room.Id;
-                            calendar.Calendar.RoomID = room.Id;
+                            if (room_id == Guid.Empty)
+                            {
+                                var room = await _db.Rooms.FirstOrDefaultAsync();
+                                room_id = room.Id;
+                                calendar.Calendar.RoomID = room.Id;
+                            }
+                            else
+                            {
+                                calendar.Calendar.RoomID = room_id;
+                            }
+
                         }
                         else
                         {
-                            calendar.Calendar.RoomID = room_id;
-                        }
-
-                    }
-                    else
-                    {
-                        bool isUse = wasUse.Any(p => p.Status == WorkingStatus.Accept && p.RoomID == room_id);
-                        if (!isUse && room_id != default)
-                        {
-                            calendar.Calendar.RoomID = room_id;
-                        }
-                        else
-                        {
-                            var room = await _db.Rooms.ToListAsync();
-                            foreach (var r in wasUse)
+                            bool isUse = wasUse.Any(p => p.Status == WorkingStatus.Accept && p.RoomID == room_id);
+                            if (!isUse && room_id != default)
                             {
-                                room.RemoveAll(v => v.Id == r.RoomID);
+                                calendar.Calendar.RoomID = room_id;
                             }
-                            if (room.Count() == 0)
+                            else
                             {
-                                throw new Exception($"Warning: All room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
+                                var room = await _db.Rooms.ToListAsync();
+                                foreach (var r in wasUse)
+                                {
+                                    room.RemoveAll(v => v.Id == r.RoomID);
+                                }
+                                if (room.Count() == 0)
+                                {
+                                    throw new Exception($"Warning: All room has been taken at {calendar.Calendar.Date} {item2.StartTime} - {item2.EndTime}");
+                                }
+                                calendar.Calendar.RoomID = room[0].Id;
+                                room_id = calendar.Calendar.RoomID;
                             }
-                            calendar.Calendar.RoomID = room[0].Id;
-                            room_id = calendar.Calendar.RoomID;
                         }
                     }
                 }
@@ -1172,7 +1203,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
     {
         try
         {
-            if(date == default)
+            if (date == default)
             {
                 throw new Exception("The date information should be include.");
             }
@@ -1181,7 +1212,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
             int r = await _db.WorkingCalendars.CountAsync(p => p.DoctorID == dprofile.Id && p.Date.Value.Month == date.Month && p.Status != WorkingStatus.Off);
             string message = "";
-            if(r == 0)
+            if (r == 0)
             {
                 message = $"Bạn chưa đăng ký lịch làm cho {date.Month}/{date.Year}";
             }
@@ -1211,12 +1242,12 @@ internal class WorkingCalendarService : IWorkingCalendarService
         try
         {
             var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == DoctorID);
-            if(doctor == null)
+            if (doctor == null)
             {
                 throw new Exception("User Not Found");
             }
             var query = _db.WorkingCalendars.Where(p => p.DoctorID == doctor.Id);
-            if(start != default)
+            if (start != default)
             {
                 query = query.Where(p => p.Date >= start);
             }
@@ -1241,7 +1272,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Times = _db.TimeWorkings.Where(p => p.CalendarID == a.Id).OrderBy(p => p.StartTime).Select(t => new { Time = $"{t.StartTime} - {t.EndTime}", Status = t.IsActive }).ToList(),
                 }).ToListAsync();
             var result = new List<WorkingCalendarExport>();
-            foreach(var item in r)
+            foreach (var item in r)
             {
                 result.Add(new WorkingCalendarExport
                 {
@@ -1259,7 +1290,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
             return _excelWriter.WriteToStream(result);
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }
