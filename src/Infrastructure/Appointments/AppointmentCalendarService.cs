@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using Xceed.Words.NET;
 using FSH.WebApi.Infrastructure.Identity;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using FSH.WebApi.Domain.Payments;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 
@@ -306,7 +307,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
     {
         try
         {
-            bool check = await _db.WorkingCalendars.AnyAsync(a => a.Id == id);
+            bool check = await _db.AppointmentCalendars.AnyAsync(a => a.Id == id);
             if (!check)
             {
                 throw new BadRequestException("Calendar Not Found");
@@ -334,9 +335,9 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
                 CalendarID = calendar.Calendar.Id,
                 PatientProfileID = calendar.Appointment.PatientId,
                 PatientCode = pProfile.PatientCode,
-                PatientName = pUser.UserName,
+                PatientName = $"{pUser.FirstName} {pUser.LastName}",
                 DoctorProfileID = calendar.Doctor.Id,
-                DoctorName = dProfile.UserName,
+                DoctorName = $"{dProfile.FirstName} {dProfile.LastName}",
                 AppointmentId = calendar.Appointment.Id,
                 AppointmentType = calendar.Calendar.Type,
                 ServiceID = service.Id,
@@ -346,6 +347,8 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
                 EndTime = calendar.Calendar.EndTime!.Value,
                 Status = calendar.Calendar.Status,
                 Note = calendar.Calendar.Note,
+                PatientAvatar = pUser.ImageUrl,
+                PatientPhone = pProfile.Phone,
             };
 
             if (calendar.TreamentPlan != null)
@@ -358,9 +361,20 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
                     Procedure = _db.Procedures.FirstOrDefault(r => r.Id == a.ProcedureId),
                 })
                 .FirstOrDefaultAsync();
+                result.TreatmentID = calendar.TreamentPlan.Id;
                 result.Step = sp.SP.StepOrder;
                 result.ProcedureName = sp.Procedure.Name;
                 result.ProcedureID = sp.Procedure.Id;
+            }
+            var working = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == calendar.Doctor.Id && p.Date == calendar.Appointment.AppointmentDate && p.Status == WorkingStatus.Accept);
+
+            if (working != null) {
+                if (working.RoomID != default)
+                {
+                    var room = await _db.Rooms.FirstOrDefaultAsync(p => p.Id == working.RoomID);
+                    result.RoomID = room.Id;
+                    result.RoomName = room.RoomName;
+                }
             }
             return result;
 

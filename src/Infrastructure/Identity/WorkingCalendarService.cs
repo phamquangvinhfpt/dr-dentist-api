@@ -373,8 +373,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
                             StartTime = i.StartTime,
                         });
                     }
+                    t.Times = t.Times.OrderBy(p => p.StartTime).ToList();
                     r.CalendarDetails.Add(t);
                 }
+                r.CalendarDetails = r.CalendarDetails.OrderBy(p => p.Date).ToList();
                 result.Add(r);
             }
             return new PaginationResponse<WorkingCalendarResponse>(result, count, filter.PageNumber, filter.PageSize);
