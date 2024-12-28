@@ -1010,7 +1010,6 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var targetMonth = date.Month;
             var targetYear = date.Year;
 
-            // Lấy danh sách doctors chưa có lịch trong tháng specified
             var doctorsWithNoSchedule = await _db.DoctorProfiles
                 .Where(d => !_db.WorkingCalendars.Any(w =>
                     w.DoctorID == d.Id &&
@@ -1021,18 +1020,107 @@ internal class WorkingCalendarService : IWorkingCalendarService
             foreach (var doctor in doctorsWithNoSchedule)
             {
                 var user = await _userManager.FindByIdAsync(doctor.DoctorId);
-                result.Add(new GetDoctorResponse
+                if (user.IsActive)
                 {
-                    DoctorProfile = doctor,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    Gender = user.Gender,
-                    Id = user.Id,
-                    ImageUrl = user.ImageUrl,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                    UserName = user.UserName,
-                });
+                    result.Add(new GetDoctorResponse
+                    {
+                        DoctorProfile = doctor,
+                        Email = user.Email,
+                        FirstName = user.FirstName,
+                        Gender = user.Gender,
+                        Id = user.Id,
+                        ImageUrl = user.ImageUrl,
+                        LastName = user.LastName,
+                        PhoneNumber = user.PhoneNumber,
+                        UserName = user.UserName,
+                    });
+                }
+            }
+            var startOfMonth = new DateOnly(targetYear, targetMonth, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+            var partTimeDoctors = await _db.DoctorProfiles
+            .Where(p => p.WorkingType == WorkingType.PartTime &&
+                _db.WorkingCalendars.Any(w =>
+                    w.DoctorID == p.Id &&
+                    w.Date.Value.Month == targetMonth &&
+                    w.Date.Value.Year == targetYear))
+            .Select(d => new
+            {
+                Doctor = d,
+                Calendars = _db.WorkingCalendars
+                    .Where(w => w.DoctorID == d.Id &&
+                        w.Date >= startOfMonth &&
+                        w.Date <= endOfMonth)
+                    .Select(w => new
+                    {
+                        Calendar = w,
+                        Times = _db.TimeWorkings.Where(t => t.CalendarID == w.Id).ToList(),
+                    })
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+            foreach (var doctorData in partTimeDoctors)
+            {
+                var insufficientHours = false;
+
+                var weeklyData = doctorData.Calendars
+                    .GroupBy(c => GetWeekOfMonth(DateTime.Parse(c.Calendar.Date.Value.ToString())))
+                    .Select(g => new
+                    {
+                        WeekNumber = g.Key,
+                        FirstDate = g.Min(c => c.Calendar.Date.Value),
+                        Hours = g.Sum(c => c.Times.Sum(t => (t.EndTime - t.StartTime).TotalHours))
+                    })
+                    .OrderBy(w => w.FirstDate)
+                    .ToList();
+
+                if (weeklyData.Last().WeekNumber < 4)
+                {
+                    insufficientHours = true;
+                }
+                else
+                {
+                    foreach (var weekData in weeklyData)
+                    {
+                        if (weekData == weeklyData.First() &&
+                        weekData.FirstDate.DayOfWeek >= DayOfWeek.Wednesday)
+                        {
+                            continue;
+                        }
+
+                        if (weekData == weeklyData.Last() &&
+                            weekData.FirstDate.AddDays(6).Month != targetMonth)
+                        {
+                            continue;
+                        }
+
+                        if (weekData.Hours < 20)
+                        {
+                            insufficientHours = true;
+                            break;
+                        }
+                    }
+                }
+                if (insufficientHours)
+                {
+                    var user = await _userManager.FindByIdAsync(doctorData.Doctor.DoctorId);
+                    if (user.IsActive)
+                    {
+                        result.Add(new GetDoctorResponse
+                        {
+                            DoctorProfile = doctorData.Doctor,
+                            Email = user.Email,
+                            FirstName = user.FirstName,
+                            Gender = user.Gender,
+                            Id = user.Id,
+                            ImageUrl = user.ImageUrl,
+                            LastName = user.LastName,
+                            PhoneNumber = user.PhoneNumber,
+                            UserName = user.UserName,
+                        });
+                    }
+                }
             }
 
             return result;
