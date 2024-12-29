@@ -481,9 +481,9 @@ public class MedicalRecordService : IMedicalRecordService
                     var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("DoctorProfile.Id")).Value;
                     count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
                 }
-                if (request.AdvancedFilter.Filters.Any(p => p.Field.Equals("PatientProfileId")))
+                if (request.AdvancedFilter.Filters.Any(p => p.Field.Equals("PatientProfile.Id")))
                 {
-                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("PatientProfileId")).Value;
+                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("PatientProfile.Id")).Value;
                     count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
                 }
             }
