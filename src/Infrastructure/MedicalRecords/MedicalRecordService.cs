@@ -1,7 +1,10 @@
-﻿using ClosedXML;
+﻿using Ardalis.Specification.EntityFrameworkCore;
+using ClosedXML;
 using FSH.WebApi.Application.Common.Exceptions;
 using FSH.WebApi.Application.Common.FileStorage;
 using FSH.WebApi.Application.Common.Interfaces;
+using FSH.WebApi.Application.Common.Models;
+using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.MedicalRecords;
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Payments;
@@ -394,6 +397,101 @@ public class MedicalRecordService : IMedicalRecordService
         try
         {
             return ValidToothNumbers.Contains(i);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PaginationResponse<MedicalRecordResponse>> GetAllMedicalRecord(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var spec = new EntitiesByPaginationFilterSpec<MedicalRecord>(request);
+
+            var medicals = await _db.MedicalRecords.OrderBy(p => p.Date)
+                .WithSpecification(spec)
+                .Select(medical => new MedicalRecordResponse
+                {
+                    RecordId = medical.Id,
+                    DentistId = medical.DoctorProfileId,
+                    PatientId = medical.PatientProfileId,
+                    AppointmentId = medical.AppointmentId,
+                    Date = medical.Date,
+                    PatientCode = _db.PatientProfiles
+                        .Where(x => x.Id == medical.PatientProfileId)
+                        .Select(x => x.PatientCode)
+                        .FirstOrDefault(),
+                    PatientName = _db.Users
+                        .Where(x => x.Id == medical.PatientProfile.UserId)
+                        .Select(x => $"{x.FirstName} {x.LastName}")
+                        .FirstOrDefault(),
+                    DentistName = _db.Users
+                        .Where(x => x.Id == medical.DoctorProfile.DoctorId)
+                        .Select(x => $"{x.FirstName} {x.LastName}")
+                        .FirstOrDefault(),
+                    AppointmentNotes = _db.Appointments
+                        .Where(x => x.Id == medical.Appointment.Id)
+                        .Select(x => x.Notes)
+                        .FirstOrDefault(),
+
+                    BasicExamination = _db.BasicExaminations
+                        .Where(x => x.RecordId == medical.Id)
+                        .Select(x => new BasicExaminationRequest
+                        {
+                            TreatmentPlanNote = x.TreatmentPlanNote,
+                            ExaminationContent = x.ExaminationContent
+                        }).FirstOrDefault(),
+                    Diagnosis = _db.Diagnoses
+                        .Where(x => x.RecordId == medical.Id)
+                        .Select(x => new DiagnosisRequest
+                        {
+                            TeethConditions = x.TeethConditions,
+                            ToothNumber = x.ToothNumber
+                        }).ToList(),
+                })
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in medicals)
+            {
+                var indication = _db.Indications
+                        .Where(x => x.RecordId == item.RecordId).FirstOrDefault();
+                var images = _db.PatientImages.Where(p => p.IndicationId == indication.Id).ToList();
+                item.Indication = new IndicationRequest
+                {
+                    Description = indication.Description,
+                    IndicationType = indication.IndicationType
+                };
+                item.IndicationImages = new List<IndicationImageResponse>();
+                foreach (var image in images)
+                {
+                    item.IndicationImages.Add(new IndicationImageResponse
+                    {
+                        ImageType = image.ImageType,
+                        ImageUrl = image.ImageUrl
+                    });
+                }
+            }
+            int count = 0;
+            if(request.AdvancedFilter.Filters != null)
+            {
+                if(request.AdvancedFilter.Filters.Any(p => p.Field.Equals("DoctorProfile.Id"))){
+                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("DoctorProfile.Id")).Value;
+                    count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
+                }
+                if (request.AdvancedFilter.Filters.Any(p => p.Field.Equals("PatientProfileId")))
+                {
+                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("PatientProfileId")).Value;
+                    count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
+                }
+            }
+            else
+            {
+                count = await _db.MedicalRecords.CountAsync();
+            }
+            return new PaginationResponse<MedicalRecordResponse>(medicals, count, request.PageNumber, request.PageSize);
         }
         catch (Exception ex)
         {

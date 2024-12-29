@@ -8,4 +8,5 @@ public interface IMedicalRecordService : ITransientService
     Task<MedicalRecordResponse> GetMedicalRecordByAppointmentID(Guid id, CancellationToken cancellationToken);
     Task CreateMedicalRecord(CreateMedicalRecordRequest request, CancellationToken cancellationToken);
     Task<bool> CheckToothNumberValidAsync(int i);
+    Task<PaginationResponse<MedicalRecordResponse>> GetAllMedicalRecord(PaginationFilter request, CancellationToken cancellationToken);
 }

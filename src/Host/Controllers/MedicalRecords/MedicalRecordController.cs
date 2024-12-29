@@ -42,4 +42,11 @@ public class MedicalRecordController : VersionNeutralApiController
     {
         return _mediicalRecordService.GetMedicalRecordsByPatientId(id, SDate, EDate, cancellationToken);
     }
+
+    [HttpPost("get-all")]
+    [OpenApiOperation("Get all Medical record.", "")]
+    public Task<PaginationResponse<MedicalRecordResponse>> GetAllMedicalRecord(PaginationFilter request, CancellationToken cancellationToken)
+    {
+        return _mediicalRecordService.GetAllMedicalRecord(request, cancellationToken);
+    }
 }

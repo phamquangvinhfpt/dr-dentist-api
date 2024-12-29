@@ -177,7 +177,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
                 var currentDate = new DateOnly(date.Year, date.Month, day);
 
-                var existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == currentDate);
+                bool existing = await _db.WorkingCalendars.AnyAsync(p => p.DoctorID == dProfile.Id && p.Date == currentDate);
                 if (existing)
                 {
                     throw new Exception($"Day: {currentDate} has been existing");

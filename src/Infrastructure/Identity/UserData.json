@@ -203,7 +203,7 @@
     "LastName": "White",
     "Gender": false,
     "BirthDate": "1993-12-08",
-    "ImageUrl": "Files/Image/png/female.png",
+    "ImageUrl": null,
     "IsActive": true,
     "Job": "HR Specialist",
     "Address": "101 Elm Ave, Officeville, USA"
