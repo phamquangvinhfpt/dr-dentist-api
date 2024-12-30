@@ -10,6 +10,7 @@ using FSH.WebApi.Application.DentalServices;
 using FSH.WebApi.Application.DentalServices.Procedures;
 using FSH.WebApi.Application.DentalServices.Services;
 using FSH.WebApi.Application.Identity.Users;
+using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -458,8 +459,9 @@ internal class ServiceService : IServiceService
             .AsNoTracking()
             .WithSpecification(spec)
             .ToListAsync(cancellationToken);
-
+        var spec2 = new EntitiesByBaseFilterSpec<Procedure>(request);
         int count = await _db.Procedures
+            .WithSpecification(spec2)
             .CountAsync(cancellationToken);
         return new PaginationResponse<Procedure>(procedures, count, request.PageNumber, request.PageSize);
     }
@@ -527,9 +529,8 @@ internal class ServiceService : IServiceService
             .AsNoTracking()
             .WithSpecification(spec)
             .ToListAsync(cancellation);
-
-        int count = await _db.Services
-            .CountAsync(cancellation);
+        var spec2 = new EntitiesByBaseFilterSpec<Service>(filter);
+        var count = await _db.Services.WithSpecification(spec2).CountAsync(cancellation);
 
         foreach(var item in services)
         {
@@ -584,7 +585,9 @@ internal class ServiceService : IServiceService
                 .Where(p => p.DeletedBy != null)
                 .ToListAsync(cancellationToken);
 
-            int count = await _db.Services.Where(p => p.DeletedBy != null)
+            var spec2 = new EntitiesByBaseFilterSpec<Service>(request);
+
+            int count = await _db.Services.IgnoreQueryFilters().Where(p => p.DeletedBy != null).WithSpecification(spec2)
                 .CountAsync(cancellationToken);
             foreach (var item in services)
             {
@@ -1280,8 +1283,9 @@ internal class ServiceService : IServiceService
                 .AsNoTracking()
                 .WithSpecification(spec)
                 .ToListAsync(cancellationToken);
+            var spec2 = new EntitiesByBaseFilterSpec<TypeService>(request);
 
-            int count = await _db.TypeServices
+            int count = await _db.TypeServices.WithSpecification(spec2)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<TypeService>(procedures, count, request.PageNumber, request.PageSize);
         }

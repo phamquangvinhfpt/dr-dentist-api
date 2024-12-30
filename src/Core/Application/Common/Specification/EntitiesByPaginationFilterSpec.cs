@@ -4,12 +4,12 @@ public class EntitiesByPaginationFilterSpec<T, TResult> : EntitiesByBaseFilterSp
 {
     public EntitiesByPaginationFilterSpec(PaginationFilter filter)
         : base(filter) =>
-        Query.PaginateBy(filter);
+        Query.PaginateBy<T>(filter);
 }
 
 public class EntitiesByPaginationFilterSpec<T> : EntitiesByBaseFilterSpec<T>
 {
     public EntitiesByPaginationFilterSpec(PaginationFilter filter)
         : base(filter) =>
-        Query.PaginateBy(filter);
+        Query.PaginateBy<T>(filter);
 }

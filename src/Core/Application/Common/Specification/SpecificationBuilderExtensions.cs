@@ -251,14 +251,20 @@ public static class SpecificationBuilderExtensions
             return Expression.Constant(valueparsed, propertyType);
         }
 
-        if (propertyType == typeof(Guid))
+        if (propertyType == typeof(Guid) || propertyType == typeof(Guid?))
         {
-            string? stringGuid = GetStringFromJsonElement(value);
+            string? stringGuid = value is JsonElement jsonElement
+                ? jsonElement.GetString()
+                : value?.ToString();
 
-            if (!Guid.TryParse(stringGuid, out Guid valueparsed)) throw new CustomException(string.Format("Value {0} is not valid for {1}", value, field));
+            if (!Guid.TryParse(stringGuid, out Guid valueparsed))
+            {
+                throw new CustomException($"Value '{value}' is not valid for field '{field}'. Expected a GUID.");
+            }
 
             return Expression.Constant(valueparsed, propertyType);
         }
+
 
         if (propertyType == typeof(string))
         {

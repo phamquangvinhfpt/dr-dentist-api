@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 using System.Numerics;
 
 namespace FSH.WebApi.Infrastructure.MedicalRecords;
@@ -474,23 +475,9 @@ public class MedicalRecordService : IMedicalRecordService
                     });
                 }
             }
-            int count = 0;
-            if(request.AdvancedFilter.Filters != null)
-            {
-                if(request.AdvancedFilter.Filters.Any(p => p.Field.Equals("DoctorProfile.Id"))){
-                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("DoctorProfile.Id")).Value;
-                    count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
-                }
-                if (request.AdvancedFilter.Filters.Any(p => p.Field.Equals("PatientProfile.Id")))
-                {
-                    var id = request.AdvancedFilter.Filters.FirstOrDefault(p => p.Field.Equals("PatientProfile.Id")).Value;
-                    count = await _db.MedicalRecords.CountAsync(p => p.DoctorProfileId == Guid.Parse(id.ToString()));
-                }
-            }
-            else
-            {
-                count = await _db.MedicalRecords.CountAsync();
-            }
+            var spec2 = new EntitiesByBaseFilterSpec<MedicalRecord>(request);
+            var count = await _db.MedicalRecords.WithSpecification(spec2).CountAsync(cancellationToken);
+
             return new PaginationResponse<MedicalRecordResponse>(medicals, count, request.PageNumber, request.PageSize);
         }
         catch (Exception ex)

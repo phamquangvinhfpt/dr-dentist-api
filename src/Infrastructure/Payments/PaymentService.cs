@@ -194,7 +194,8 @@ public class PaymentService : IPaymentService
                 var patientProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 paymentQuery = paymentQuery.Where(p => p.PatientProfileId == patientProfile.Id);
             }
-            var count = paymentQuery.Count();
+            var spec2 = new EntitiesByBaseFilterSpec<Payment>(filter);
+            var count = paymentQuery.WithSpecification(spec2).Count();
             paymentQuery = paymentQuery.OrderByDescending(p => p.CreatedOn).WithSpecification(spec);
 
             var payments = await paymentQuery
@@ -312,8 +313,8 @@ public class PaymentService : IPaymentService
                 .WithSpecification(spec)
                 .OrderByDescending(x => x.When)
                 .ToListAsync(cancellationToken);
-
-            var count = await _context.Transactions.CountAsync();
+            var spec2 = new EntitiesByBaseFilterSpec<Transaction>(filter);
+            var count = await _context.Transactions.WithSpecification(spec2).CountAsync();
 
             return new PaginationResponse<Transaction>(result, count, filter.PageNumber, filter.PageSize);
 

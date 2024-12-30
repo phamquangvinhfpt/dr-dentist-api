@@ -20,6 +20,7 @@ using FSH.WebApi.Application.Identity.MedicalHistories;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.Users.Profile;
 using FSH.WebApi.Domain.CustomerServices;
+using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Auditing;
@@ -141,7 +142,8 @@ internal partial class UserService : IUserService
                     });
                 }
             }
-            count = await _userManager.Users
+            var spec2 = new EntitiesByBaseFilterSpec<ApplicationUser>(filter);
+            count = await _userManager.Users.WithSpecification(spec2)
                 .CountAsync(cancellationToken);
         }
         catch (Exception ex) {
@@ -430,8 +432,8 @@ internal partial class UserService : IUserService
                     u => u.Id,
                     (ur, u) => u
                 );
-
-            totalRecords = query.Count();
+            var spec2 = new EntitiesByBaseFilterSpec<ApplicationUser>(request);
+            totalRecords = query.WithSpecification(spec2).Count();
 
             var users = query
                 .Where(p => p.IsActive == request.IsActive)
@@ -472,7 +474,8 @@ internal partial class UserService : IUserService
                     isWorked = check
                 });
             }
-        }catch(Exception ex)
+        }
+        catch(Exception ex)
         {
             _logger.LogError(ex.Message, ex);
         }
@@ -611,8 +614,8 @@ internal partial class UserService : IUserService
                     u => u.Id,
                     (ur, u) => u
                 );
-
-            totalRecords = await query.CountAsync(cancellationToken);
+            var spec2 = new EntitiesByBaseFilterSpec<ApplicationUser>(request);
+            totalRecords = await query.WithSpecification(spec2).CountAsync(cancellationToken);
 
             var users = await query
                 .Where(p => p.IsActive == request.IsActive)
@@ -927,8 +930,8 @@ internal partial class UserService : IUserService
                     u => u.Id,
                     (ur, u) => u
                 );
-
-            totalRecords = await query.CountAsync(cancellationToken);
+            var spec2 = new EntitiesByBaseFilterSpec<ApplicationUser>(request);
+            totalRecords = await query.WithSpecification(spec2).CountAsync(cancellationToken);
 
             var users = await query
                 .Where(p => p.IsActive == request.IsActive)

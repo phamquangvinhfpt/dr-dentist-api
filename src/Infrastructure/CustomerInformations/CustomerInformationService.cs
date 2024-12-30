@@ -11,6 +11,7 @@ using FSH.WebApi.Application.CustomerServices;
 using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
+using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
@@ -148,8 +149,8 @@ internal class CustomerInformationService : ICustomerInformationService
 
                 list.Add(contactResponse);
             }
-
-            int count = await _db.ContactInfor.Where(p => p.StaffId != null)
+            var spec2 = new EntitiesByBaseFilterSpec<ContactInfor>(request);
+            int count = await _db.ContactInfor.Where(p => p.StaffId != null).WithSpecification(spec2)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
         }
@@ -194,8 +195,8 @@ internal class CustomerInformationService : ICustomerInformationService
 
                 list.Add(contactResponse);
             }
-
-            int count = await _db.ContactInfor.Where(p => p.StaffId == staffID)
+            var spec2 = new EntitiesByBaseFilterSpec<ContactInfor>(request);
+            int count = await _db.ContactInfor.Where(p => p.StaffId == staffID).WithSpecification(spec2)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
         }
@@ -233,8 +234,8 @@ internal class CustomerInformationService : ICustomerInformationService
 
                 list.Add(contactResponse);
             }
-
-            int count = await _db.ContactInfor.Where(p => p.StaffId == null)
+            var spec2 = new EntitiesByBaseFilterSpec<ContactInfor>(request);
+            int count = await _db.ContactInfor.Where(p => p.StaffId == null).WithSpecification(spec2)
                 .CountAsync(cancellationToken);
             return new PaginationResponse<ContactResponse>(list, count, request.PageNumber, request.PageSize);
         }
