@@ -309,7 +309,7 @@ internal class CustomerInformationService : ICustomerInformationService
                 throw new Exception("Warning: Can not found image");
             }
             contact.ImageUrl = await _fileStorageService.SaveFilesAsync(request.Images, cancellationToken);
-
+            contact.StaffId = _currentUserService.GetUserId().ToString();
             contact.LastModifiedBy = _currentUserService.GetUserId();
             contact.Status = ContactStatus.Done;
             await _db.SaveChangesAsync(cancellationToken);
