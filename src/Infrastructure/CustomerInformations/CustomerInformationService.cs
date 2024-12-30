@@ -81,7 +81,7 @@ internal class CustomerInformationService : ICustomerInformationService
             var role = await _userManager.GetRolesAsync(user);
             if (role[0] == FSHRoles.Staff)
             {
-                if (!request.StaffId.Equals(_currentUserService.GetUserId()))
+                if (!request.StaffId.Equals(_currentUserService.GetUserId().ToString()))
                 {
                     throw new InvalidOperationException("Staff can not handle for other staff");
                 }
@@ -101,6 +101,7 @@ internal class CustomerInformationService : ICustomerInformationService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
         }
     }
 
