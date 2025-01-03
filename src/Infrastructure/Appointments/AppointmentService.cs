@@ -1,6 +1,7 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
 using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Drawing;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using FluentValidation;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
@@ -25,6 +26,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
+using System.Numerics;
+using System.Threading;
 
 namespace FSH.WebApi.Infrastructure.Appointments;
 internal class AppointmentService : IAppointmentService
@@ -88,8 +91,7 @@ internal class AppointmentService : IAppointmentService
             .Where(p => p.PatientId == patient.Id &&
             (p.Status == Domain.Appointments.AppointmentStatus.Pending || p.Status == AppointmentStatus.Confirmed)
             ).AnyAsync();
-        bool isSunday = date.DayOfWeek == DayOfWeek.Sunday;
-        return !appointment && !isSunday;
+        return !appointment;
     }
 
     public async Task<PayAppointmentRequest> CreateAppointment(CreateAppointmentRequest request, CancellationToken cancellationToken)
@@ -540,8 +542,18 @@ internal class AppointmentService : IAppointmentService
                 var calendar = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
 
                 calendar.Status = CalendarStatus.Canceled;
-                var payment = await _db.Payments.FirstOrDefaultAsync(p => p.AppointmentId == request.AppointmentID);
-                payment.Status = Domain.Payments.PaymentStatus.Canceled;
+                var payment = await _db.Payments.Where(p => p.AppointmentId == appoint.Id)
+                .Select(a => new
+                {
+                    Payment = a,
+                    Detail = _db.PaymentDetails.Where(p => p.PaymentID == a.Id).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+                payment.Payment.Status = PaymentStatus.Canceled;
+                foreach (var item in payment.Detail)
+                {
+                    item.PaymentStatus = PaymentStatus.Canceled;
+                }
                 if (appoint.DentistId != default)
                 {
                     _jobService.Schedule(() => SendAppointmentActionNotification(appoint.PatientId,
@@ -569,6 +581,7 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new BadRequestException("The Appointment can not be cancel");
             }
+            
             appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -1590,6 +1603,9 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception("Can not verify the follow up appointment.");
             }
             calendar.Status = CalendarStatus.Checkin;
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             await DeleteRedisCode();
             return "Success";
         }
@@ -1675,6 +1691,77 @@ internal class AppointmentService : IAppointmentService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task JobAppointmentsAsync()
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            bool flag = true;
+            var appointments = await _db.Appointments.Where(p => p.Status == AppointmentStatus.Confirmed).ToListAsync();
+            if(appointments != null)
+            {
+                foreach(var appointment in appointments)
+                {
+                    if(appointment.AppointmentDate < DateOnly.FromDateTime(DateTime.Now))
+                    {
+                        var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                            .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                            .FirstOrDefaultAsync();
+                        var doctor = await _db.DoctorProfiles.Where(p => p.Id == appointment.DentistId)
+                            .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.DoctorId))
+                            .FirstOrDefaultAsync();
+
+                        appointment.Status = AppointmentStatus.Cancelled;
+                        await _notificationService.SendNotificationToUser(doctor.Id,
+                        new Shared.Notifications.BasicNotification
+                        {
+                            Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                            Message = $"Patient {patient.FirstName} {patient.LastName} was cancel the meeting in {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
+                            Title = "Cancel Appointment Notification",
+                            Url = "/appointment",
+                        }, null, default);
+                        await _notificationService.SendNotificationToUser(patient.Id,
+                            new Shared.Notifications.BasicNotification
+                            {
+                                Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                Message = $"Cancel appointment in {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
+                                Title = "Cancel Appointment Notification",
+                                Url = "/appointment",
+                            }, null, default);
+                        flag = false;
+
+                    }
+                    else if(appointment.AppointmentDate == DateOnly.FromDateTime(DateTime.Now) && appointment.StartTime < DateTime.Now.TimeOfDay)
+                    {
+                        var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                            .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                            .FirstOrDefaultAsync();
+                        await _notificationService.SendNotificationToUser(patient.Id,
+                            new Shared.Notifications.BasicNotification
+                            {
+                                Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} chưa được thực hiện. Nếu bạn có việc hãy thay đổi ngày khám trong ngày hôm nay.",
+                                Title = "Nhắc nhở lịch hẹn",
+                                Url = "/appointment",
+                            }, null, default);
+                    }
+                }
+            }
+            if (!flag)
+            {
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await DeleteRedisCode();
+            }
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }

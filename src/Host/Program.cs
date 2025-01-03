@@ -33,6 +33,9 @@ try
     await app.Services.InitializeDatabasesAsync();
 
     app.UseInfrastructure(builder.Configuration);
+
+    RecurringJob.AddOrUpdate<AppointmentJobDaily>("AppointmentJobDaily", job => job.AppointmentJobDailyAsync(), Cron.Daily);
+
     //if (!app.Environment.IsDevelopment())
     app.MapEndpoints();
     app.Run();

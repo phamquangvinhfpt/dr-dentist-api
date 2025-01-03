@@ -288,6 +288,14 @@ public class AppointmentController : VersionNeutralApiController
         _appointmentService.DeleteRedisCode();
         return _appointmentService.RevertPayment(id);
     }
+    [HttpGet("job")]
+    [AllowAnonymous]
+    [TenantIdHeader]
+    [OpenApiOperation("Revert Payment", "")]
+    public Task T(Guid id)
+    {
+        return _appointmentService.JobAppointmentsAsync();
+    }
     //public Task DeleteRedisCode()
     //{
     //    try

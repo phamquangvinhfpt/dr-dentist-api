@@ -1408,7 +1408,7 @@ internal class ApplicationDbSeeder
                 (new TimeSpan(18, 0, 0), new TimeSpan(22, 0, 0), "Evening")
             };
                 var startDate = new DateOnly(2024, 3, 1);
-                var endDate = new DateOnly(2024, 12, 31);
+                var endDate = DateOnly.FromDateTime(DateTime.Now).AddMonths(1).AddDays(-(DateOnly.FromDateTime(DateTime.Now).Day));
 
                 foreach (var doctor in doctors)
                 {
@@ -1417,31 +1417,32 @@ internal class ApplicationDbSeeder
                     for (var date = startDate; date <= endDate; date = date.AddDays(1))
                     {
                         // Skip only Sundays
-                        if (date.DayOfWeek != DayOfWeek.Sunday)
+                        //if (date.DayOfWeek != DayOfWeek.Sunday)
+                        //{
+
+                        //}
+                        var c = new WorkingCalendar
                         {
-                            var c = new WorkingCalendar
-                            {
-                                DoctorID = doctor.Id,
-                                RoomID = room.Id,
-                                Date = date,
-                                Status = WorkingStatus.Accept,
-                                Note = $"Schedule for {doctor.DoctorId}"
-                            };
-                            var calendar = _db.WorkingCalendars.Add(c).Entity;
+                            DoctorID = doctor.Id,
+                            RoomID = room.Id,
+                            Date = date,
+                            Status = WorkingStatus.Accept,
+                            Note = $"Schedule for {doctor.DoctorId}"
+                        };
+                        var calendar = _db.WorkingCalendars.Add(c).Entity;
 
-                            // Xác định ca làm việc dựa trên WorkingType
-                            var shiftsForDoctor = GetShiftsBasedOnWorkingType(doctor.WorkingType, allShifts, date.DayOfWeek);
+                        // Xác định ca làm việc dựa trên WorkingType
+                        var shiftsForDoctor = GetShiftsBasedOnWorkingType(doctor.WorkingType, allShifts, date.DayOfWeek);
 
-                            foreach (var shift in shiftsForDoctor)
+                        foreach (var shift in shiftsForDoctor)
+                        {
+                            _db.TimeWorkings.Add(new TimeWorking
                             {
-                                _db.TimeWorkings.Add(new TimeWorking
-                                {
-                                    CalendarID = calendar.Id,
-                                    StartTime = shift.Start,
-                                    EndTime = shift.End,
-                                    IsActive = true
-                                });
-                            }
+                                CalendarID = calendar.Id,
+                                StartTime = shift.Start,
+                                EndTime = shift.End,
+                                IsActive = true
+                            });
                         }
                     }
                 }

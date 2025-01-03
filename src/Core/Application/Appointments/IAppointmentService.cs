@@ -35,5 +35,6 @@ public interface IAppointmentService : ITransientService
     Task<List<GetDoctorResponse>> GetAvailableDoctorAsync(GetAvailableDoctor request, CancellationToken cancellationToken);
     Task<string> ToggleFollowAppointment(DefaultIdType id, CancellationToken cancellationToken);
     Task<string> RevertPayment(DefaultIdType id);
+    Task JobAppointmentsAsync();
     Task DeleteRedisCode();
 }
