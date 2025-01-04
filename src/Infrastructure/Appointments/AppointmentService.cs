@@ -321,7 +321,7 @@ internal class AppointmentService : IAppointmentService
             if (currentUser == FSHRoles.Dentist)
             {
                 var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
-                appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id && p.Status == AppointmentStatus.Come && p.Status == AppointmentStatus.Examinated);
+                appointmentsQuery = appointmentsQuery.Where(p => p.DentistId == dProfile.Id && (p.Status == AppointmentStatus.Come || p.Status == AppointmentStatus.Examinated));
             }
             else if (currentUser == FSHRoles.Patient)
             {
@@ -1287,14 +1287,14 @@ internal class AppointmentService : IAppointmentService
             if (currentUser == FSHRoles.Dentist)
             {
                 var dProfile = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
-                appointmentsQuery = appointmentsQuery.Where(p => p.DoctorId == dProfile.Id && p.Status == CalendarStatus.Checkin);
+                appointmentsQuery = appointmentsQuery.Where(p => p.DoctorId == dProfile.Id && (p.Status == CalendarStatus.Checkin || p.Status == CalendarStatus.Booked));
             }
             else if (currentUser == FSHRoles.Patient)
             {
                 var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == _currentUserService.GetUserId().ToString());
                 appointmentsQuery = appointmentsQuery.Where(p => p.PatientId == patientProfile.Id);
             }
-            if (currentUser == FSHRoles.Staff || currentUser == FSHRoles.Dentist)
+            if (currentUser == FSHRoles.Staff)
             {
                 appointmentsQuery = appointmentsQuery.Where(w => w.Status == CalendarStatus.Booked);
             }
@@ -1745,7 +1745,21 @@ internal class AppointmentService : IAppointmentService
                             new Shared.Notifications.BasicNotification
                             {
                                 Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                                Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} chưa được thực hiện. Nếu bạn có việc hãy thay đổi ngày khám trong ngày hôm nay.",
+                                Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
+                                Title = "Nhắc nhở lịch hẹn",
+                                Url = "/appointment",
+                            }, null, default);
+                    }
+                    else if (appointment.AppointmentDate > DateOnly.FromDateTime(DateTime.Now))
+                    {
+                        var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                            .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                            .FirstOrDefaultAsync();
+                        await _notificationService.SendNotificationToUser(patient.Id,
+                            new Shared.Notifications.BasicNotification
+                            {
+                                Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
                                 Title = "Nhắc nhở lịch hẹn",
                                 Url = "/appointment",
                             }, null, default);

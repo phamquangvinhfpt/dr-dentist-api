@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
+using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Interfaces;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
@@ -34,8 +35,9 @@ internal class ApplicationDbSeeder
     private readonly ApplicationDbContext _db;
     private readonly ISerializerService _serializerService;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IAppointmentService _appointmentService;
 
-    public ApplicationDbSeeder(ISerializerService serializerService, ApplicationDbContext db, FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger, IServiceScopeFactory scopeFactory)
+    public ApplicationDbSeeder(IAppointmentService appointmentService, ISerializerService serializerService, ApplicationDbContext db, FSHTenantInfo currentTenant, RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager, CustomSeederRunner seederRunner, ILogger<ApplicationDbSeeder> logger, IServiceScopeFactory scopeFactory)
     {
         _currentTenant = currentTenant;
         _roleManager = roleManager;
@@ -45,6 +47,7 @@ internal class ApplicationDbSeeder
         _db = db;
         _serializerService = serializerService;
         _scopeFactory = scopeFactory;
+        _appointmentService = appointmentService;
     }
 
     public async Task SeedDatabaseAsync(ApplicationDbContext dbContext, CancellationToken cancellationToken)
@@ -61,7 +64,9 @@ internal class ApplicationDbSeeder
         await SeedAppointmentAsync();
         await SeedAppointmentInforAsync();
         await _seederRunner.RunSeedersAsync(cancellationToken);
+        await _appointmentService.DeleteRedisCode();
     }
+
 
     private async Task SeedRoomAsync()
     {

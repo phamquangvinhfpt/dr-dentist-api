@@ -9,10 +9,12 @@ using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.CustomerServices;
 using FSH.WebApi.Application.Identity.WorkingCalendar;
+using FSH.WebApi.Application.Notifications;
 using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.CustomerServices;
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
+using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Domain.Service;
 using FSH.WebApi.Infrastructure.Identity;
 using FSH.WebApi.Infrastructure.Persistence.Context;
@@ -39,8 +41,8 @@ internal class CustomerInformationService : ICustomerInformationService
     private readonly IFileStorageService _fileStorageService;
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
-
-    public CustomerInformationService(ApplicationDbContext db, IStringLocalizer<CustomerInformationService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<CustomerInformationService> logger, IFileStorageService fileStorageService, IEmailTemplateService templateService, IMailService mailService)
+    private readonly INotificationService _notificationService;
+    public CustomerInformationService(INotificationService notificationService, ApplicationDbContext db, IStringLocalizer<CustomerInformationService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<CustomerInformationService> logger, IFileStorageService fileStorageService, IEmailTemplateService templateService, IMailService mailService)
     {
         _db = db;
         _t = t;
@@ -50,6 +52,7 @@ internal class CustomerInformationService : ICustomerInformationService
         _fileStorageService = fileStorageService;
         _templateService = templateService;
         _mailService = mailService;
+        _notificationService = notificationService;
     }
 
     public async Task AddCustomerInformation(ContactInformationRequest request)
@@ -77,9 +80,7 @@ internal class CustomerInformationService : ICustomerInformationService
     {
         try
         {
-            var user = await _userManager.FindByIdAsync(_currentUserService.GetUserId().ToString());
-            var role = await _userManager.GetRolesAsync(user);
-            if (role[0] == FSHRoles.Staff)
+            if (_currentUserService.GetRole() != FSHRoles.Admin)
             {
                 if (!request.StaffId.Equals(_currentUserService.GetUserId().ToString()))
                 {
@@ -89,14 +90,22 @@ internal class CustomerInformationService : ICustomerInformationService
             var contact = await _db.ContactInfor.FirstOrDefaultAsync(p => p.Id == request.ContactID);
             if (contact.StaffId != null)
             {
-                if (role[0] != FSHRoles.Admin)
-                {
-                    throw new InvalidOperationException($"the Staff {user.UserName} contacted with guest {contact.Email}");
-                }
+                throw new InvalidOperationException($"The contact is in processing");
             }
             contact.StaffId = request.StaffId;
             contact.Status = ContactStatus.Waiting;
             await _db.SaveChangesAsync(cancellationToken);
+            if(_currentUserService.GetRole() == FSHRoles.Admin)
+            {
+                await _notificationService.SendNotificationToUser(contact.StaffId,
+                new Shared.Notifications.BasicNotification
+                {
+                    Label = Shared.Notifications.BasicNotification.LabelType.Information,
+                    Message = $"Bạn có 1 yêu cầu hỗ trợ mới từ khách hàng ${contact.Email}",
+                    Title = "Contact",
+                    Url = "/contact-info-for-staff",
+                }, null, cancellationToken);
+            }
         }
         catch (Exception ex)
         {
