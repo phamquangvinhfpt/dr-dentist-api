@@ -81,14 +81,17 @@ internal class ApplicationFormService : IApplicationFormService
                 if (form.TimeID == existingForm.TimeID) {
                     throw new Exception($"Warning: Your application form was created");
                 }
-                var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == form.TimeID);
-                if (time == null)
+                if(form.TimeID != default)
                 {
-                    throw new Exception("Warning: Time Not Found");
-                }
-                else if (!time.IsActive)
-                {
-                    throw new Exception("Warning: Your time that you selected, was not active");
+                    var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == form.TimeID);
+                    if (time == null)
+                    {
+                        throw new Exception("Warning: Time Not Found");
+                    }
+                    else if (!time.IsActive)
+                    {
+                        throw new Exception("Warning: Your time that you selected, was not active");
+                    }
                 }
                 existingForm.TimeID = default;
                 existingForm.Description = string.Concat(existingForm.Description, ", ", form.Description);

@@ -14,6 +14,21 @@ public class DashboardController : VersionedApiController
     {
         _dashboardService = dashboardService;
     }
+
+    //checked
+    [HttpGet("booking/percent")]
+    [OpenApiOperation("Get Booking Percent follow by Date", "")]
+    public Task<PercentChart> GetBookingPercent([FromQuery] DateOnly start, CancellationToken cancellationToken)
+    {
+        return _dashboardService.GetBookingPercent(start, cancellationToken);
+    }
+    //checked
+    [HttpGet("revenue/percent")]
+    [OpenApiOperation("Get revenue Percent follow by Date", "")]
+    public Task<PercentChart> GetRevenuePercent([FromQuery] DateOnly start, CancellationToken cancellationToken)
+    {
+        return _dashboardService.GetRevenuePercent(start, cancellationToken);
+    }
     //checked
     [HttpGet("chart/revenue")]
     [OpenApiOperation("Get Revenue follow by Date", "")]

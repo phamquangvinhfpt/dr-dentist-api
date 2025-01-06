@@ -1,4 +1,5 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
+using DocumentFormat.OpenXml.InkML;
 using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Spreadsheet;
 using FSH.WebApi.Application.Appointments;
@@ -229,6 +230,39 @@ internal class DashboardService : IDashboardService
         }
     }
 
+    public async Task<PercentChart> GetBookingPercent(DateOnly start, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var weekStart = start.AddDays(-((int)start.DayOfWeek -1));
+            var weekEnd = weekStart.AddDays(6);
+
+            var previousWeekStart = weekStart.AddDays(-7);
+            var previousWeekEnd = weekEnd.AddDays(-7);
+
+            var currentWeekBookings = await _db.Appointments
+                .Where(a => a.AppointmentDate >= weekStart && a.AppointmentDate <= weekEnd)
+                .CountAsync(cancellationToken);
+
+            var previousWeekBookings = await _db.Appointments
+                .Where(a => a.AppointmentDate >= previousWeekStart && a.AppointmentDate <= previousWeekEnd)
+                .CountAsync(cancellationToken);
+
+            double percentChange = (currentWeekBookings - previousWeekBookings) * 100 / previousWeekBookings;
+
+            return new PercentChart
+            {
+                Value = currentWeekBookings,
+                Percent = percentChange
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
     public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken)
     {
         try
@@ -380,6 +414,39 @@ internal class DashboardService : IDashboardService
             return chart;
         }
         catch (Exception ex) {
+            _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
+        }
+    }
+
+    public async Task<PercentChart> GetRevenuePercent(DateOnly start, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var weekStart = start.AddDays(-((int)start.DayOfWeek - 1));
+            var weekEnd = weekStart.AddDays(6);
+
+            var previousWeekStart = weekStart.AddDays(-7);
+            var previousWeekEnd = weekEnd.AddDays(-7);
+
+            var currentWeek = await _db.Payments
+                .Where(a => a.Status == Domain.Payments.PaymentStatus.Completed && (a.FinalPaymentDate >= weekStart && a.FinalPaymentDate <= weekEnd))
+                .ToListAsync(cancellationToken);
+
+            var previousWeek = await _db.Payments
+                .Where(a => (a.FinalPaymentDate >= previousWeekStart && a.FinalPaymentDate <= previousWeekEnd))
+                .ToListAsync(cancellationToken);
+
+            var percentChange = (currentWeek.Sum(p => p.Amount) - previousWeek.Sum(p => p.Amount)) * 100 / previousWeek.Sum(p => p.Amount);
+
+            return new PercentChart
+            {
+                Value = ((int)currentWeek.Sum(p => p.Amount).Value),
+                Percent = Math.Round(percentChange.Value, 0)
+            };
+        }
+        catch (Exception ex)
+        {
             _logger.LogError(ex.Message);
             throw new Exception(ex.Message);
         }

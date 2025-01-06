@@ -27,4 +27,6 @@ public interface IDashboardService : ITransientService
     Task<int> TotalFollowUpAsync(DateOnly date, CancellationToken cancellationToken);
     Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAsync(DateOnly date, PaginationFilter filter, CancellationToken cancellationToken);
     Task<int> TotalUnAssignAsync(DateOnly date, CancellationToken cancellationToken);
+    Task<PercentChart> GetBookingPercent(DateOnly start, CancellationToken cancellationToken);
+    Task<PercentChart> GetRevenuePercent(DateOnly start, CancellationToken cancellationToken);
 }
