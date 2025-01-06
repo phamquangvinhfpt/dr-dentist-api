@@ -38,8 +38,9 @@ internal class ApplicationFormService : IApplicationFormService
     private readonly INotificationService _notificationService;
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
+    private readonly IAppointmentService _appointmentService;
 
-    public ApplicationFormService(ApplicationDbContext db, IStringLocalizer<ApplicationFormService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<ApplicationFormService> logger, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService)
+    public ApplicationFormService(IAppointmentService appointmentService, ApplicationDbContext db, IStringLocalizer<ApplicationFormService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<ApplicationFormService> logger, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService)
     {
         _db = db;
         _t = t;
@@ -51,10 +52,12 @@ internal class ApplicationFormService : IApplicationFormService
         _notificationService = notificationService;
         _templateService = templateService;
         _mailService = mailService;
+        _appointmentService = appointmentService;
     }
 
     public async Task<string> AddFormAsync(AddFormRequest form, CancellationToken cancellationToken)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user = await _userManager.FindByIdAsync(form.UserID);
@@ -73,31 +76,54 @@ internal class ApplicationFormService : IApplicationFormService
             {
                 throw new Exception("Warning: Lack off description.");
             }
-            var app = new ApplicationForm
-            {
-                UserID = form.UserID,
-                CalendarID = form.CalendarID,
-                Description = form.Description,
-                Status = FormStatus.Waiting,
-            };
-            if(form.TimeID != default)
-            {
+            var existingForm = await _db.ApplicationForms.Where(p => p.CalendarID == form.CalendarID).FirstOrDefaultAsync();
+            if (existingForm != null){
+                if (form.TimeID == existingForm.TimeID) {
+                    throw new Exception($"Warning: Your application form was created");
+                }
                 var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == form.TimeID);
                 if (time == null)
                 {
                     throw new Exception("Warning: Time Not Found");
                 }
-                else if (!time.IsActive) {
+                else if (!time.IsActive)
+                {
                     throw new Exception("Warning: Your time that you selected, was not active");
                 }
-                app.TimeID = time.Id;
+                existingForm.TimeID = default;
+                existingForm.Description = string.Concat(existingForm.Description, ", ", form.Description);
             }
-            _db.ApplicationForms.Add(app);
+            else
+            {
+                var app = new ApplicationForm
+                {
+                    UserID = form.UserID,
+                    CalendarID = form.CalendarID,
+                    Description = form.Description,
+                    Status = FormStatus.Waiting,
+                };
+                if (form.TimeID != default)
+                {
+                    var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == form.TimeID);
+                    if (time == null)
+                    {
+                        throw new Exception("Warning: Time Not Found");
+                    }
+                    else if (!time.IsActive)
+                    {
+                        throw new Exception("Warning: Your time that you selected, was not active");
+                    }
+                    app.TimeID = time.Id;
+                }
+                _db.ApplicationForms.Add(app);
+            }
             await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return "Success";
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, ex.Message);
             throw new Exception(ex.Message);
         }
@@ -201,8 +227,8 @@ internal class ApplicationFormService : IApplicationFormService
                 {
                     var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == existingForm.TimeID);
                     time.IsActive = false;
-                    bool isOffAllDay = await _db.TimeWorkings.AnyAsync(p => p.CalendarID == calendar.Id && p.IsActive);
-                    if (!isOffAllDay)
+                    var isOffAllDay = await _db.TimeWorkings.CountAsync(p => p.CalendarID == calendar.Id && p.IsActive);
+                    if (isOffAllDay == 1)
                     {
                         calendar.Status = WorkingStatus.Off;
                     }
@@ -220,6 +246,7 @@ internal class ApplicationFormService : IApplicationFormService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await SendAppointmentActionNotification(existingForm.UserID, calendar.Date.Value, form.Status, cancellationToken);
+            await _appointmentService.DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)

@@ -26,5 +26,5 @@ public interface IWorkingCalendarService : ITransientService
     Task<List<TimeDetail>> GetTimeWorkingAsync(GetTimeWorkingRequest request, CancellationToken cancellationToken);
     Task<string> AutoAddRoomForWorkingAsync(List<DefaultIdType> request, CancellationToken cancellationToken);
     Task<string> SendNotiReminderAsync(string id, DateOnly date, CancellationToken cancellationToken);
-    Task<Stream> ExportWorkingCalendarAsync(DateOnly start, DateOnly end, string doctorID);
+    Task<Stream> ExportWorkingCalendarAsync(DateOnly start, DateOnly end);
 }

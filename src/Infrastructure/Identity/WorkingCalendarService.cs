@@ -1422,16 +1422,11 @@ internal class WorkingCalendarService : IWorkingCalendarService
         }
     }
 
-    public async Task<Stream> ExportWorkingCalendarAsync(DateOnly start, DateOnly end, string DoctorID)
+    public async Task<Stream> ExportWorkingCalendarAsync(DateOnly start, DateOnly end)
     {
         try
         {
-            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == DoctorID);
-            if (doctor == null)
-            {
-                throw new Exception("User Not Found");
-            }
-            var query = _db.WorkingCalendars.Where(p => p.DoctorID == doctor.Id);
+            var query = _db.WorkingCalendars.AsQueryable();
             if (start != default)
             {
                 query = query.Where(p => p.Date >= start);
@@ -1447,7 +1442,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Calendar = a,
                     Doctor = _db.DoctorProfiles
                         .Where(p => p.Id == a.DoctorID)
-                        .Join(_db.Users, p => p.DoctorId, u => u.Id, (p, u) => $"{u.FirstName} {u.LastName}").FirstOrDefault(),
+                        .Join(_db.Users, p => p.DoctorId, u => u.Id, (p, u) => u).FirstOrDefault(),
                     TypeWorking = _db.DoctorProfiles.Where(p => p.Id == a.DoctorID).Select(t => t.WorkingType.ToString()).FirstOrDefault(),
                     TypeService = _db.DoctorProfiles
                         .Where(p => p.Id == a.DoctorID)
@@ -1456,24 +1451,44 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     Room = _db.Rooms.Where(p => p.Id == a.RoomID).Select(r => r.RoomName).FirstOrDefault(),
                     Times = _db.TimeWorkings.Where(p => p.CalendarID == a.Id).OrderBy(p => p.StartTime).Select(t => new { Time = $"{t.StartTime} - {t.EndTime}", Status = t.IsActive }).ToList(),
                 }).ToListAsync();
-            var result = new List<WorkingCalendarExport>();
-            foreach (var item in r)
+            var groupedResults = r.GroupBy(x => new { x.Doctor }).ToList();
+            var sheetData = new Dictionary<string, List<WorkingCalendarExport>>();
+
+            foreach (var group in groupedResults)
             {
-                result.Add(new WorkingCalendarExport
+                var doctorCalendars = new List<WorkingCalendarExport>();
+
+                foreach (var item in group)
                 {
-                    Doctor = item.Doctor,
-                    TypeWorking = item.TypeWorking,
-                    TypeService = item.TypeService,
-                    Date = item.Date,
-                    Room = item.Room,
-                    First_Shift = item.Times[0].Time,
-                    First_Status = item.Times[0].Status && (item.Calendar.Date.Value < DateOnly.FromDateTime(DateTime.Now)) ? "Present" : "Absent",
-                    Last_Shift = item.Times.Count > 1 ? item.Times[1].Time : "",
-                    Second_Status = item.Times.Count > 1 ? item.Times[1].Status && (item.Calendar.Date.Value < DateOnly.FromDateTime(DateTime.Now)) ? "Present" : "Absent" : "",
-                });
+                    string GetStatus(bool isActive, DateOnly calendarDate)
+                    {
+                        if (!isActive) return "Absent";
+                        return calendarDate <= DateOnly.FromDateTime(DateTime.Now) ? "Present" : "Waiting";
+                    }
+                    var form = await _db.ApplicationForms.FirstOrDefaultAsync(p => p.CalendarID == item.Calendar.Id);
+                    doctorCalendars.Add(new WorkingCalendarExport
+                    {
+                        Doctor = $"{item.Doctor.FirstName} {item.Doctor.LastName}",
+                        TypeWorking = item.TypeWorking,
+                        TypeService = item.TypeService,
+                        Date = item.Date,
+                        Room = item.Room,
+                        First_Shift = item.Times[0].Time,
+                        First_Status = GetStatus(item.Times[0].Status, item.Calendar.Date.Value),
+                        Last_Shift = item.Times.Count > 1 ? item.Times[1].Time : null,
+                        Second_Status = item.Times.Count > 1 ? GetStatus(item.Times[1].Status, item.Calendar.Date.Value) : null,
+                        Description = form != null ? form.Description : null,
+                        Note = form != null ? form.Note : null,
+                    });
+                }
+
+                string sheetName = $"{group.Key.Doctor.FirstName} {group.Key.Doctor.LastName}";
+
+                sheetData.Add(sheetName, doctorCalendars);
             }
 
-            return _excelWriter.WriteToStream(result);
+
+            return _excelWriter.WriteToStreamWithMultipleSheets(sheetData);
         }
         catch (Exception ex)
         {

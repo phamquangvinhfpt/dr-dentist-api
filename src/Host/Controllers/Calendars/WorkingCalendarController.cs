@@ -210,9 +210,9 @@ public class WorkingCalendarController : VersionNeutralApiController
     [HttpPost("export-working-calendar")]
     [OpenApiOperation("Export working calendar logs.", "")]
     [MustHavePermission(FSHAction.Export, FSHResource.Files)]
-    public async Task<FileResult> ExportWorkingCalendarAsync([FromQuery] DateOnly start, [FromQuery] DateOnly end, [FromQuery] string DoctorID)
+    public async Task<FileResult> ExportWorkingCalendarAsync([FromQuery] DateOnly start, [FromQuery] DateOnly end)
     {
-        var stream = await _workingCalendarService.ExportWorkingCalendarAsync(start, end, DoctorID);
+        var stream = await _workingCalendarService.ExportWorkingCalendarAsync(start, end);
         return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"working_calendar_export{start.Month}{start.Year}{end.Month}{end.Year}.xlsx");
     }
 }

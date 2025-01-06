@@ -1,5 +1,7 @@
 ﻿using Finbuckle.MultiTenant;
 using FSH.WebApi.Application.Appointments;
+using FSH.WebApi.Application.Multitenancy;
+using FSH.WebApi.Infrastructure.Multitenancy;
 using FSH.WebApi.Infrastructure.Payments;
 using FSH.WebApi.Shared.Multitenancy;
 using Hangfire;
@@ -26,20 +28,15 @@ public class AppointmentJobDaily
         _scopeFactory = scopeFactory;
         _webHost = webHostEnvironment;
     }
-
+    [DisableConcurrentExecution(10)]
+    [AutomaticRetry(Attempts = 3)]
     public async Task AppointmentJobDailyAsync()
     {
         using (var scope = _scopeFactory.CreateScope())
         {
-            var url = "";
-            if (_webHost.IsDevelopment())
-            {
-                url = "https://localhost:5001/api/appointment/job";
-            }
-            else
-            {
-                url = "https://api.drdentist.me/api/appointment/job";
-            }
+            var url = _webHost.IsDevelopment()
+                ? "https://localhost:5001/api/appointment/job"
+                : "https://api.drdentist.me/api/appointment/job";
             TransactionsUtils.CallAPIChecking(url);
         }
     }

@@ -35,6 +35,10 @@ public class FSHJobActivator : JobActivator
         private void ReceiveParameters()
         {
             string tenantId = _context.GetJobParameter<string>(MultitenancyConstants.TenantIdName);
+            if(_context.BackgroundJob.Job.Type == typeof(AppointmentJobDaily))
+            {
+                return;
+            }
             if (tenantId is not null)
             {
                 var tenantContext = _scope.ServiceProvider.GetRequiredService<TenantDbContext>();

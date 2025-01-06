@@ -16,5 +16,7 @@ public class WorkingCalendarExport
     public string? First_Status { get; set; }
     public string? Last_Shift { get; set; }
     public string? Second_Status { get; set; }
+    public string? Description { get; set; }
+    public string? Note { get; set; }
 
 }
