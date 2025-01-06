@@ -695,6 +695,10 @@ internal class ServiceService : IServiceService
                         var procedure = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item);
                         service.TotalPrice -= procedure.Price;
                         _db.ServiceProcedures.Remove(sp);
+                        if(service.TotalPrice == 0)
+                        {
+                            service.IsActive = false;
+                        }
                     }
                 }
                 else
@@ -709,6 +713,7 @@ internal class ServiceService : IServiceService
                         IsActive = true,
                         CreatedBy = _currentUserService.GetUserId(),
                         CreatedOn = DateTime.Now,
+                        TypeServiceID = current_service.TypeServiceID,
                     };
                     var entry = _db.Services.Add(newService).Entity;
 
@@ -734,6 +739,10 @@ internal class ServiceService : IServiceService
                                 p.Id == currentProcedure.ProcedureId);
                             newService.TotalPrice -= procedure.Price;
                         }
+                    }
+                    if(newService.TotalPrice == 0)
+                    {
+                        newService.IsActive = false;
                     }
                     current_service.IsActive = false;
                     current_service.DeletedOn = DateTime.UtcNow;
@@ -794,6 +803,7 @@ internal class ServiceService : IServiceService
                         IsActive = true,
                         CreatedBy = _currentUserService.GetUserId(),
                         CreatedOn = DateTime.Now,
+                        TypeServiceID = current_service.TypeServiceID,
                     };
 
                     var entry = _db.Services.Add(newService).Entity;
