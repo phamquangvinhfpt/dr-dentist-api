@@ -125,9 +125,9 @@ internal partial class UserService
                 LastName = request.LastName,
                 UserName = request.UserName,
                 PhoneNumber = request.PhoneNumber,
-                Address = request.Role.Equals(FSHRoles.Patient) ? request.Address : null,
+                Address = request.Address != null ? request.Address : null,
                 Job = request.Job,
-                IsActive = true
+                IsActive = true,
             };
             var result = await _userManager.CreateAsync(user, request.Password);
 

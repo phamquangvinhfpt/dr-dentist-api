@@ -508,6 +508,10 @@ public class PaymentService : IPaymentService
             {
                 query = query.Where(p => p.Method == request.PaymentMethod);
             }
+            else
+            {
+                query = query.Where(p => p.Method == PaymentMethod.BankTransfer || p.Method == PaymentMethod.Cash);
+            }
             var result = await query
                 .Select(a => new
                 {
