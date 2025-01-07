@@ -1427,6 +1427,12 @@ internal class WorkingCalendarService : IWorkingCalendarService
         try
         {
             var query = _db.WorkingCalendars.AsQueryable();
+            var current_user = _currentUserService.GetRole();
+            if(current_user == FSHRoles.Dentist)
+            {
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
+                query = query.Where(p => p.DoctorID == doctor.Id);
+            }
             if (start != default)
             {
                 query = query.Where(p => p.Date >= start);
