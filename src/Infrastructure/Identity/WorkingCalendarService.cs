@@ -1197,10 +1197,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 //{
                 //    throw new Exception("Warning: Time was not selected.");
                 //}
-                if (calendar.Doctor.WorkingType == WorkingType.PartTime && calendar.Calendar.Status != WorkingStatus.Accept)
-                {
-                    throw new Exception("Warning: Time working that is not accept.");
-                }
+                //if (calendar.Doctor.WorkingType == WorkingType.PartTime && calendar.Calendar.Status != WorkingStatus.Accept)
+                //{
+                //    throw new Exception("Warning: Time working that is not accept.");
+                //}
                 if (!calendar.Times.Any())
                 {
                     var shifts = new List<(TimeSpan Start, TimeSpan End)>
