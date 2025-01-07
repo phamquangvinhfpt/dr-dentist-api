@@ -13,9 +13,11 @@ using FSH.WebApi.Domain.Identity;
 using FSH.WebApi.Domain.Payments;
 using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Identity;
+using FSH.WebApi.Infrastructure.Notifications;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -31,6 +33,7 @@ namespace FSH.WebApi.Infrastructure.Treatments;
 internal class TreatmentPlanService : ITreatmentPlanService
 {
     private readonly ApplicationDbContext _db;
+    private readonly IHubContext<NotificationHub> _chatHubContext;
     private readonly IStringLocalizer _t;
     private readonly ICurrentUser _currentUserService;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -43,7 +46,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly IMailService _mailService;
     private readonly IAppointmentService _appointmentService;
 
-    public TreatmentPlanService(ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService, IAppointmentService appointmentService)
+    public TreatmentPlanService(IHubContext<NotificationHub> chatHubContext, ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService, IAppointmentService appointmentService)
     {
         _db = db;
         _t = t;
@@ -57,6 +60,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         _templateService = templateService;
         _mailService = mailService;
         _appointmentService = appointmentService;
+        _chatHubContext = chatHubContext;
     }
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
@@ -70,12 +74,12 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 throw new Exception("Appointment in status that can not do this action");
             }
 
-            var plan = await _db.TreatmentPlanProcedures
+            var plan = await _db.TreatmentPlanProcedures.IgnoreQueryFilters()
                 .Where(p => p.Id == request.TreatmentId)
                 .Select(b => new
                 {
                     Plan = b,
-                    SP = _db.ServiceProcedures.FirstOrDefault(p => p.Id == b.ServiceProcedureId)
+                    SP = _db.ServiceProcedures.IgnoreQueryFilters().FirstOrDefault(p => p.Id == b.ServiceProcedureId)
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -92,11 +96,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             else
             {
-                var past_procedure = await _db.ServiceProcedures
+                var past_procedure = await _db.ServiceProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceId == plan.SP.ServiceId && p.StepOrder == (plan.SP.StepOrder - 1))
                     .FirstOrDefaultAsync();
 
-                var past_plan = await _db.TreatmentPlanProcedures
+                var past_plan = await _db.TreatmentPlanProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == appointment.Id)
                     .FirstOrDefaultAsync();
 
@@ -133,6 +137,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            _jobService.Enqueue(
+                () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
         }
         catch (Exception ex)
@@ -152,7 +158,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             if (existing) {
                 throw new Exception("The Plan has prescription");
             }
-            var plan = await _db.TreatmentPlanProcedures
+            var plan = await _db.TreatmentPlanProcedures.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(p => p.Id == request.TreatmentID);
 
             if(plan.StartDate != DateOnly.FromDateTime(DateTime.Now))
@@ -250,7 +256,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             var cal = await _db.AppointmentCalendars.FirstOrDefaultAsync(p => p.PlanID == plan.Id)
                 ?? throw new Exception("Calendar is not found.");
             var appointment = await _db.Appointments.FirstOrDefaultAsync(a => a.Id == plan.AppointmentID);
-            var ser_pro = await _db.ServiceProcedures.FirstOrDefaultAsync(p => p.Id == plan.ServiceProcedureId);
+            var ser_pro = await _db.ServiceProcedures.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == plan.ServiceProcedureId);
 
             if(ser_pro.StepOrder == 1)
             {
@@ -258,11 +264,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             else
             {
-                var past_procedure = await _db.ServiceProcedures
+                var past_procedure = await _db.ServiceProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceId == ser_pro.ServiceId && p.StepOrder == (ser_pro.StepOrder - 1))
                     .FirstOrDefaultAsync();
 
-                var past_plan = await _db.TreatmentPlanProcedures
+                var past_plan = await _db.TreatmentPlanProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == appointment.Id)
                     .FirstOrDefaultAsync();
 
@@ -300,10 +306,15 @@ internal class TreatmentPlanService : ITreatmentPlanService
                             Title = "Chúc mừng đã hoàn thành lộ trình dịch vụ",
                             Url = $"/feedback/{appointment.Id}",
                         }, null, cancellationToken);
+                _jobService.Enqueue(
+                    () => _appointmentService.SendHubJob(appointment.AppointmentDate, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
+                await _appointmentService.DeleteRedisCode();
             }
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            _jobService.Enqueue(
+                () => _appointmentService.SendHubJob(plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }
@@ -343,12 +354,12 @@ internal class TreatmentPlanService : ITreatmentPlanService
             foreach (var item in tps)
             {
 
-                var sp = await _db.ServiceProcedures
+                var sp = await _db.ServiceProcedures.IgnoreQueryFilters()
                 .Where(p => p.Id == item.ServiceProcedureId)
                 .Select(b => new
                 {
                     SP = b,
-                    Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
+                    Procedure = _db.Procedures.IgnoreQueryFilters().FirstOrDefault(p => p.Id == b.ProcedureId),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
                 var hasPre = await _db.Prescriptions.AnyAsync(p => p.TreatmentID == item.Id);
@@ -519,12 +530,12 @@ internal class TreatmentPlanService : ITreatmentPlanService
             foreach (var item in tps) {
                 var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == tps[0].DoctorID);
                 var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
-                var sp = await _db.ServiceProcedures
+                var sp = await _db.ServiceProcedures.IgnoreQueryFilters()
                 .Where(p => p.Id == item.ServiceProcedureId)
                 .Select(b => new
                 {
                     SP = b,
-                    Procedure = _db.Procedures.FirstOrDefault(p => p.Id == b.ProcedureId),
+                    Procedure = _db.Procedures.IgnoreQueryFilters().FirstOrDefault(p => p.Id == b.ProcedureId),
                 })
                 .FirstOrDefaultAsync(cancellationToken);
                 var hasPre = await _db.Prescriptions.AnyAsync(p => p.TreatmentID == item.Id);
@@ -566,7 +577,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 {
                     Plan = b,
                     Appointment = _db.Appointments.FirstOrDefault(a => a.Id == b.AppointmentID),
-                    SP = _db.ServiceProcedures.FirstOrDefault(p => p.Id == b.ServiceProcedureId)
+                    SP = _db.ServiceProcedures.IgnoreQueryFilters().FirstOrDefault(p => p.Id == b.ServiceProcedureId)
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -622,11 +633,11 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             if(plan.SP.StepOrder != 1)
             {
-                var past_procedure = await _db.ServiceProcedures
+                var past_procedure = await _db.ServiceProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceId == plan.SP.ServiceId && p.StepOrder == plan.SP.StepOrder - 1)
                     .FirstOrDefaultAsync();
 
-                var past_plan = await _db.TreatmentPlanProcedures
+                var past_plan = await _db.TreatmentPlanProcedures.IgnoreQueryFilters()
                     .Where(p => p.ServiceProcedureId == past_procedure.Id && p.AppointmentID == request.AppointmentID)
                     .FirstOrDefaultAsync();
 
@@ -653,6 +664,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            _jobService.Enqueue(
+                    () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }

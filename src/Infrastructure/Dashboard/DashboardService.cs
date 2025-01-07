@@ -304,8 +304,8 @@ internal class DashboardService : IDashboardService
                     var sp = await _db.ServiceProcedures.Where(p => p.Id == a.TreatmentPlan.ServiceProcedureId)
                         .Select(s => new
                         {
-                            Service = _db.Services.FirstOrDefault(p => p.Id == s.ServiceId),
-                            Procedure = _db.Procedures.FirstOrDefault(p => p.Id == s.ProcedureId),
+                            Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(p => p.Id == s.ServiceId),
+                            Procedure = _db.Procedures.IgnoreQueryFilters().FirstOrDefault(p => p.Id == s.ProcedureId),
                             Step = s.StepOrder
                         }).FirstOrDefaultAsync();
                     var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);

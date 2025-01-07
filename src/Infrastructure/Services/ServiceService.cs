@@ -875,8 +875,12 @@ internal class ServiceService : IServiceService
                     var service = await _db.Services.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == item.ServiceId);
                     if (service.DeletedBy != null)
                     {
-                        _db.ServiceProcedures.Remove(item);
+                        _db.ServiceProcedures.ExecuteDelete();
                         service.TotalPrice -= procedure.Price;
+                        if(service.TotalPrice == 0)
+                        {
+                            service.IsActive = false;
+                        }
                     }
                     else
                     {
@@ -898,7 +902,8 @@ internal class ServiceService : IServiceService
                                 CreatedBy = _currentUserService.GetUserId(),
                                 CreatedOn = DateTime.Now,
                                 LastModifiedBy = _currentUserService.GetUserId(),
-                                LastModifiedOn = DateTime.UtcNow
+                                LastModifiedOn = DateTime.UtcNow,
+                                TypeServiceID = service.TypeServiceID,
                             }).Entity;
                             int step = 1;
                             foreach (var a in sp)
@@ -914,15 +919,20 @@ internal class ServiceService : IServiceService
                                         CreatedOn = DateTime.Now,
                                     });
                                 }
-                                else
-                                {
-                                    _db.ServiceProcedures.Remove(a);
-                                }
+                                //else
+                                //{
+                                //    _db.ServiceProcedures.Remove(a);
+                                //}
                             }
                         }
                         else
                         {
+                            _db.ServiceProcedures.Remove(item);
                             service.TotalPrice -= procedure.Price;
+                            if (service.TotalPrice == 0)
+                            {
+                                service.IsActive = false;
+                            }
                         }
                     }
                 }

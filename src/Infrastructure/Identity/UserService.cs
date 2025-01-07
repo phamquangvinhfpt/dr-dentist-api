@@ -832,7 +832,7 @@ internal partial class UserService : IUserService
 
                     foreach (var feedback in ratingGroup.Feedbacks)
                     {
-                        var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
+                        var service = await _db.Services.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == feedback.ServiceId);
 
                         var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == feedback.PatientProfileId);
                         var patientUser = patientProfile != null ?
