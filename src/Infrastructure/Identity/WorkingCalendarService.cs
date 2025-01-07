@@ -1433,14 +1433,17 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == _currentUserService.GetUserId().ToString());
                 query = query.Where(p => p.DoctorID == doctor.Id);
             }
+
             if (start != default)
             {
                 query = query.Where(p => p.Date >= start);
             }
+
             if (end != default)
             {
                 query = query.Where(p => p.Date <= end);
             }
+
             query = query.OrderBy(p => p.Date);
             var r = await query
                 .Select(a => new
@@ -1492,7 +1495,6 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
                 sheetData.Add(sheetName, doctorCalendars);
             }
-
 
             return _excelWriter.WriteToStreamWithMultipleSheets(sheetData);
         }

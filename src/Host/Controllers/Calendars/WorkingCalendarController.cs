@@ -209,7 +209,7 @@ public class WorkingCalendarController : VersionNeutralApiController
 
     [HttpPost("export-working-calendar")]
     [OpenApiOperation("Export working calendar logs.", "")]
-    [MustHavePermission(FSHAction.Export, FSHResource.Files)]
+    // [MustHavePermission(FSHAction.Export, FSHResource.Files)]
     public async Task<FileResult> ExportWorkingCalendarAsync([FromQuery] DateOnly start, [FromQuery] DateOnly end)
     {
         var stream = await _workingCalendarService.ExportWorkingCalendarAsync(start, end);

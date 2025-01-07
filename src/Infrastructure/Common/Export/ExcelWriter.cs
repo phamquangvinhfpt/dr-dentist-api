@@ -28,6 +28,7 @@ public class ExcelWriter : IExcelWriter
         stream.Seek(0, SeekOrigin.Begin);
         return stream;
     }
+
     public Stream WriteToStreamWithMultipleSheets<T>(Dictionary<string, List<T>> sheetData)
     {
         using XLWorkbook wb = new XLWorkbook();
