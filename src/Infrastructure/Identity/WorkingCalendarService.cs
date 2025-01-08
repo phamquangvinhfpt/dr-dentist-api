@@ -1490,8 +1490,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
                         First_Status = GetStatus(item.Times[0].Status, item.Calendar.Date.Value),
                         Last_Shift = item.Times.Count > 1 ? item.Times[1].Time : null,
                         Second_Status = item.Times.Count > 1 ? GetStatus(item.Times[1].Status, item.Calendar.Date.Value) : null,
-                        Description = form != null ? form.Description : null,
-                        Note = form != null ? form.Note : null,
+                        Description = item.Calendar.Status == WorkingStatus.Off ? form.Description : null,
+                        Note = item.Calendar.Status == WorkingStatus.Off ? form.Note : null,
                     });
                 }
 
