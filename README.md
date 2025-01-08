@@ -22,12 +22,77 @@ To make it easy for you to get started with project, here's a list of recommende
 
 - https://dotnet.microsoft.com/download/dotnet/7.0
 - https://visualstudio.microsoft.com/
+- https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/
 
 ## Clone repository
 
 ``` bash
 git clone https://github.com/phamquangvinhfpt/dr-dentist-api.git
 cd DR-DENTIST-API
+dotnet run --project .\src\Host\Host.csproj --configuration Release
+```
+
+## Configuration
+Setup database connection strings at hangfire.json and database.json
+- database.json
+```
+{
+  "DatabaseSettings": {
+    "DBProvider": "postgresql",
+    "ConnectionString": "Host=localhost;Port=5432;Database=dcms-db-test;Username=postgres;Password=12345;Include Error Detail=true"
+  }
+}
+```
+- hangfire.json
+```
+{
+  ...
+    "Storage": {
+      "StorageProvider": "postgresql",
+      "ConnectionString": "Host=localhost;Port=5432;Database=dcms-db-test;Username=postgres;Password=12345;Include Error Detail=true",
+      "Options": {
+        "CommandBatchMaxTimeout": "00:05:00",
+        "QueuePollInterval": "00:00:01",
+        "UseRecommendedIsolationLevel": true,
+        "SlidingInvisibilityTimeout": "00:05:00",
+        "DisableGlobalLocks": true
+      }
+    },
+  ...
+}
+```
+
+- signalr.json
+```
+{
+  "SignalRSettings": {
+    "UseBackplane": true,
+    "Backplane": {
+      "Provider": "redis",
+      "StringConnection": "localhost:6379"
+    }
+  }
+}
+```
+
+- cache.json
+```
+{
+  "CacheSettings": {
+    "UseDistributedCache": true,
+    "PreferRedis": true,
+    "RedisURL": "localhost:6379"
+  }
+}
+```
+
+## Install redis on docker
+```bash
+docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
+```
+
+## Started project
+```bash
 dotnet run --project .\src\Host\Host.csproj --configuration Release
 ```
 
