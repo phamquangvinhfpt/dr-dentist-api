@@ -1,99 +1,78 @@
 [
   {
-    "Title": "Wellcome to DCMS",
+    "Title": "Welcome to Dental Clinic Management System",
     "Label": "Information",
-    "Message": "This is the first page of the DCMS application. You can navigate through the application using the menu on the left. Enjoy your experience!"
+    "Message": "Chào mừng bạn đến với hệ thống quản lý phòng khám nha khoa. Bạn có thể điều hướng qua các chức năng bằng menu bên trái. Chúc bạn có trải nghiệm tốt!"
   },
   {
-    "Title": "Success notification",
+    "Title": "Đặt lịch thành công",
     "Label": "Success",
-    "Message": "This is message to test success notification."
+    "Message": "Bạn đã đặt lịch khám thành công. Vui lòng đến đúng giờ theo lịch hẹn."
   },
   {
-    "Title": "Error notification",
+    "Title": "Lỗi đặt lịch",
     "Label": "Error",
-    "Message": "This is message to test error notification."
+    "Message": "Đã có lỗi xảy ra trong quá trình đặt lịch. Vui lòng thử lại sau."
   },
   {
-    "Title": "Warning notification",
+    "Title": "Cảnh báo lịch hẹn",
     "Label": "Warning",
-    "Message": "This is message to test warning notification."
+    "Message": "Bạn có lịch hẹn sắp bị trùng. Vui lòng kiểm tra lại."
   },
   {
-    "Title": "Reminder notification",
+    "Title": "Nhắc nhở lịch hẹn",
     "Label": "Reminder",
-    "Message": "This is message to test reminder notification.",
-    "Url": "http://www.google.com"
+    "Message": "Bạn có lịch hẹn khám răng vào ngày mai. Vui lòng xác nhận tham dự.",
+    "Url": "/appointment"
   },
   {
-    "Title": "Assignment assigned",
+    "Title": "Phân công bác sĩ",
     "Label": "Information",
-    "Message": "You have been assigned to a new assignment. Please check the assignment page for more details.",
-    "Url": "http://www.google.com"
+    "Message": "Bạn đã được phân công một ca khám mới. Vui lòng kiểm tra lịch làm việc.",
+    "Url": "/working-calendar"
   },
   {
-    "Title": "Exam Finished",
+    "Title": "Hoàn thành điều trị",
     "Label": "Success",
-    "Message": "You have successfully finished the exam. Please check the exam page for the results.",
-    "Url": "http://www.google.com"
+    "Message": "Liệu trình điều trị đã hoàn thành thành công."
   },
   {
-    "Title": "Exam Failed",
+    "Title": "Điều trị không thành công",
     "Label": "Error",
-    "Message": "You have failed the exam. Please check the exam page for the results.",
-    "Url": "http://www.google.com"
+    "Message": "Có vấn đề phát sinh trong quá trình điều trị. Vui lòng liên hệ bác sĩ để được tư vấn."
   },
   {
-    "Title": "Exam Reminder",
+    "Title": "Nhắc lịch tái khám",
     "Label": "Reminder",
-    "Message": "You have an exam in 2 days. Please check the exam page for more details.",
-    "Url": "http://www.google.com"
+    "Message": "Bạn có lịch tái khám sau 2 ngày nữa. Vui lòng sắp xếp thời gian.",
+    "Url": "/appointment"
   },
   {
-    "Title": "Assignment Reminder",
-    "Label": "Reminder",
-    "Message": "You have an assignment due in 2 days. Please check the assignment page for more details.",
-    "Url": "http://www.google.com"
-  },
-  {
-    "Title": "Assignment Submitted",
+    "Title": "Thanh toán thành công",
     "Label": "Success",
-    "Message": "You have successfully submitted the assignment. Please check the assignment page for the results.",
-    "Url": "http://www.google.com"
+    "Message": "Bạn đã thanh toán hóa đơn thành công. Xem chi tiết hóa đơn tại mail."
   },
   {
-    "Title": "Class Assigned",
+    "Title": "Bác sĩ mới",
     "Label": "Information",
-    "Message": "You have been assigned to a new class. Please check the class page for more details.",
-    "Url": "http://www.google.com"
+    "Message": "Phòng khám có bác sĩ mới. Xem thông tin chi tiết tại đây.",
+    "Url": "/find-doctors"
   },
   {
-    "Title": "Class Reminder",
+    "Title": "Nhắc lịch vệ sinh răng",
     "Label": "Reminder",
-    "Message": "You have a class in 2 days. Please check the class page for more details.",
-    "Url": "http://www.google.com"
+    "Message": "Đã đến lịch vệ sinh răng định kỳ của bạn. Đặt lịch ngay!",
+    "Url": "/appointment"
   },
   {
-    "Title": "Course Assigned",
+    "Title": "Dịch vụ mới",
     "Label": "Information",
-    "Message": "You have been assigned to a new course. Please check the course page for more details.",
-    "Url": "http://www.google.com"
+    "Message": "Phòng khám có dịch vụ mới. Xem chi tiết tại đây.",
+    "Url": "/services"
   },
   {
-    "Title": "Course Reminder",
-    "Label": "Reminder",
-    "Message": "You have a course in 2 days. Please check the course page for more details.",
-    "Url": "http://www.google.com"
-  },
-  {
-    "Title": "Course Finished",
-    "Label": "Success",
-    "Message": "You have successfully finished the course. Please check the course page for the results.",
-    "Url": "http://www.google.com"
-  },
-  {
-    "Title": "Course Failed",
+    "Title": "Điều trị không hiệu quả",
     "Label": "Error",
-    "Message": "You have failed the course. Please check the course page for more details"
+    "Message": "Kết quả điều trị không đạt như mong đợi. Vui lòng liên hệ bác sĩ để được tư vấn thêm."
   }
 ]
