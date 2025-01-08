@@ -413,11 +413,10 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
 
     public async Task<PaginationResponse<AppointmentCalendarResponse>> GetWorkingCalendars(PaginationFilter filter, DateOnly date, CancellationToken cancellation)
     {
-
-        var result = new List<AppointmentCalendarResponse>();
-        int totalCount = 0;
         try
         {
+            var result = new List<AppointmentCalendarResponse>();
+            int totalCount = 0;
             string currentUserRole = _currentUserService.GetRole();
             string currentUserId = _currentUserService.GetUserId().ToString();
 
@@ -499,15 +498,17 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
                     }
                 }
             }
+
+            return new PaginationResponse<AppointmentCalendarResponse>(
+                    result,
+                    totalCount,
+                    filter.PageNumber,
+                    filter.PageSize);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex.Message);
+            throw new Exception(ex.Message);
         }
-        return new PaginationResponse<AppointmentCalendarResponse>(
-                result,
-                totalCount,
-                filter.PageNumber,
-                filter.PageSize);
     }
 }

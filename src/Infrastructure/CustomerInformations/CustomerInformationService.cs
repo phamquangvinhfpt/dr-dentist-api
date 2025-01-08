@@ -73,6 +73,7 @@ internal class CustomerInformationService : ICustomerInformationService
         catch (Exception ex)
         {
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
         }
     }
 

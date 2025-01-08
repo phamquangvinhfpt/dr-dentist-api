@@ -209,7 +209,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
-            throw;
+            throw new Exception(ex.Message);
         }
     }
 

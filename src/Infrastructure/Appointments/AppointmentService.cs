@@ -236,7 +236,7 @@ internal class AppointmentService : IAppointmentService
         }
         catch(Exception ex)
         {
-            _logger.LogError("AppointmentHub", ex);
+            _logger.LogError("AppointmentHub Error", ex);
         }
     }
 
@@ -607,7 +607,7 @@ internal class AppointmentService : IAppointmentService
             else if (appoint.Status == AppointmentStatus.Come)
             {
                 var query = await _db.TreatmentPlanProcedures
-                    .Where(p => p.AppointmentID == request.AppointmentID && p.Status == Domain.Treatment.TreatmentPlanStatus.Active).OrderByDescending(p => p.StartDate).ToListAsync();
+                    .Where(p => p.AppointmentID == request.AppointmentID && (p.Status == Domain.Treatment.TreatmentPlanStatus.Active || p.Status == Domain.Treatment.TreatmentPlanStatus.Pending)).OrderByDescending(p => p.StartDate).ToListAsync();
                 foreach (var item in query)
                 {
                     item.Status = Domain.Treatment.TreatmentPlanStatus.Cancelled;
@@ -1835,8 +1835,7 @@ internal class AppointmentService : IAppointmentService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            _logger.LogError(ex.Message);
-            throw new Exception(ex.Message);
+            _logger.LogError("Appointment job", ex.Message);
         }
     }
 }

@@ -540,7 +540,7 @@ internal partial class UserService : IUserService
             if (request.IsUpdatePatientFamily)
             {
                 var family = await _db.PatientFamilys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
-                var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone).FirstOrDefaultAsync();
+                var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone && p.Id != family.Id).FirstOrDefaultAsync();
                 if (phone_existing != null)
                 {
                     throw new BadRequestException("Phone number is existing");
@@ -576,6 +576,7 @@ internal partial class UserService : IUserService
         {
             await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
         }
     }
 
