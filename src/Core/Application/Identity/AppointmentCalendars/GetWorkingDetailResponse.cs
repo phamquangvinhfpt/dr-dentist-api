@@ -19,6 +19,7 @@ public class GetWorkingDetailResponse
     public string? PatientPhone { get; set; }
     public Guid PatientProfileID { get; set; }
     public Guid DoctorProfileID { get; set; }
+    public string? DoctorUserID { get; set; }
     public string? DoctorName { get; set; }
     public Guid AppointmentId { get; set; }
     public Guid ServiceID { get; set; }

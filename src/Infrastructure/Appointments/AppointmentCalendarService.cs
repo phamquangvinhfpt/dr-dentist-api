@@ -374,6 +374,7 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
                 Note = calendar.Calendar.Note,
                 PatientAvatar = pUser.ImageUrl,
                 PatientPhone = pProfile.Phone,
+                DoctorUserID = dProfile.Id,
             };
 
             if (calendar.TreamentPlan != null)

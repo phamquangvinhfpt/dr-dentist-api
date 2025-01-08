@@ -176,7 +176,7 @@ internal class DashboardService : IDashboardService
 
             //int count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            //appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -283,7 +283,7 @@ internal class DashboardService : IDashboardService
 
             //int count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            //appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime).WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderBy(p => p.StartTime);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -332,6 +332,7 @@ internal class DashboardService : IDashboardService
                         Status = a.Appointment.Status,
                         Step = sp.Step,
                         PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                        DoctorUserID = doctor.Id
                     };
                     if (calendar != null)
                     {

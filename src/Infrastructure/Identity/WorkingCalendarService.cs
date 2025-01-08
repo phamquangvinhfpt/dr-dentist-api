@@ -304,13 +304,17 @@ internal class WorkingCalendarService : IWorkingCalendarService
             var result = new List<WorkingCalendarResponse>();
             var spec = new EntitiesByPaginationFilterSpec<WorkingCalendar>(filter);
             var query = _db.WorkingCalendars
-                .AsNoTracking().Where(p => p.Status == WorkingStatus.Accept);
+                .AsNoTracking();
 
             if (currentUser == FSHRoles.Dentist)
             {
                 string id = _currentUserService.GetUserId().ToString();
                 var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.DoctorId == id);
                 query = query.Where(p => p.DoctorID == doctor.Id);
+            }
+            else
+            {
+                query = query.Where(p => p.Status == WorkingStatus.Accept);
             }
 
             if (date != default)

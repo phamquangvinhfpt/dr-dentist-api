@@ -373,7 +373,7 @@ internal class AppointmentService : IAppointmentService
                 appointmentsQuery = appointmentsQuery.Where(w => w.Status != AppointmentStatus.Failed && w.Status != AppointmentStatus.Pending);
             }
             int count = appointmentsQuery.Count();
-            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.AppointmentDate).WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.AppointmentDate).OrderBy(p => p.StartTime).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -1207,7 +1207,7 @@ internal class AppointmentService : IAppointmentService
 
             int count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            appointmentsQuery = appointmentsQuery.OrderBy(p => p.AppointmentDate).WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderBy(p => p.AppointmentDate).OrderBy(p => p.StartTime).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -1355,7 +1355,7 @@ internal class AppointmentService : IAppointmentService
 
             int count = await appointmentsQuery.CountAsync(cancellationToken);
 
-            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.Date).WithSpecification(spec);
+            appointmentsQuery = appointmentsQuery.OrderByDescending(p => p.Date).OrderBy(p => p.StartTime).WithSpecification(spec);
 
             var appointments = await appointmentsQuery
                 .Select(appointment => new
@@ -1402,6 +1402,7 @@ internal class AppointmentService : IAppointmentService
                     Status = a.Appointment.Status,
                     Step = sp.Step,
                     PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                    DoctorUserID = doctor.Id,
                 };
                 if (calendar != null)
                 {
@@ -1489,6 +1490,7 @@ internal class AppointmentService : IAppointmentService
                     StartTime = a.Appointment.StartTime.Value,
                     Status = a.Appointment.Status,
                     PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
+                    DoctorUserID = doctor.Id,
                 };
 
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == a.Doctor.Id && p.Date == a.Appointment.Date && p.Status == WorkingStatus.Accept);

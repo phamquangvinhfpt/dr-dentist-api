@@ -71,6 +71,9 @@ internal class ApplicationFormService : IApplicationFormService
             }
             else if (calendar.Status != Domain.Identity.WorkingStatus.Accept) {
                 throw new Exception($"Warning: Your Calendar was {calendar.Status.ToString()}");
+            }else if(calendar.Date <= DateOnly.FromDateTime(DateTime.Now))
+            {
+                throw new Exception("Warning: Time Off can not be applied.");
             }
             if(form.Description == null)
             {
