@@ -164,7 +164,7 @@ internal class DashboardService : IDashboardService
             var result = new List<AppointmentResponse>();
             var spec = new EntitiesByPaginationFilterSpec<AppointmentResponse>(filter);
             var appointmentsQuery = _db.Appointments
-                .AsQueryable().Where(p => p.DentistId != default);
+                .AsQueryable().Where(p => p.DentistId != default && p.Status == AppointmentStatus.Confirmed);
 
             if (date != default)
             {
