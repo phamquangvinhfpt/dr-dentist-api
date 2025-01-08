@@ -191,7 +191,7 @@ internal class DashboardService : IDashboardService
 
             foreach (var a in appointments)
             {
-                if(!_appointmentCalendarService.CheckAvailableTimeSlot(a.Appointment.AppointmentDate, a.Appointment.StartTime, a.Appointment.StartTime.Add(a.Appointment.Duration), a.Appointment.DentistId).Result)
+                if(!_appointmentCalendarService.CheckAvailableTimeSlotForDash(a.Appointment.AppointmentDate, a.Appointment.StartTime, a.Appointment.StartTime.Add(a.Appointment.Duration), a.Appointment.DentistId).Result)
                 {
                     var patient = _db.Users.FirstOrDefaultAsync(p => p.Id == a.Patient.UserId).Result;
                     var dUser = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
@@ -297,7 +297,7 @@ internal class DashboardService : IDashboardService
 
             foreach (var a in appointments)
             {
-                if (!_appointmentCalendarService.CheckAvailableTimeSlot(a.Appointment.Date.Value, a.Appointment.StartTime.Value, a.Appointment.EndTime.Value, a.Appointment.DoctorId.Value).Result)
+                if (!_appointmentCalendarService.CheckAvailableTimeSlotForDash(a.Appointment.Date.Value, a.Appointment.StartTime.Value, a.Appointment.EndTime.Value, a.Appointment.DoctorId.Value).Result)
                 {
                     var doctor = await _userManager.FindByIdAsync(a.Doctor.DoctorId);
                     var patient = await _userManager.FindByIdAsync(a.Patient.UserId);

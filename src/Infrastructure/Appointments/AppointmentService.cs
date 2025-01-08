@@ -1807,7 +1807,7 @@ internal class AppointmentService : IAppointmentService
                                 Url = "/appointment",
                             }, null, default);
                     }
-                    else if (appointment.AppointmentDate > DateOnly.FromDateTime(DateTime.Now))
+                    else if (appointment.AppointmentDate == DateOnly.FromDateTime(DateTime.Now).AddDays(1))
                     {
                         var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
                             .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))

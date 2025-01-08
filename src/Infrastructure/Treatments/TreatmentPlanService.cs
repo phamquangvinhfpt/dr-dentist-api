@@ -45,8 +45,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
     private readonly IEmailTemplateService _templateService;
     private readonly IMailService _mailService;
     private readonly IAppointmentService _appointmentService;
+    private readonly IAppointmentCalendarService _appointmentCalendarService;
 
-    public TreatmentPlanService(IHubContext<NotificationHub> chatHubContext, ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService, IAppointmentService appointmentService)
+    public TreatmentPlanService(IAppointmentCalendarService appointmentCalendarService, IHubContext<NotificationHub> chatHubContext, ApplicationDbContext db, IStringLocalizer<TreatmentPlanService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, IJobService jobService, ILogger<TreatmentPlanService> logger, IAppointmentCalendarService workingCalendarService, ICacheService cacheService, INotificationService notificationService, IEmailTemplateService templateService, IMailService mailService, IAppointmentService appointmentService)
     {
         _db = db;
         _t = t;
@@ -61,6 +62,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         _mailService = mailService;
         _appointmentService = appointmentService;
         _chatHubContext = chatHubContext;
+        _appointmentCalendarService = appointmentCalendarService;
     }
 
     public async Task AddFollowUpAppointment(AddTreatmentDetail request, CancellationToken cancellationToken)
@@ -655,6 +657,15 @@ internal class TreatmentPlanService : ITreatmentPlanService
                         throw new Exception("Warning: the plan can not do when the previous plan in progress");
                     }
                 }
+            }
+            if(request.DoctorID != default)
+            {
+                if(!_appointmentCalendarService.CheckAvailableTimeSlot(request.TreatmentDate, request.TreatmentTime, request.TreatmentTime.Add(TimeSpan.FromMinutes(30)), request.DoctorID.Value).Result)
+                {
+                    throw new Exception("Doctor is not available.");
+                }
+                calendar.DoctorId = request.DoctorID;
+                plan.Plan.DoctorID = request.DoctorID;
             }
             calendar.Date = request.TreatmentDate;
             calendar.StartTime = request.TreatmentTime;

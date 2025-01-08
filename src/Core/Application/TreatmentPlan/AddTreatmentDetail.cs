@@ -15,6 +15,7 @@ public class AddTreatmentDetail : IRequest<string>
     public DateOnly TreatmentDate { get; set; }
     public TimeSpan TreatmentTime { get; set; }
     public string? Note { get; set; }
+    public Guid? DoctorID { get; set; }
 }
 
 public class AddTreatmentDetailValidator : CustomValidator<AddTreatmentDetail>

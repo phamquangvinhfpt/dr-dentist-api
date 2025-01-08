@@ -133,6 +133,31 @@ internal class AppointmentCalendarService : IAppointmentCalendarService
         return !calendars;
     }
 
+    public async Task<bool> CheckAvailableTimeSlotForDash(DateOnly date, TimeSpan start, TimeSpan end, DefaultIdType DoctorID)
+    {
+        var workingTime = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == DoctorID && p.Date == date && p.Status == WorkingStatus.Accept);
+        if (workingTime == null)
+        {
+            return false;
+        }
+        else if (workingTime.Status != WorkingStatus.Accept)
+        {
+            return false;
+        }
+        bool time = await _db.TimeWorkings.Where(p =>
+            p.CalendarID == workingTime.Id &&
+            p.StartTime <= start &&
+             p.EndTime >= end &&
+            p.IsActive
+        ).AnyAsync();
+
+        if (!time)
+        {
+            return false;
+        }
+        return true;
+    }
+
     public async Task<bool> CheckAvailableTimeSlotToAddFollowUp(DefaultIdType doctorID, DateOnly treatmentDate, TimeSpan treatmentTime)
     {
         var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == doctorID);

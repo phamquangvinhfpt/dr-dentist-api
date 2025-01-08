@@ -16,4 +16,5 @@ public interface IAppointmentCalendarService : ITransientService
     Task<bool> CheckAvailableTimeSlotToAddFollowUp(Guid doctorID, DateOnly treatmentDate, TimeSpan treatmentTime);
     Task<GetWorkingDetailResponse> GetCalendarDetail(Guid id, CancellationToken cancellationToken);
     Task<bool> CheckAvailableTimeSlot(DateOnly date, TimeSpan start, TimeSpan end, Guid DoctorID);
+    Task<bool> CheckAvailableTimeSlotForDash(DateOnly date, TimeSpan start, TimeSpan end, Guid DoctorID);
 }
