@@ -1,0 +1,161 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <style type="text/css">
+        /* CLIENT-SPECIFIC STYLES */
+        body, table, td, a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        /* RESET STYLES */
+        img {
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        table {
+            border-collapse: collapse !important;
+        }
+
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        /* iOS BLUE LINKS */
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+
+        /* MOBILE STYLES */
+        @("@")media screen and (max-width:600px) {
+            h1 {
+                font-size: 32px !important;
+                line-height: 32px !important;
+            }
+        }
+
+        /* ANDROID CENTER FIX */
+        div[style*="margin: 16px 0;"] {
+            margin: 0 !important;
+        }
+    </style>
+</head>
+
+<body style="background-color: #0a0b14; margin: 0 !important; padding: 0 !important;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <!-- Header -->
+        <tr>
+            <td align="center" style="padding: 0px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="center" style="padding: 40px 30px 40px 30px; border-radius: 4px 4px 0px 0px; color: #d1d5db; font-family: Arial, sans-serif;">
+                            <h1 style="font-size: 24px; margin: 0;">Hóa Đơn Thanh Toán</h1>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+            <td align="center" style="padding: 0px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="left" style="padding: 20px 30px 40px 30px; color: #d1d5db; font-family: Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 25px;">
+                            <!-- Patient Info -->
+                            <p style="margin-bottom: 15px;">
+                                <strong>Bệnh Nhân:</strong> @Model?.PaymentResponse.PatientName - @Model?.PaymentResponse.PatientCode
+                            </p>
+                            <p style="margin-bottom: 25px;">
+                                <strong>Dịch Vụ:</strong> @Model?.PaymentResponse.ServiceName
+                            </p>
+
+                            <!-- Bill Details -->
+                            <div style="background-color: #374151; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                <h2 style="color: #d1d5db; font-size: 18px; margin-top: 0; margin-bottom: 15px;">Chi Tiết Hóa Đơn</h2>
+                                
+                                <table style="width: 100%; color: #d1d5db;">
+                                    <tr style="border-bottom: 1px solid #4b5563;">
+                                        <th align="left" style="padding: 10px 0;">TÊN THỦ THUẬT</th>
+                                        <th align="right" style="padding: 10px 0;">SỐ TIỀN</th>
+                                    </tr>
+                                    @foreach(var item in @Model.Details){
+                                        <tr style="border-bottom: 1px solid #4b5563;">
+                                        <td style="padding: 10px 0;">@item.ProcedureName</td>
+                                        <td align="right">@item.PaymentAmount</td>
+                                        </tr>
+                                    }
+                                </table>
+
+                                <!-- Total Section -->
+                                <div style="margin-top: 20px; border-top: 2px solid #4b5563; padding-top: 20px;">
+                                    <p style="display: flex; justify-content: space-between; margin: 5px 0;">
+                                        <span>Tổng Tiền:</span>
+                                        <strong>@Model.PaymentResponse.TotalAmount đ</strong>
+                                    </p>
+                                    <p style="display: flex; justify-content: space-between; margin: 5px 0;">
+                                        <span>Số Tiền Đã Cọc:</span>
+                                        <strong>@Model.PaymentResponse.DepositAmount đ</strong>
+                                    </p>
+                                    <p style="display: flex; justify-content: space-between; margin: 5px 0;">
+                                        <span>Số Tiền Còn Lại:</span>
+                                        <strong>(@Model.PaymentResponse.TotalAmount - @Model.PaymentResponse.RemainingAmount) đ</strong>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Payment Methods -->
+                            <div style="background-color: #374151; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                                <h2 style="color: #d1d5db; font-size: 18px; margin-top: 0; margin-bottom: 15px;">Phương Thức Thanh Toán</h2>
+                                <div style="color: #d1d5db;">
+                                    <p style="margin: 5px 0;">@(Model.PaymentResponse.Method.ToString() == "Cash" ? "☑ Tiền Mặt" : "☑ Chuyển Khoản")</p>
+                                </div>
+                            </div>
+
+                            <!-- Payment Button -->
+                             @* <table border="0" cellspacing="0" cellpadding="0" style="margin: 30px auto;">
+                                 <tr>
+                                     <td align="center" style="border-radius: 4px;" bgcolor="#4ade80">
+                                         <a href="@Model?.PaymentUrl" target="_blank" style="font-size: 16px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 15px 25px; border-radius: 4px; display: inline-block;">
+                                             Xác Nhận Thanh Toán
+                                         </a>
+                                     </td>
+                                 </tr>
+                             </table> *@
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td align="center" style="padding: 30px 10px 0px 10px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#1f2937" align="center" style="padding: 30px 30px 30px 30px; border-radius: 4px; color: #9ca3af; font-family: Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px;">
+                            <p style="margin: 0;">© 2024 Dental Clinic. All rights reserved.</p>
+                            <p style="margin-top: 10px;">Email này được gửi tự động từ hệ thống của chúng tôi.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

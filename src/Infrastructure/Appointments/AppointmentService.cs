@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.Drawing;
 using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using FluentValidation;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
@@ -1025,6 +1026,86 @@ internal class AppointmentService : IAppointmentService
             throw new Exception(ex.Message);
         }
     }
+    public async Task<PaymentDetailResponse> GetInvoice(Guid id)
+    {
+        try
+        {
+            var query = await _db.Payments
+                .Where(p => p.AppointmentId == id)
+                .Select(a => new
+                {
+                    Payment = a,
+                    pProfile = _db.PatientProfiles.FirstOrDefault(p => p.Id == a.PatientProfileId),
+                    Service = _db.Services.IgnoreQueryFilters().FirstOrDefault(p => p.Id == a.ServiceId),
+                    Detail = _db.PaymentDetails.Where(t => t.PaymentID == a.Id).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            //if (query.Payment.Status != PaymentStatus.Incomplete)
+            //{
+            //    throw new Exception("The appointment have no any amount to pay.");
+            //}
+
+            var patient = await _userManager.FindByIdAsync(query.pProfile.UserId);
+
+            var response = new PaymentDetailResponse
+            {
+                PaymentResponse = new PaymentResponse
+                {
+                    AppointmentId = id,
+                    ServiceId = query.Service.Id,
+                    ServiceName = query.Service.ServiceName,
+                    PaymentId = query.Payment.Id,
+                    PatientProfileId = query.pProfile.Id,
+                    PatientCode = query.pProfile.PatientCode,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
+                    DepositAmount = query.Payment.DepositAmount!.Value,
+                    DepositDate = query.Payment.DepositAmount.Value == 0 ? query.Payment.DepositDate : default,
+                    RemainingAmount = query.Payment.RemainingAmount!.Value,
+                    TotalAmount = query.Payment.Amount!.Value,
+                    Method = query.Payment.Method,
+                    Status = query.Payment.Status,
+                },
+                Details = new List<Application.Payments.PaymentDetail>()
+            };
+
+            foreach (var item in query.Detail)
+            {
+                var pro = await _db.Procedures.FirstOrDefaultAsync(p => p.Id == item.ProcedureID);
+                response.Details.Add(new Application.Payments.PaymentDetail
+                {
+                    ProcedureID = item.ProcedureID,
+                    ProcedureName = pro.Name,
+                    PaymentAmount = item.PaymentAmount,
+                    PaymentStatus = item.PaymentStatus
+                });
+            }
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw;
+        }
+    }
+
+    public async Task SendInvoiceToMail(Guid AppointmentID, ApplicationUser patient)
+    {
+        try
+        {
+            var result = await GetInvoice(AppointmentID);
+            var mailRequest = new MailRequest(
+                    new List<string> { patient.Email },
+                    _t["Hóa Đơn Thanh Toán"],
+                    _templateService.GenerateEmailTemplate("invoice", result));
+            await _mailService.SendAsync(mailRequest, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message, ex);
+            throw new Exception(ex.Message);
+        }
+    }
 
     public async Task HandlePaymentRequest(PayAppointmentRequest request, CancellationToken cancellationToken)
     {
@@ -1049,6 +1130,7 @@ internal class AppointmentService : IAppointmentService
                 query.Payment.RemainingAmount -= request.Amount;
                 query.Payment.Status = Domain.Payments.PaymentStatus.Completed;
                 query.Payment.FinalPaymentDate = DateOnly.FromDateTime(DateTime.Now);
+                query.Payment.Method = PaymentMethod.Cash;
 
                 foreach (var item in query.Detail)
                 {
@@ -1072,6 +1154,8 @@ internal class AppointmentService : IAppointmentService
                 _jobService.Enqueue(
                 () => SendHubJob(query.Payment.Appointment.AppointmentDate, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
                 await DeleteRedisCode();
+                _jobService.Enqueue(
+                () => SendInvoiceToMail(query.Payment.AppointmentId.Value, user));
             }
             else if (!request.IsPay && (request.Method == Domain.Payments.PaymentMethod.BankTransfer))
             {
@@ -1150,6 +1234,8 @@ internal class AppointmentService : IAppointmentService
             _jobService.Enqueue(
                 () => SendHubJob(query.Payment.Appointment.AppointmentDate, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
             await DeleteRedisCode();
+            _jobService.Enqueue(
+                () => SendInvoiceToMail(query.Payment.AppointmentId.Value, user));
         }
         catch (Exception ex)
         {

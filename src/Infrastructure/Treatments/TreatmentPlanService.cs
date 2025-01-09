@@ -71,7 +71,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         try
         {
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == request.AppointmentID);
-            if (appointment.Status != AppointmentStatus.Come)
+            if (appointment.Status != AppointmentStatus.Examinated)
             {
                 throw new Exception("Appointment in status that can not do this action");
             }

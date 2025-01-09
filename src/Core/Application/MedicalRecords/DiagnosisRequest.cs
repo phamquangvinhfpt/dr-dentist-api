@@ -15,7 +15,7 @@ public class DiagnosisRequestValidator : CustomValidator<DiagnosisRequest>
             .WithMessage((_, i) => $"Invalid tooth number. Tooth number at: {i}");
 
         RuleFor(x => x.TeethConditions)
-            .NotEmpty()
+            .NotNull()
             .WithMessage("Teeth condition is required");
     }
 }
