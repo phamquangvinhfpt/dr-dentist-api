@@ -540,13 +540,14 @@ internal partial class UserService : IUserService
             if (request.IsUpdatePatientFamily)
             {
                 var family = await _db.PatientFamilys.FirstOrDefaultAsync(p => p.PatientProfileId == request.PatientProfileId);
-                var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone && p.Id != family.Id).FirstOrDefaultAsync();
-                if (phone_existing != null)
-                {
-                    throw new BadRequestException("Phone number is existing");
-                }
+
                 if (family != null)
                 {
+                    var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone && p.Id != family.Id).FirstOrDefaultAsync();
+                    if (phone_existing != null)
+                    {
+                        throw new BadRequestException("Phone number is existing");
+                    }
                     family.Phone = request.PatientFamily.Phone ?? family.Phone;
                     family.Relationship = request.PatientFamily.Relationship;
                     family.Name = request.PatientFamily.Name ?? family.Name;
@@ -557,6 +558,11 @@ internal partial class UserService : IUserService
                 else
                 {
                     var profile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == request.PatientProfileId) ?? throw new BadRequestException("Profile is not found.");
+                    var phone_existing = await _db.PatientFamilys.Where(p => p.Phone == request.PatientFamily.Phone).FirstOrDefaultAsync();
+                    if (phone_existing != null)
+                    {
+                        throw new BadRequestException("Phone number is existing");
+                    }
                     await _db.PatientFamilys.AddAsync(new PatientFamily
                     {
                         PatientProfileId = request.PatientProfileId,
