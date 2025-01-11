@@ -55,7 +55,12 @@
         }
     </style>
 </head>
-
+@{
+    string FormatCurrency(double number)
+    {
+        return System.String.Format("{0:N0}", number).Replace(",", ".");
+    }
+}
 <body style="background-color: #0a0b14; margin: 0 !important; padding: 0 !important;">
     <table border="0" cellpadding="0" cellspacing="0" width="100%">
         <!-- Header -->
@@ -97,7 +102,7 @@
                                     @foreach(var item in @Model.Details){
                                         <tr style="border-bottom: 1px solid #4b5563;">
                                         <td style="padding: 10px 0;">@item.ProcedureName</td>
-                                        <td align="right">@item.PaymentAmount</td>
+                                        <td align="right">@FormatCurrency(@item.PaymentAmount) đ</td>
                                         </tr>
                                     }
                                 </table>
@@ -106,15 +111,15 @@
                                 <div style="margin-top: 20px; border-top: 2px solid #4b5563; padding-top: 20px;">
                                     <p style="display: flex; justify-content: space-between; margin: 5px 0;">
                                         <span>Tổng Tiền:</span>
-                                        <strong>@Model.PaymentResponse.TotalAmount đ</strong>
+                                        <strong>@FormatCurrency(@Model.PaymentResponse.TotalAmount) đ</strong>
                                     </p>
                                     <p style="display: flex; justify-content: space-between; margin: 5px 0;">
                                         <span>Số Tiền Đã Cọc:</span>
-                                        <strong>@Model.PaymentResponse.DepositAmount đ</strong>
+                                        <strong>@FormatCurrency(@Model.PaymentResponse.DepositAmount) đ</strong>
                                     </p>
                                     <p style="display: flex; justify-content: space-between; margin: 5px 0;">
                                         <span>Số Tiền Còn Lại:</span>
-                                        <strong>(@Model.PaymentResponse.TotalAmount - @Model.PaymentResponse.RemainingAmount) đ</strong>
+                                        <strong>@FormatCurrency(@Model.PaymentResponse.RemainingAmount) đ</strong>
                                     </p>
                                 </div>
                             </div>

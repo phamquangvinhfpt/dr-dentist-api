@@ -405,7 +405,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             var patientProfile = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == patientUser.Id);
             var prescriptions = await _db.Prescriptions
-                .Where(p => p.PatientID == patientProfile.Id)
+                .Where(p => p.PatientID == patientProfile.Id).OrderBy(p => p.DeletedOn)
                 .Select(g => new
                 {
                     Prescriptions = g,
@@ -429,6 +429,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
                 var prescriptionResponse = new PrescriptionResponse
                 {
+                    CreateDate = prescription.Prescriptions.CreatedOn.ToString("dd/MM/yyyy"),
                     PatientID = patientUser.Id,
                     PatientName = $"{patientUser.FirstName} {patientUser.LastName}",
                     DoctorID = doctorUser.Id,
@@ -490,7 +491,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
                 var doctor = await _userManager.FindByIdAsync(pre.Doctor.DoctorId);
                 var result = new PrescriptionResponse
                 {
-                    CreateDate = pre.Prescription.CreatedOn,
+                    CreateDate = pre.Prescription.CreatedOn.ToString("dd/MM/yyyy"),
                     PatientID = patient.Id,
                     PatientName = patient.FirstName + " " + patient.LastName,
                     Notes = pre.Prescription.Notes,

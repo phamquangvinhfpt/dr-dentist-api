@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace FSH.WebApi.Application.TreatmentPlan.Prescriptions;
 public class PrescriptionResponse
 {
-    public DateTime CreateDate { get; set; }
+    public string? CreateDate { get; set; }
     public string? PatientID { get; set; }
     public string? PatientName { get; set; }
     public string? DoctorID { get; set; }
