@@ -215,7 +215,8 @@ internal class DashboardService : IDashboardService
                         PatientAvatar = patient.ImageUrl != null ? patient.ImageUrl : null,
                         DentistId = a.Doctor.Id,
                         DentistName = $"{dUser.FirstName} {dUser.LastName}",
-                        Type = AppointmentType.Appointment
+                        Type = AppointmentType.Appointment,
+                        DentistUserID = dUser.Id,
                     });
                 }
             }

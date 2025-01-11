@@ -409,6 +409,7 @@ internal class AppointmentService : IAppointmentService
                     isFeedback = feedback,
 
                     DentistId = a.Appointment.DentistId,
+                    DentistUserID = dUser.Id,
                     DentistName = $"{dUser.FirstName} {dUser.LastName}",
                     PatientCode = a.Patient?.PatientCode,
                     PatientName = $"{pUser.FirstName} {pUser.LastName}",
@@ -830,6 +831,7 @@ internal class AppointmentService : IAppointmentService
                     var d = await _userManager.FindByIdAsync(dentist.DoctorId);
                     result.DentistId = dentist.Id;
                     result.DentistName = $"{d.FirstName} {d.LastName}";
+                    result.DentistUserID = d.Id;
                 }
                 var calendar = await _db.WorkingCalendars.FirstOrDefaultAsync(p => p.DoctorID == dentist.Id && p.Date == appointments.Appointment.AppointmentDate && p.Status == WorkingStatus.Accept);
 
