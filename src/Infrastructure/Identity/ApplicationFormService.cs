@@ -6,23 +6,15 @@ using FSH.WebApi.Application.Common.Mailing;
 using FSH.WebApi.Application.Common.Models;
 using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.ApplicationForms;
-using FSH.WebApi.Application.Identity.AppointmentCalendars;
 using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Application.Notifications;
-using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Identity;
-using FSH.WebApi.Infrastructure.Appointments;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 
@@ -71,7 +63,8 @@ internal class ApplicationFormService : IApplicationFormService
             }
             else if (calendar.Status != Domain.Identity.WorkingStatus.Accept) {
                 throw new Exception($"Warning: Your Calendar was {calendar.Status.ToString()}");
-            }else if(calendar.Date <= DateOnly.FromDateTime(DateTime.Now))
+            }
+            else if(calendar.Date <= DateOnly.FromDateTime(DateTime.Now))
             {
                 throw new Exception("Warning: Time Off can not be applied.");
             }
@@ -80,10 +73,12 @@ internal class ApplicationFormService : IApplicationFormService
                 throw new Exception("Warning: Lack off description.");
             }
             var existingForm = await _db.ApplicationForms.Where(p => p.CalendarID == form.CalendarID).FirstOrDefaultAsync();
-            if (existingForm != null){
+            if (existingForm != null)
+            {
                 if (form.TimeID == existingForm.TimeID) {
                     throw new Exception($"Warning: Your application form was created");
                 }
+
                 if(form.TimeID != default)
                 {
                     var time = await _db.TimeWorkings.FirstOrDefaultAsync(p => p.Id == form.TimeID);
@@ -96,6 +91,7 @@ internal class ApplicationFormService : IApplicationFormService
                         throw new Exception("Warning: Your time that you selected, was not active");
                     }
                 }
+
                 existingForm.TimeID = default;
                 existingForm.Description = string.Concat(existingForm.Description, ", ", form.Description);
             }
@@ -119,10 +115,13 @@ internal class ApplicationFormService : IApplicationFormService
                     {
                         throw new Exception("Warning: Your time that you selected, was not active");
                     }
+
                     app.TimeID = time.Id;
                 }
+
                 _db.ApplicationForms.Add(app);
             }
+
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return "Success";
@@ -143,7 +142,6 @@ internal class ApplicationFormService : IApplicationFormService
             var result = new List<FormDetailResponse>();
             var spec = new EntitiesByPaginationFilterSpec<ApplicationForm>(filter);
 
-
             var query = _db.ApplicationForms
                 .AsNoTracking();
 
@@ -151,7 +149,6 @@ internal class ApplicationFormService : IApplicationFormService
             {
                 query = query.Where(p => p.UserID == _currentUserService.GetUserId().ToString());
             }
-
 
             var forms = await query
                 .OrderByDescending(p => p.CreatedOn)
@@ -198,6 +195,7 @@ internal class ApplicationFormService : IApplicationFormService
                     WorkingTimes = times
                 });
             }
+
             return new PaginationResponse<FormDetailResponse>(result, count, filter.PageNumber, filter.PageSize);
         }
         catch (Exception ex)

@@ -1,6 +1,4 @@
 ﻿using Ardalis.Specification.EntityFrameworkCore;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Wordprocessing;
 using FSH.WebApi.Application.Appointments;
 using FSH.WebApi.Application.Common.Caching;
 using FSH.WebApi.Application.Common.Exporters;
@@ -10,28 +8,19 @@ using FSH.WebApi.Application.Common.Specification;
 using FSH.WebApi.Application.Identity.Users;
 using FSH.WebApi.Application.Identity.WorkingCalendar;
 using FSH.WebApi.Application.Notifications;
-using FSH.WebApi.Domain.Appointments;
 using FSH.WebApi.Domain.Examination;
 using FSH.WebApi.Domain.Identity;
-using FSH.WebApi.Domain.Payments;
-using FSH.WebApi.Infrastructure.Appointments;
-using FSH.WebApi.Infrastructure.Auditing;
+using FSH.WebApi.Infrastructure.Chat;
+using FSH.WebApi.Infrastructure.Notifications;
 using FSH.WebApi.Infrastructure.Persistence.Context;
 using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net.WebSockets;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Xceed.Document.NET;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FSH.WebApi.Infrastructure.Identity;
 internal class WorkingCalendarService : IWorkingCalendarService
@@ -45,8 +34,10 @@ internal class WorkingCalendarService : IWorkingCalendarService
     private readonly INotificationService _notificationService;
     private readonly IExcelWriter _excelWriter;
     private readonly IAppointmentService _appointmentService;
+    private readonly IHubContext<NotificationHub> _chatHubContext;
+    private readonly PresenceTracker _presenceTracker;
 
-    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService, IExcelWriter excelWriter, IAppointmentService appointmentService)
+    public WorkingCalendarService(ApplicationDbContext db, IStringLocalizer<WorkingCalendarService> t, ICurrentUser currentUserService, UserManager<ApplicationUser> userManager, ILogger<WorkingCalendarService> logger, ICacheService cacheService, INotificationService notificationService, IExcelWriter excelWriter, IAppointmentService appointmentService, IHubContext<NotificationHub> chatHubContext, PresenceTracker presenceTracker)
     {
         _db = db;
         _t = t;
@@ -57,6 +48,8 @@ internal class WorkingCalendarService : IWorkingCalendarService
         _notificationService = notificationService;
         _excelWriter = excelWriter;
         _appointmentService = appointmentService;
+        _chatHubContext = chatHubContext;
+        _presenceTracker = presenceTracker;
     }
 
     public Task<bool> CheckAvailableTimeWorking(string DoctorID, DateOnly date, TimeSpan time)
@@ -274,6 +267,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
 
                     totalTimeInDay += timeWorked;
                 }
+
                 if (dProfile.WorkingType == WorkingType.PartTime && totalTimeInDay < 4)
                 {
                     throw new Exception($"Part-time doctor must work at least 4 hours per day. Date: {item.Date}");
@@ -282,8 +276,13 @@ internal class WorkingCalendarService : IWorkingCalendarService
                 {
                     throw new Exception($"Fulltime doctor must work at 8 hours per day. Date: {item.Date}");
                 }
+
                 calendar.Status = dProfile.WorkingType == WorkingType.FullTime ? WorkingStatus.Accept : WorkingStatus.Waiting;
             }
+
+            List<string> users = new() { doctorID, _currentUserService.GetUserId().ToString() };
+
+            await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return "Success";
@@ -454,6 +453,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             calendar.Calendar.RoomID = request.RoomID;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
             await _appointmentService.DeleteRedisCode();
             return "Success";
         }
@@ -1377,6 +1377,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
             await _appointmentService.DeleteRedisCode();
             return "Success";
         }

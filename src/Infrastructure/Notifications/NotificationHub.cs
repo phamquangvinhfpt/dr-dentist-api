@@ -89,4 +89,9 @@ public class NotificationHub : Hub, ITransientService
 
         return await _chatService.GetConversationAsync(conversionId, default);
     }
+
+    public async Task Heartbeat()
+    {
+        await Clients.Caller.SendAsync("HeartbeatResponse");
+    }
 }

@@ -20,6 +20,7 @@ internal static class Startup
             services.AddSingleton<PresenceTracker>();
             services.AddSignalR(options =>
             {
+                options.EnableDetailedErrors = true;
                 options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
                 options.KeepAliveInterval = TimeSpan.FromSeconds(30);
             });
@@ -35,6 +36,7 @@ internal static class Startup
                     if (backplaneSettings.StringConnection is null) throw new InvalidOperationException("Redis backplane provider: No connectionString configured.");
                     services.AddSignalR(options =>
                     {
+                        options.EnableDetailedErrors = true;
                         options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
                         options.KeepAliveInterval = TimeSpan.FromSeconds(30);
                     }).AddStackExchangeRedis(backplaneSettings.StringConnection, options =>

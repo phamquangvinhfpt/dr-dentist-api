@@ -233,6 +233,7 @@ internal class AppointmentService : IAppointmentService
             }
 
             await _chatHubContext.Clients.Users(users).SendAsync("Appointments", date);
+            await DeleteRedisCode();
             _logger.LogInformation("AppointmentHub Success");
         }
         catch(Exception ex)
@@ -625,7 +626,7 @@ internal class AppointmentService : IAppointmentService
             {
                 throw new BadRequestException("The Appointment can not be cancel");
             }
-            
+
             appoint.Status = AppointmentStatus.Cancelled;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);

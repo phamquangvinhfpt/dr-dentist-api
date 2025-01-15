@@ -10,6 +10,7 @@ using FSH.WebApi.Shared.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace FSH.WebApi.Infrastructure.Chat;
 public class ChatService : IChatService
@@ -19,17 +20,20 @@ public class ChatService : IChatService
     private readonly ICurrentUser _currentUser;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IFileStorageService _fileStorageService;
+    private readonly ILogger<ChatService> _logger;
 
     public ChatService(
         IHubContext<NotificationHub> chatHubContext,
         ApplicationDbContext dbContext,
         ICurrentUser currentUser,
+        ILogger<ChatService> logger,
         UserManager<ApplicationUser> userManager,
         IFileStorageService fileStorageService)
     {
         _chatHubContext = chatHubContext;
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _logger = logger;
         _userManager = userManager;
         _fileStorageService = fileStorageService;
     }
@@ -84,7 +88,8 @@ public class ChatService : IChatService
 
     public async Task<ListMessageDto> SendMessageAsync(SendMessageDto send, CancellationToken cancellationToken)
     {
-
+        try
+        {
         string senderId = _currentUser.GetUserId().ToString();
         var patientMessage = new PatientMessages
         {
@@ -117,10 +122,16 @@ public class ChatService : IChatService
             sentMessage.ImageUrl = user.ImageUrl;
         }
 
-        _chatHubContext.Clients.User(send.ReceiverId).SendAsync("ReceiveMessage", sentMessage);
-        _chatHubContext.Clients.User(senderId).SendAsync("ReceiveMessage", sentMessage);
+        await _chatHubContext.Clients.User(send.ReceiverId).SendAsync("ReceiveMessage", sentMessage);
+        await _chatHubContext.Clients.User(senderId).SendAsync("ReceiveMessage", sentMessage);
 
         return sentMessage;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending message");
+            throw new Exception("Error sending message", ex);
+        }
     }
 
     public async Task<IEnumerable<ListMessageDto>> GetConversationAsync(string? conversionId, CancellationToken cancellationToken)
