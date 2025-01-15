@@ -42,8 +42,33 @@ public class ChatService : IChatService
     {
         var users = await _userManager.Users.ToListAsync();
         var adminUser = await _userManager.GetUsersInRoleAsync(FSHRoles.Admin);
-        var currentUser = _currentUser.GetUserId().ToString();
-        users = users.Where(u => u.Id != currentUser && !adminUser.Contains(u)).ToList();
+        var staffUser = await _userManager.GetUsersInRoleAsync(FSHRoles.Staff);
+        var doctorUser = await _userManager.GetUsersInRoleAsync(FSHRoles.Dentist);
+        var patientUser = await _userManager.GetUsersInRoleAsync(FSHRoles.Patient);
+        string currentUser = _currentUser.GetUserId().ToString();
+        var current_user = await _userManager.FindByIdAsync(currentUser);
+
+        // users = users.Where(u => u.Id != currentUser && !adminUser.Contains(u)).ToList();
+        if (adminUser.Contains(current_user))
+        {
+            users = users.Where(u => (doctorUser.Contains(u) || staffUser.Contains(u))
+                                    && u.Id != currentUser).ToList();
+        }
+        else if (staffUser.Contains(current_user))
+        {
+            users = users.Where(u => (doctorUser.Contains(u) || patientUser.Contains(u) || adminUser.Contains(u))
+                                    && u.Id != currentUser).ToList();
+        }
+        else if (doctorUser.Contains(current_user))
+        {
+            users = users.Where(u => (staffUser.Contains(u) || patientUser.Contains(u) || adminUser.Contains(u))
+                                    && u.Id != currentUser).ToList();
+        }
+        else if (patientUser.Contains(current_user))
+        {
+            users = users.Where(u => (doctorUser.Contains(u) || staffUser.Contains(u))
+                                    && u.Id != currentUser).ToList();
+        }
 
         var senderIds = await _dbContext.PatientMessages
             .Select(pm => pm.SenderId)
@@ -52,7 +77,7 @@ public class ChatService : IChatService
 
         var latestMessages = new List<ListUserDto>();
 
-        foreach( var user in users)
+        foreach (var user in users)
         {
             var latestMessage = await _dbContext.PatientMessages
                 .Where(pm => pm.SenderId == user.Id && pm.ReceiverId == currentUser)
@@ -69,7 +94,7 @@ public class ChatService : IChatService
                 })
                 .FirstOrDefaultAsync();
 
-            if (latestMessage == null )
+            if (latestMessage == null)
             {
                 latestMessage = new ListUserDto
                 {
@@ -90,42 +115,42 @@ public class ChatService : IChatService
     {
         try
         {
-        string senderId = _currentUser.GetUserId().ToString();
-        var patientMessage = new PatientMessages
-        {
-            SenderId = senderId,
-            ReceiverId = send.ReceiverId ?? string.Empty,
-            Message = send.Message,
-            IsRead = false
-        };
+            string senderId = _currentUser.GetUserId().ToString();
+            var patientMessage = new PatientMessages
+            {
+                SenderId = senderId,
+                ReceiverId = send.ReceiverId ?? string.Empty,
+                Message = send.Message,
+                IsRead = false
+            };
 
-        if (send.Images != null)
-        {
-            patientMessage.Images = await _fileStorageService.SaveFilesAsync(send.Images, cancellationToken);
-        }
+            if (send.Images != null)
+            {
+                patientMessage.Images = await _fileStorageService.SaveFilesAsync(send.Images, cancellationToken);
+            }
 
-        _dbContext.Set<PatientMessages>().Add(patientMessage);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            _dbContext.Set<PatientMessages>().Add(patientMessage);
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var sentMessage = new ListMessageDto
-        {
-            Id = patientMessage.Id,
-            SenderId = patientMessage.SenderId,
-            Message = patientMessage.Message,
-            CreatedOn = patientMessage.CreatedOn
-        };
+            var sentMessage = new ListMessageDto
+            {
+                Id = patientMessage.Id,
+                SenderId = patientMessage.SenderId,
+                Message = patientMessage.Message,
+                CreatedOn = patientMessage.CreatedOn
+            };
 
-        var user = await _userManager.FindByIdAsync(senderId);
-        if (user != null)
-        {
-            sentMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
-            sentMessage.ImageUrl = user.ImageUrl;
-        }
+            var user = await _userManager.FindByIdAsync(senderId);
+            if (user != null)
+            {
+                sentMessage.SenderName = $"{user.FirstName} {user.LastName}" ?? "Unknown User";
+                sentMessage.ImageUrl = user.ImageUrl;
+            }
 
-        await _chatHubContext.Clients.User(send.ReceiverId).SendAsync("ReceiveMessage", sentMessage);
-        await _chatHubContext.Clients.User(senderId).SendAsync("ReceiveMessage", sentMessage);
+            await _chatHubContext.Clients.User(send.ReceiverId).SendAsync("ReceiveMessage", sentMessage);
+            await _chatHubContext.Clients.User(senderId).SendAsync("ReceiveMessage", sentMessage);
 
-        return sentMessage;
+            return sentMessage;
         }
         catch (Exception ex)
         {

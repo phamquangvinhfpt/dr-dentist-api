@@ -21,13 +21,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
-using SQLitePCL;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FSH.WebApi.Infrastructure.Treatments;
 internal class TreatmentPlanService : ITreatmentPlanService
@@ -142,6 +135,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
             _jobService.Enqueue(
                 () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
+            List<string> users = new() { _currentUserService.GetUserId().ToString(), patient.UserId };
+            await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);
             await _appointmentService.DeleteRedisCode();
         }
         catch (Exception ex)
@@ -199,6 +194,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            List<string> users = new() { _currentUserService.GetUserId().ToString(), appointment.PatientId.ToString() };
+            await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);
         }
         catch (Exception ex)
         {
@@ -682,6 +679,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
             _jobService.Enqueue(
                     () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
+            List<string> users = new() { _currentUserService.GetUserId().ToString(), patient.UserId };
+            await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);
             return _t["Success"];
         }
         catch (Exception ex)

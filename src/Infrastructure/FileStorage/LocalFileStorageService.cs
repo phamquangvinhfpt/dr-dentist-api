@@ -9,6 +9,11 @@ namespace FSH.WebApi.Infrastructure.FileStorage;
 
 public class LocalFileStorageService : IFileStorageService
 {
+    private const int TARGET_FILE_SIZE_KB = 100;
+    private const int INITIAL_QUALITY = 90;
+    private const int MIN_QUALITY = 30;
+    private const int QUALITY_STEP = 10;
+
     public async Task<string> UploadAsync<T>(FileUploadRequest? request, FileType supportedFileType, CancellationToken cancellationToken = default)
     where T : class
     {
@@ -88,8 +93,9 @@ public class LocalFileStorageService : IFileStorageService
 
         Directory.CreateDirectory(pathToSave);
 
-        using var stream = new FileStream(fullPath, FileMode.Create);
-        await file.CopyToAsync(stream, cancellationToken);
+        // using var stream = new FileStream(fullPath, FileMode.Create);
+        // await file.CopyToAsync(stream, cancellationToken);
+        await CompressAndSaveImageAsync(file, fullPath, cancellationToken);
 
         return dbPath.Replace("\\", "/");
     }
@@ -210,5 +216,37 @@ public class LocalFileStorageService : IFileStorageService
                 Remove(path);
             }
         }
+    }
+
+    private async Task CompressAndSaveImageAsync(IFormFile file, string outputPath, CancellationToken cancellationToken)
+    {
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream, cancellationToken);
+        memoryStream.Position = 0;
+
+        using var image = new ImageMagick.MagickImage(memoryStream);
+
+        // Start with high quality
+        int quality = INITIAL_QUALITY;
+
+        while (quality >= MIN_QUALITY)
+        {
+            image.Quality = (uint)quality;
+
+            using var tempStream = new MemoryStream();
+            await image.WriteAsync(tempStream, cancellationToken);
+
+            // Check if file size is under target
+            if (tempStream.Length / 1024 <= TARGET_FILE_SIZE_KB)
+            {
+                await File.WriteAllBytesAsync(outputPath, tempStream.ToArray(), cancellationToken);
+                return;
+            }
+
+            quality -= QUALITY_STEP;
+        }
+
+        image.Quality = MIN_QUALITY;
+        await image.WriteAsync(outputPath, cancellationToken);
     }
 }
