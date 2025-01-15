@@ -75,6 +75,7 @@ public class AppointmentController : VersionNeutralApiController
         _currentUserService.GetUserId().ToString(),
         filter,
         date,
+        default,
         APPOINTMENT
     );
         var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
@@ -159,6 +160,7 @@ public class AppointmentController : VersionNeutralApiController
         _currentUserService.GetUserId().ToString(),
         filter,
         date,
+        time,
         NON
     );
         var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
@@ -201,6 +203,7 @@ public class AppointmentController : VersionNeutralApiController
             _currentUserService.GetUserId().ToString(),
             filter,
             date,
+            default,
             FOLLOW
         );
         var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
@@ -235,6 +238,7 @@ public class AppointmentController : VersionNeutralApiController
             _currentUserService.GetUserId().ToString(),
             filter,
             date,
+            default,
             REEXAM
         );
         var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);

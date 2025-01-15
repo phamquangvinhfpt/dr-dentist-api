@@ -139,8 +139,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
             }
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
             _jobService.Enqueue(
-                () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
+                () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
         }
         catch (Exception ex)
@@ -299,8 +300,8 @@ internal class TreatmentPlanService : ITreatmentPlanService
             {
                 appointment.canFeedback = true;
                 appointment.Status = AppointmentStatus.Done;
-                var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
-                await _notificationService.SendNotificationToUser(patient.UserId,
+                var patients = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+                await _notificationService.SendNotificationToUser(patients.UserId,
                         new Shared.Notifications.BasicNotification
                         {
                             Label = Shared.Notifications.BasicNotification.LabelType.Information,
@@ -308,15 +309,16 @@ internal class TreatmentPlanService : ITreatmentPlanService
                             Title = "Chúc mừng đã hoàn thành lộ trình dịch vụ",
                             Url = $"/feedback/{appointment.Id}",
                         }, null, cancellationToken);
-                _jobService.Enqueue(
-                    () => _appointmentService.SendHubJob(appointment.AppointmentDate, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
-                await _appointmentService.DeleteRedisCode();
+                //_jobService.Enqueue(
+                //    () => _appointmentService.SendHubJob(appointment.AppointmentDate, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
+                //await _appointmentService.DeleteRedisCode();
             }
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
             _jobService.Enqueue(
-                () => _appointmentService.SendHubJob(plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
+                () => _appointmentService.SendHubJob(plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }
@@ -676,8 +678,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == plan.Appointment.PatientId);
             _jobService.Enqueue(
-                    () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, _currentUserService.GetUserId().ToString(), _currentUserService.GetRole()));
+                    () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }

@@ -278,7 +278,11 @@ public static class SpecificationBuilderExtensions
             string? text = GetStringFromJsonElement(value);
             return Expression.Constant(ChangeType(text, propertyType), propertyType);
         }
-
+        if (propertyType == typeof(DateOnly) || propertyType == typeof(DateOnly?))
+        {
+            string? text = GetStringFromJsonElement(value);
+            return Expression.Constant(ChangeType(text, propertyType), propertyType);
+        }
         return Expression.Constant(ChangeType(((JsonElement)value).GetRawText(), propertyType), propertyType);
     }
 

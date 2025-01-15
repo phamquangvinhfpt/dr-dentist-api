@@ -11,7 +11,7 @@ public static class RedisKeyGenerator
 {
     private const string Separator = ":";
 
-    public static string GenerateAppointmentKey(string userId, PaginationFilter filter, DateOnly date, string prefix)
+    public static string GenerateAppointmentKey(string userId, PaginationFilter filter, DateOnly date, TimeSpan time, string prefix)
     {
         var keyBuilder = new StringBuilder();
 
@@ -29,6 +29,11 @@ public static class RedisKeyGenerator
         keyBuilder.Append("date");
         keyBuilder.Append(Separator);
         keyBuilder.Append(date.ToString("yyyyMMdd"));
+        keyBuilder.Append(Separator);
+
+        keyBuilder.Append("time");
+        keyBuilder.Append(Separator);
+        keyBuilder.Append(time);
         keyBuilder.Append(Separator);
 
         if (filter != null)
