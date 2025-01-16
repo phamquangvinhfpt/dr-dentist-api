@@ -133,8 +133,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
+                () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             List<string> users = new() { _currentUserService.GetUserId().ToString(), patient.UserId };
             await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);
             await _appointmentService.DeleteRedisCode();
@@ -314,8 +315,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => _appointmentService.SendHubJob(plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
+                () => _appointmentService.SendHubJob(plan.StartDate.Value, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             return _t["Success"];
         }
@@ -676,8 +678,9 @@ internal class TreatmentPlanService : ITreatmentPlanService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == plan.Appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == plan.Appointment.DentistId);
             _jobService.Enqueue(
-                    () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, _currentUserService.GetRole()));
+                    () => _appointmentService.SendHubJob(plan.Plan.StartDate.Value, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await _appointmentService.DeleteRedisCode();
             List<string> users = new() { _currentUserService.GetUserId().ToString(), patient.UserId };
             await _chatHubContext.Clients.Users(users).SendAsync("Fetch", true);

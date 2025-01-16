@@ -37,5 +37,5 @@ public interface IAppointmentService : ITransientService
     Task<string> RevertPayment(DefaultIdType id);
     Task JobAppointmentsAsync();
     Task DeleteRedisCode();
-    Task SendHubJob(DateOnly date, string current_user, string role);
+    Task SendHubJob(DateOnly date, string patient, string docter, string role);
 }

@@ -210,7 +210,7 @@ internal class AppointmentService : IAppointmentService
         }
     }
 
-    public async Task SendHubJob(DateOnly date, string current_user, string role)
+    public async Task SendHubJob(DateOnly date, string patient, string doctor, string role)
     {
         try
         {
@@ -227,7 +227,7 @@ internal class AppointmentService : IAppointmentService
             {
                 users.Add(staff.Id);
             }
-            users.Add(current_user);
+            users.Add(patient);
 
             await _chatHubContext.Clients.Users(users).SendAsync("Appointments", date);
             await DeleteRedisCode();
@@ -280,9 +280,9 @@ internal class AppointmentService : IAppointmentService
                 Url = "/appointment",
             };
             await _notificationService.SendPaymentNotificationToUser(patientId.UserId, notification, null, cancellationToken);
-
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                    () => SendHubJob(appointment.AppointmentDate, patientId.UserId, currentUserRole));
+                    () => SendHubJob(appointment.AppointmentDate, patientId.UserId, doctor.DoctorId, currentUserRole));
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -525,8 +525,9 @@ internal class AppointmentService : IAppointmentService
                 TypeRequest.Reschedule, cancellationToken), TimeSpan.FromSeconds(5));
             }
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(appointment.AppointmentDate, patient.UserId, user_role));
+                () => SendHubJob(appointment.AppointmentDate, patient.UserId, doctor.DoctorId, user_role));
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -629,8 +630,9 @@ internal class AppointmentService : IAppointmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appoint.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appoint.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(appoint.AppointmentDate, patient.UserId, user_role));
+                () => SendHubJob(appoint.AppointmentDate, patient.UserId, doctor.DoctorId, user_role));
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -689,8 +691,9 @@ internal class AppointmentService : IAppointmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(appointment.AppointmentDate, patient.UserId, currentUserRole));
+                () => SendHubJob(appointment.AppointmentDate, patient.UserId, doctor.DoctorId, currentUserRole));
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -881,7 +884,7 @@ internal class AppointmentService : IAppointmentService
 
                 var dprofile = _db.DoctorProfiles.FirstOrDefault(p => p.Id == appointment.DentistId);
 
-                var doctor = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
+                var doctors = _userManager.FindByIdAsync(dprofile.DoctorId!).Result;
 
                 appointment.Status = AppointmentStatus.Come;
 
@@ -932,8 +935,8 @@ internal class AppointmentService : IAppointmentService
                         ProcedureID = item.Value,
                         ProcedureName = pro.Name,
                         Price = pro.Price,
-                        DoctorID = doctor.Id,
-                        DoctorName = $"{doctor.FirstName} {doctor.LastName}",
+                        DoctorID = doctors.Id,
+                        DoctorName = $"{doctors.FirstName} {doctors.LastName}",
                         PlanCost = entry.FinalCost,
                         PlanDescription = null,
                         Step = sp.StepOrder,
@@ -955,8 +958,9 @@ internal class AppointmentService : IAppointmentService
                 throw new Exception("Can not verify appointment.");
             }
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(appointment.AppointmentDate, patient.UserId, _currentUserService.GetRole()));
+                () => SendHubJob(appointment.AppointmentDate, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await DeleteRedisCode();
         }
         catch (Exception ex)
@@ -1155,8 +1159,9 @@ internal class AppointmentService : IAppointmentService
                 var user = await _userManager.FindByIdAsync(query.Profile.UserId);
                 await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
                 await _notificationService.SendPaymentNotificationToUser(_currentUserService.GetUserId().ToString(), notification, null, cancellationToken);
+                var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == query.Payment.Appointment.DentistId);
                 _jobService.Enqueue(
-                () => SendHubJob(query.Payment.Appointment.AppointmentDate, user.Id, _currentUserService.GetRole()));
+                () => SendHubJob(query.Payment.Appointment.AppointmentDate, user.Id, doctor.DoctorId, _currentUserService.GetRole()));
                 await DeleteRedisCode();
                 _jobService.Enqueue(
                 () => SendInvoiceToMail(query.Payment.AppointmentId.Value, user));
@@ -1236,8 +1241,9 @@ internal class AppointmentService : IAppointmentService
             await _notificationService.SendPaymentNotificationToUser(user.Id, notification, null, cancellationToken);
             await _notificationService.SendPaymentNotificationToUser(request.UserId, notification, null, cancellationToken);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == query.Payment.Appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == query.Payment.Appointment.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(query.Payment.Appointment.AppointmentDate, patient.UserId, _currentUserService.GetRole()));
+                () => SendHubJob(query.Payment.Appointment.AppointmentDate, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await DeleteRedisCode();
             _jobService.Enqueue(
                 () => SendInvoiceToMail(query.Payment.AppointmentId.Value, user));
@@ -1402,7 +1408,7 @@ internal class AppointmentService : IAppointmentService
                 TimeSpan.FromSeconds(1));
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appoitment.Appointment.PatientId);
             _jobService.Enqueue(
-                () => SendHubJob(appoitment.Appointment.AppointmentDate, patient.UserId, _currentUserService.GetRole()));
+                () => SendHubJob(appoitment.Appointment.AppointmentDate, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await DeleteRedisCode();
             return _t["Success"];
         }
@@ -1756,8 +1762,9 @@ internal class AppointmentService : IAppointmentService
             await transaction.CommitAsync(cancellationToken);
             var appointment = await _db.Appointments.FirstOrDefaultAsync(p => p.Id == calendar.AppointmentId);
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.Id == appointment.PatientId);
+            var doctor = await _db.DoctorProfiles.FirstOrDefaultAsync(p => p.Id == appointment.DentistId);
             _jobService.Enqueue(
-                () => SendHubJob(appointment.AppointmentDate, patient.UserId, _currentUserService.GetRole()));
+                () => SendHubJob(appointment.AppointmentDate, patient.UserId, doctor.DoctorId, _currentUserService.GetRole()));
             await DeleteRedisCode();
             return "Success";
         }
