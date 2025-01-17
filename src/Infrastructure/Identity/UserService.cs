@@ -281,7 +281,7 @@ internal partial class UserService : IUserService
 
         if (role.Equals(FSHRoles.Patient) || role.Equals(FSHRoles.Staff) || role.Equals(FSHRoles.Admin))
         {
-            birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-18);
+            birthDayValid = date.Value < DateOnly.FromDateTime(DateTime.Today).AddYears(-3);
         }
         else if (role.Equals(FSHRoles.Dentist))
         {

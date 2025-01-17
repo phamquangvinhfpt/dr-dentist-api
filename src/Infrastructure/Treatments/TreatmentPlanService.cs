@@ -335,7 +335,7 @@ internal class TreatmentPlanService : ITreatmentPlanService
         {
             List<TreatmentPlanResponse> result = new List<TreatmentPlanResponse>();
             var patient = await _db.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == id) ?? throw new Exception("Patient not found");
-            var newAppointment = await _db.Appointments.Where(p => p.PatientId == patient.Id && p.Status == AppointmentStatus.Come)
+            var newAppointment = await _db.Appointments.Where(p => p.PatientId == patient.Id && (p.Status == AppointmentStatus.Examinated || p.Status == AppointmentStatus.Come))
                 .OrderByDescending(p => p.AppointmentDate)
                 .FirstOrDefaultAsync();
 
@@ -373,14 +373,14 @@ internal class TreatmentPlanService : ITreatmentPlanService
                     ProcedureName = sp.Procedure.Name,
                     Price = sp.Procedure.Price,
                     DoctorID = doctor.Id,
-                    DoctorName = doctor.UserName,
+                    DoctorName = $"{doctor.FirstName} {doctor.LastName}",
                     PlanCost = item.FinalCost,
                     PlanDescription = item.Note,
                     Step = sp.SP.StepOrder,
                     Status = item.Status,
                     hasPrescription = hasPre,
                 };
-                if (item.Status == Domain.Treatment.TreatmentPlanStatus.Active)
+                if (item.Status != Domain.Treatment.TreatmentPlanStatus.Pending)
                 {
                     r.StartDate = item.StartDate.Value;
                 }

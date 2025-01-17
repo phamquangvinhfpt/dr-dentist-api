@@ -71,7 +71,7 @@ public class CreateUserRequestValidator : CustomValidator<CreateUserRequest>
         RuleFor(p => p.Password).Cascade(CascadeMode.Stop)
             .NotEmpty()
             .MinimumLength(8)
-            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
+            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?.&\-])[A-Za-z\d@$!%*\-.?&]{8,}$")
             .WithMessage("Password must contain at least one uppercase letter, one lowercase letter, one number and one special character");
 
         RuleFor(p => p.ConfirmPassword).Cascade(CascadeMode.Stop)
