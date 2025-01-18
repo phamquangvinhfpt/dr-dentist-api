@@ -454,7 +454,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
-            await _appointmentService.DeleteRedisCode();
+            // await _appointmentService.DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)
@@ -1378,7 +1378,7 @@ internal class WorkingCalendarService : IWorkingCalendarService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
-            await _appointmentService.DeleteRedisCode();
+            // await _appointmentService.DeleteRedisCode();
             return "Success";
         }
         catch (Exception ex)

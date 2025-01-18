@@ -111,10 +111,10 @@ public class CreateAppointmentRequestValidator : CustomValidator<CreateAppointme
             .When(p => p.Notes != null)
             .WithMessage("Notes cannot exceed 500 characters");
 
-        RuleFor(p => p)
-            .MustAsync(async (request, cancellation) =>
-                await appointmentService.CheckAvailableAppointment(request.PatientId, request.AppointmentDate))
-            .WithMessage((request, cancellation) => $"Patient has an available appointment");
+        // RuleFor(p => p)
+        //     .MustAsync(async (request, cancellation) =>
+        //         await appointmentService.CheckAvailableAppointment(request.PatientId, request.AppointmentDate))
+        //     .WithMessage((request, cancellation) => $"Patient has an available appointment");
 
         RuleFor(p => p)
             .MustAsync(async (request, cancellation) =>

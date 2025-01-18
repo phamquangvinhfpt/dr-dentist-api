@@ -15,10 +15,10 @@ public class AppointmentController : VersionNeutralApiController
     private readonly IAppointmentService _appointmentService;
     private readonly ICacheService _cacheService;
     private readonly ICurrentUser _currentUserService;
-    private static string APPOINTMENT = "APPOINTMENT";
-    private static string FOLLOW = "FOLLOW";
-    private static string REEXAM = "REEXAM";
-    private static string NON = "NON";
+    // private static string APPOINTMENT = "APPOINTMENT";
+    // private static string FOLLOW = "FOLLOW";
+    // private static string REEXAM = "REEXAM";
+    // private static string NON = "NON";
     public AppointmentController(ICacheService cacheService, IAppointmentService appointmentService, ICurrentUser currentUserService)
     {
         _appointmentService = appointmentService;
@@ -71,31 +71,31 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Appointments", "")]
     public async Task<PaginationResponse<AppointmentResponse>> GetAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
-        string key = RedisKeyGenerator.GenerateAppointmentKey(
-        _currentUserService.GetUserId().ToString(),
-        filter,
-        date,
-        default,
-        APPOINTMENT
-    );
-        var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
-        if (r != null) {
-            return r;
-        }
-        var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
-        _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
-        if (keys != null) {
-            keys.Add(key);
-            _cacheService.Remove(APPOINTMENT);
-            _cacheService.Set(APPOINTMENT, keys);
-        }
-        else
-        {
-            HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(APPOINTMENT, list);
-        }
-        return result;
+    //     string key = RedisKeyGenerator.GenerateAppointmentKey(
+    //     _currentUserService.GetUserId().ToString(),
+    //     filter,
+    //     date,
+    //     default,
+    //     APPOINTMENT
+    // );
+    //     var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+    //     if (r != null) {
+    //         return r;
+    //     }
+    //     var result = await _appointmentService.GetAppointments(filter, date, cancellationToken);
+    //     _cacheService.Set(key, result);
+    //     var keys = _cacheService.Get<HashSet<string>>(APPOINTMENT);
+    //     if (keys != null) {
+    //         keys.Add(key);
+    //         _cacheService.Remove(APPOINTMENT);
+    //         _cacheService.Set(APPOINTMENT, keys);
+    //     }
+    //     else
+    //     {
+    //         HashSet<string> list = new HashSet<string> { key };
+    //         _cacheService.Set(APPOINTMENT, list);
+    //     }
+        return await _appointmentService.GetAppointments(filter, date, cancellationToken);
     }
 
     //[HttpPost("schedule")]
@@ -156,33 +156,33 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Appointments that have non-doctor", "")]
     public async Task<PaginationResponse<AppointmentResponse>> GetNonDoctorAppointments(PaginationFilter filter, [FromQuery] DateOnly date, TimeSpan time, CancellationToken cancellationToken)
     {
-        string key = RedisKeyGenerator.GenerateAppointmentKey(
-        _currentUserService.GetUserId().ToString(),
-        filter,
-        date,
-        time,
-        NON
-    );
-        var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
-        if (r != null)
-        {
-            return r;
-        }
-        var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
-        _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(NON);
-        if (keys != null)
-        {
-            keys.Add(key);
-            _cacheService.Remove(NON);
-            _cacheService.Set(NON, keys);
-        }
-        else
-        {
-            HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(NON, list);
-        }
-        return result;
+    //     string key = RedisKeyGenerator.GenerateAppointmentKey(
+    //     _currentUserService.GetUserId().ToString(),
+    //     filter,
+    //     date,
+    //     time,
+    //     NON
+    // );
+    //     var r = _cacheService.Get<PaginationResponse<AppointmentResponse>>(key);
+    //     if (r != null)
+    //     {
+    //         return r;
+    //     }
+    //     var result = await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
+    //     _cacheService.Set(key, result);
+    //     var keys = _cacheService.Get<HashSet<string>>(NON);
+    //     if (keys != null)
+    //     {
+    //         keys.Add(key);
+    //         _cacheService.Remove(NON);
+    //         _cacheService.Set(NON, keys);
+    //     }
+    //     else
+    //     {
+    //         HashSet<string> list = new HashSet<string> { key };
+    //         _cacheService.Set(NON, list);
+    //     }
+        return await _appointmentService.GetNonDoctorAppointments(filter, date, time, cancellationToken);
     }
 
     [HttpPost("non-doctor/add-doctor")]
@@ -199,33 +199,33 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Follow up Appointments", "")]
     public async Task<PaginationResponse<GetWorkingDetailResponse>> GetFollowUpAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
-        string key = RedisKeyGenerator.GenerateAppointmentKey(
-            _currentUserService.GetUserId().ToString(),
-            filter,
-            date,
-            default,
-            FOLLOW
-        );
-        var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
-        if (r != null)
-        {
-            return r;
-        }
-        var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
-        _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(FOLLOW);
-        if (keys != null)
-        {
-            keys.Add(key);
-            _cacheService.Remove(FOLLOW);
-            _cacheService.Set(FOLLOW, keys);
-        }
-        else
-        {
-            HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(FOLLOW, list);
-        }
-        return result;
+        // string key = RedisKeyGenerator.GenerateAppointmentKey(
+        //     _currentUserService.GetUserId().ToString(),
+        //     filter,
+        //     date,
+        //     default,
+        //     FOLLOW
+        // );
+        // var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
+        // if (r != null)
+        // {
+        //     return r;
+        // }
+        // var result = await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
+        // _cacheService.Set(key, result);
+        // var keys = _cacheService.Get<HashSet<string>>(FOLLOW);
+        // if (keys != null)
+        // {
+        //     keys.Add(key);
+        //     _cacheService.Remove(FOLLOW);
+        //     _cacheService.Set(FOLLOW, keys);
+        // }
+        // else
+        // {
+        //     HashSet<string> list = new HashSet<string> { key };
+        //     _cacheService.Set(FOLLOW, list);
+        // }
+        return await _appointmentService.GetFollowUpAppointments(filter, date, cancellationToken);
     }
 
     //checked
@@ -234,33 +234,33 @@ public class AppointmentController : VersionNeutralApiController
     [OpenApiOperation("View Re Examination Appointments", "")]
     public async Task<PaginationResponse<GetWorkingDetailResponse>> GetReExamAppointments(PaginationFilter filter, [FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
-        string key = RedisKeyGenerator.GenerateAppointmentKey(
-            _currentUserService.GetUserId().ToString(),
-            filter,
-            date,
-            default,
-            REEXAM
-        );
-        var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
-        if (r != null)
-        {
-            return r;
-        }
-        var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
-        _cacheService.Set(key, result);
-        var keys = _cacheService.Get<HashSet<string>>(REEXAM);
-        if (keys != null)
-        {
-            keys.Add(key);
-            _cacheService.Remove(REEXAM);
-            _cacheService.Set(REEXAM, keys);
-        }
-        else
-        {
-            HashSet<string> list = new HashSet<string> { key };
-            _cacheService.Set(REEXAM, list);
-        }
-        return result;
+        // string key = RedisKeyGenerator.GenerateAppointmentKey(
+        //     _currentUserService.GetUserId().ToString(),
+        //     filter,
+        //     date,
+        //     default,
+        //     REEXAM
+        // );
+        // var r = _cacheService.Get<PaginationResponse<GetWorkingDetailResponse>>(key);
+        // if (r != null)
+        // {
+        //     return r;
+        // }
+        // var result = await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
+        // _cacheService.Set(key, result);
+        // var keys = _cacheService.Get<HashSet<string>>(REEXAM);
+        // if (keys != null)
+        // {
+        //     keys.Add(key);
+        //     _cacheService.Remove(REEXAM);
+        //     _cacheService.Set(REEXAM, keys);
+        // }
+        // else
+        // {
+        //     HashSet<string> list = new HashSet<string> { key };
+        //     _cacheService.Set(REEXAM, list);
+        // }
+        return await _appointmentService.GetReExamAppointments(filter, date, cancellationToken);
     }
 
     [HttpGet("cache/delete")]
