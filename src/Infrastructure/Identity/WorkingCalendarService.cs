@@ -453,7 +453,9 @@ internal class WorkingCalendarService : IWorkingCalendarService
             calendar.Calendar.RoomID = request.RoomID;
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
+            await _chatHubContext.Clients.User(_currentUserService.GetUserId().ToString()).SendAsync("Fetch", true);
+            await _chatHubContext.Clients.User(calendar.Doctor.DoctorId).SendAsync("Fetch", true);
+            // await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
             // await _appointmentService.DeleteRedisCode();
             return "Success";
         }
@@ -1375,9 +1377,11 @@ internal class WorkingCalendarService : IWorkingCalendarService
                     }
                 }
             }
+
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             await _chatHubContext.Clients.Users(_presenceTracker.GetOnlineUsers().Result).SendAsync("Fetch", true);
+            await _chatHubContext.Clients.User(_currentUserService.GetUserId().ToString()).SendAsync("Fetch", true);
             // await _appointmentService.DeleteRedisCode();
             return "Success";
         }
