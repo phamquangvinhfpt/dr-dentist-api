@@ -38,4 +38,5 @@ public interface IAppointmentService : ITransientService
     Task JobAppointmentsAsync();
     Task DeleteRedisCode();
     Task SendHubJob(DateOnly date, string patient, string docter, string role);
+    Task JobFollowAppointmentsAsync();
 }

@@ -295,9 +295,17 @@ public class AppointmentController : VersionNeutralApiController
     [HttpGet("job")]
     [AllowAnonymous]
     [TenantIdHeader]
-    [OpenApiOperation("Revert Payment", "")]
-    public Task T(Guid id)
+    [OpenApiOperation("Appointment Job", "")]
+    public Task T()
     {
         return _appointmentService.JobAppointmentsAsync();
     }
+    //[HttpGet("followup/job")]
+    //[AllowAnonymous]
+    //[TenantIdHeader]
+    //[OpenApiOperation("Follow Up Appointment Job", "")]
+    //public Task T2()
+    //{
+    //    return _appointmentService.JobFollowAppointmentsAsync();
+    //}
 }

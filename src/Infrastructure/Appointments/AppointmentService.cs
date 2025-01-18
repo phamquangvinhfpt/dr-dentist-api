@@ -1860,7 +1860,6 @@ internal class AppointmentService : IAppointmentService
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
-            bool flag = true;
             var appointments = await _db.Appointments.Where(p => p.Status == AppointmentStatus.Confirmed).ToListAsync();
             if(appointments != null)
             {
@@ -1876,23 +1875,25 @@ internal class AppointmentService : IAppointmentService
                             .FirstOrDefaultAsync();
 
                         appointment.Status = AppointmentStatus.Cancelled;
-                        await _notificationService.SendNotificationToUser(doctor.Id,
-                        new Shared.Notifications.BasicNotification
+                        if(doctor != null)
                         {
-                            Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                            Message = $"Patient {patient.FirstName} {patient.LastName} was cancel the meeting in {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
-                            Title = "Cancel Appointment Notification",
-                            Url = "/appointment",
-                        }, null, default);
+                            await _notificationService.SendNotificationToUser(doctor.Id,
+                       new Shared.Notifications.BasicNotification
+                       {
+                           Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                           Message = $"Hệ thống tự động hủy lịch hẹn của bệnh nhân {patient.FirstName} {patient.LastName} ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} do không đến khám.",
+                           Title = "Thông báo hủy lịch hẹn",
+                           Url = "/appointment",
+                       }, default, default);
+                        }
                         await _notificationService.SendNotificationToUser(patient.Id,
                             new Shared.Notifications.BasicNotification
                             {
                                 Label = Shared.Notifications.BasicNotification.LabelType.Success,
-                                Message = $"Cancel appointment in {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
-                                Title = "Cancel Appointment Notification",
+                                Message = $"Xác nhận hủy lịch ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
+                                Title = "Thông báo hủy lịch hẹn",
                                 Url = "/appointment",
-                            }, null, default);
-                        flag = false;
+                            }, default, default);
 
                     }
                     else if(appointment.AppointmentDate == DateOnly.FromDateTime(DateTime.Now) && appointment.StartTime < DateTime.Now.TimeOfDay)
@@ -1907,7 +1908,7 @@ internal class AppointmentService : IAppointmentService
                                 Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
                                 Title = "Nhắc nhở lịch hẹn",
                                 Url = "/appointment",
-                            }, null, default);
+                            }, default, default);
                     }
                     else if (appointment.AppointmentDate == DateOnly.FromDateTime(DateTime.Now).AddDays(1))
                     {
@@ -1921,7 +1922,95 @@ internal class AppointmentService : IAppointmentService
                                 Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
                                 Title = "Nhắc nhở lịch hẹn",
                                 Url = "/appointment",
-                            }, null, default);
+                            }, default, default);
+                    }
+                }
+            }
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+            //_jobService.Enqueue(
+            //() => SendHubJob(appointment.AppointmentDate, null, FSHRoles.Admin));
+            await DeleteRedisCode();
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError("Appointment job", ex.Message);
+        }
+    }
+
+    public async Task JobFollowAppointmentsAsync()
+    {
+        using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            bool flag = true;
+            var appointments = await _db.Appointments.Where(p => p.Status == AppointmentStatus.Examinated).ToListAsync();
+            if (appointments != null)
+            {
+                foreach (var appointment in appointments)
+                {
+                    var tmp = await _db.TreatmentPlanProcedures.Where(p => p.AppointmentID == appointment.Id
+                        && p.Status == Domain.Treatment.TreatmentPlanStatus.Active).ToListAsync();
+                    foreach(var item in tmp)
+                    {
+                        if (item.StartDate < DateOnly.FromDateTime(DateTime.Now))
+                        {
+                            var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                                .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                                .FirstOrDefaultAsync();
+                            var doctor = await _db.DoctorProfiles.Where(p => p.Id == appointment.DentistId)
+                                .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.DoctorId))
+                                .FirstOrDefaultAsync();
+
+                            appointment.Status = AppointmentStatus.Cancelled;
+                            await _notificationService.SendNotificationToUser(doctor.Id,
+                            new Shared.Notifications.BasicNotification
+                            {
+                                Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                Message = $"Hệ thống tự động hủy lịch hẹn của bệnh nhân {patient.FirstName} {patient.LastName} ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} do không đến khám.",
+                                Title = "Thông báo hủy lịch hẹn",
+                                Url = "/appointment",
+                            }, default, default);
+                            await _notificationService.SendNotificationToUser(patient.Id,
+                                new Shared.Notifications.BasicNotification
+                                {
+                                    Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                    Message = $"Xác nhận hủy lịch ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")}",
+                                    Title = "Thông báo hủy lịch hẹn",
+                                    Url = "/appointment",
+                                }, default, default);
+                            flag = false;
+
+                        }
+                        else if (item.StartDate == DateOnly.FromDateTime(DateTime.Now) && item.StartTime < DateTime.Now.TimeOfDay)
+                        {
+                            var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                                .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                                .FirstOrDefaultAsync();
+                            await _notificationService.SendNotificationToUser(patient.Id,
+                                new Shared.Notifications.BasicNotification
+                                {
+                                    Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                    Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
+                                    Title = "Nhắc nhở lịch hẹn",
+                                    Url = "/appointment",
+                                }, default, default);
+                        }
+                        else if (appointment.AppointmentDate == DateOnly.FromDateTime(DateTime.Now).AddDays(1))
+                        {
+                            var patient = await _db.PatientProfiles.Where(p => p.Id == appointment.PatientId)
+                                .Select(a => _db.Users.FirstOrDefault(u => u.Id == a.UserId))
+                                .FirstOrDefaultAsync();
+                            await _notificationService.SendNotificationToUser(patient.Id,
+                                new Shared.Notifications.BasicNotification
+                                {
+                                    Label = Shared.Notifications.BasicNotification.LabelType.Success,
+                                    Message = $"Lịch hẹn ngày {appointment.AppointmentDate.ToString("dd-MM-yyyy")} sắp diễn ra. Nếu bạn có việc bận không đến được hãy thay đổi ngày khám trong ngày hôm nay.",
+                                    Title = "Nhắc nhở lịch hẹn",
+                                    Url = "/appointment",
+                                }, default, default);
+                        }
                     }
                 }
             }
