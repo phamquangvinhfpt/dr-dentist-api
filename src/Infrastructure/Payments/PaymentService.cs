@@ -272,7 +272,7 @@ public class PaymentService : IPaymentService
                     PaymentId = query.Payment.Id,
                     PatientProfileId = query.pProfile.Id,
                     PatientCode = query.pProfile.PatientCode,
-                    PatientName = patient.UserName,
+                    PatientName = $"{patient.FirstName} {patient.LastName}",
                     DepositAmount = query.Payment.DepositAmount!.Value,
                     DepositDate = query.Payment.DepositAmount.Value != 0 ? query.Payment.DepositDate : default,
                     RemainingAmount = query.Payment.RemainingAmount!.Value,

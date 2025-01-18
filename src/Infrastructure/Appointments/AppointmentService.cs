@@ -1698,7 +1698,7 @@ internal class AppointmentService : IAppointmentService
         {
             var result = new List<GetDoctorResponse>();
 
-            var service = await _db.Services.FirstOrDefaultAsync(p => p.Id == request.ServiceID);
+            var service = await _db.Services.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == request.ServiceID);
 
             if (service == null)
             {
@@ -1713,7 +1713,7 @@ internal class AppointmentService : IAppointmentService
 
             foreach (var doctor in doctors)
             {
-                bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.DoctorId);
+                bool check = await _workingCalendarService.CheckAvailableTimeSlot(request.Date, request.StartTime, request.EndTime, doctor.Id);
 
                 if (check)
                 {
