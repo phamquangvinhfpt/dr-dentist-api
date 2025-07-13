@@ -36,7 +36,7 @@ public class AppointmentJobDaily
         {
             var url = _webHost.IsDevelopment()
                 ? "https://localhost:5001/api/appointment/job"
-                : "https://api.drdentist.me/api/appointment/job";
+                : "https://api.drdentist.site/api/appointment/job";
             TransactionsUtils.CallAPIChecking(url);
         }
     }
